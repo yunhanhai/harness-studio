@@ -7,7 +7,11 @@
 ![electron](https://img.shields.io/badge/Electron-44-8B5CF6?style=flat-square)
 ![status](https://img.shields.io/badge/status-beta-F59E0B?style=flat-square)
 
-[English](README.en.md) · [架构说明](docs/ARCHITECTURE.md) · [发布指南](docs/PUBLISHING.md) · [参与贡献](CONTRIBUTING.md)
+[![GitHub release](https://img.shields.io/github/v/release/yunhanhai/harness-studio?style=flat-square&color=5B8CFF)](https://github.com/yunhanhai/harness-studio/releases)
+[![Gitee release](https://img.shields.io/badge/gitee-v0.1.0-C71D23?style=flat-square)](https://gitee.com/yunhanhai/harness-studio/releases)
+[![GitHub stars](https://img.shields.io/github/stars/yunhanhai/harness-studio?style=flat-square&color=F59E0B)](https://github.com/yunhanhai/harness-studio/stargazers)
+
+[English](README.en.md) · [下载](#下载) · [架构说明](docs/ARCHITECTURE.md) · [发布指南](docs/PUBLISHING.md) · [参与贡献](CONTRIBUTING.md)
 
 > Harness Studio 是独立的开源项目，**不是 DeepSeek 官方产品**。它复用 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的 Web 运行时与会话能力，不包含模型权重、账号或任何闭源服务。
 
@@ -127,10 +131,15 @@ Harness Studio 换了一个角度：**先让一个人每天用得顺手**。
 
 ### 下载
 
-从 [GitHub Releases](https://github.com/yunhanhai/harness-studio/releases) 或 [Gitee 发行版](https://gitee.com/yunhanhai/harness-studio/releases) 下载：
+| 平台 | 安装版 | 便携版 |
+| --- | --- | --- |
+| **GitHub**（全球） | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.0/Harness-Studio-0.1.0-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.0/Harness-Studio-0.1.0-x64-Portable.exe) |
+| **Gitee**（国内更快） | [Setup.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.0/Harness-Studio-0.1.0-x64-Setup.exe) | [Portable.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.0/Harness-Studio-0.1.0-x64-Portable.exe) |
 
-- `Harness-Studio-0.1.0-x64-Setup.exe` — 安装版，创建开始菜单与桌面快捷方式
-- `Harness-Studio-0.1.0-x64-Portable.exe` — 免安装，数据写在可执行文件旁
+- **Setup.exe**（99 MB）— 安装版，创建开始菜单与桌面快捷方式，支持自动更新
+- **Portable.exe**（99 MB）— 免安装，数据写在可执行文件旁的 `HarnessStudioData/`
+
+完整发布页：[GitHub Releases](https://github.com/yunhanhai/harness-studio/releases) · [Gitee 发行版](https://gitee.com/yunhanhai/harness-studio/releases)
 
 > 当前安装包未做代码签名，Windows SmartScreen 可能提示"未知发布者"。选择「更多信息 → 仍要运行」即可。介意的话可以自行从源码构建。
 
