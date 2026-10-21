@@ -2,8 +2,8 @@ import type { PromptItem, Settings } from './types'
 
 export const PRODUCT_NAME = 'Harness Studio'
 export const PRODUCT_NAME_ZH = '深寻工作台'
-export const GITHUB_REPO = 'REPLACE_ME/harness-studio'
-export const GITEE_REPO = 'REPLACE_ME/harness-studio'
+export const GITHUB_REPO = 'yunhanhai/harness-studio'
+export const GITEE_REPO = 'yunhanhai/harness-studio'
 export const GITHUB_URL = `https://github.com/${GITHUB_REPO}`
 export const GITEE_URL = `https://gitee.com/${GITEE_REPO}`
 export const RELEASES_URL = `${GITHUB_URL}/releases`

@@ -8,10 +8,10 @@
   },
   "license": "MIT",
   "private": true,
-  "homepage": "https://github.com/REPLACE_ME/harness-studio",
+  "homepage": "https://github.com/yunhanhai/harness-studio",
   "repository": {
     "type": "git",
-    "url": "https://github.com/REPLACE_ME/harness-studio.git"
+    "url": "https://github.com/yunhanhai/harness-studio.git"
   },
   "scripts": {
     "dev": "electron-vite dev",

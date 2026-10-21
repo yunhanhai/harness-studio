@@ -127,7 +127,7 @@ Harness Studio 换了一个角度：**先让一个人每天用得顺手**。
 
 ### 下载
 
-从 [GitHub Releases](https://github.com/REPLACE_ME/harness-studio/releases) 或 [Gitee 发行版](https://gitee.com/REPLACE_ME/harness-studio/releases) 下载：
+从 [GitHub Releases](https://github.com/yunhanhai/harness-studio/releases) 或 [Gitee 发行版](https://gitee.com/yunhanhai/harness-studio/releases) 下载：
 
 - `Harness-Studio-0.1.0-x64-Setup.exe` — 安装版，创建开始菜单与桌面快捷方式
 - `Harness-Studio-0.1.0-x64-Portable.exe` — 免安装，数据写在可执行文件旁
@@ -148,7 +148,7 @@ Harness Studio 换了一个角度：**先让一个人每天用得顺手**。
 需要 Node.js 22+ 与 npm 10+。
 
 ```powershell
-git clone https://github.com/REPLACE_ME/harness-studio.git
+git clone https://github.com/yunhanhai/harness-studio.git
 cd harness-studio
 npm install
 $env:ELECTRON_MIRROR = "https://npmmirror.com/mirrors/electron/"
@@ -269,7 +269,7 @@ docs/         架构、发布指南、截图
 - `.github/workflows/mirror-gitee.yml`：手动把仓库镜像到 Gitee
 - `docs/PUBLISHING.md`：从替换占位符到双平台发布的完整步骤
 
-发布前必须替换 4 处 `REPLACE_ME`：
+仓库已配置为 `yunhanhai/harness-studio`。如果你 fork 到自己的账号，需要同步替换 4 处：
 
 1. `src/shared/defaults.ts` 的 `GITHUB_REPO` / `GITEE_REPO`
 2. `package.json` 的 `homepage` / `repository`

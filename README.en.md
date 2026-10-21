@@ -53,7 +53,7 @@ Harness Studio takes a different angle: **make one developer's daily loop feel f
 
 ### Download
 
-Get the installer or portable build from [GitHub Releases](https://github.com/REPLACE_ME/harness-studio/releases) or [Gitee Releases](https://gitee.com/REPLACE_ME/harness-studio/releases).
+Get the installer or portable build from [GitHub Releases](https://github.com/yunhanhai/harness-studio/releases) or [Gitee Releases](https://gitee.com/yunhanhai/harness-studio/releases).
 
 > Builds are unsigned for now, so Windows SmartScreen may warn about an unknown publisher. Choose **More info → Run anyway**, or build from source.
 
@@ -68,7 +68,7 @@ Get the installer or portable build from [GitHub Releases](https://github.com/RE
 Requires Node.js 22+ and npm 10+.
 
 ```powershell
-git clone https://github.com/REPLACE_ME/harness-studio.git
+git clone https://github.com/yunhanhai/harness-studio.git
 cd harness-studio
 npm install
 $env:ELECTRON_MIRROR = "https://npmmirror.com/mirrors/electron/"
@@ -136,7 +136,7 @@ npm run icons        # regenerate icons from resources/brand.svg
 The repo ships CI and release workflows plus a full guide:
 
 - `docs/PUBLISHING.md` — GitHub Actions release, Gitee mirror, manual upload, versioning.
-- Replace the `REPLACE_ME` values in `src/shared/defaults.ts`, `package.json`, `electron-builder.yml`, and this README before releasing.
+- The repo is configured for `yunhanhai/harness-studio`. If you fork it, update the owner in `src/shared/defaults.ts`, `package.json`, `electron-builder.yml`, and both READMEs.
 
 ## Roadmap
 

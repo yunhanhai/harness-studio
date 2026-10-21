@@ -73,6 +73,6 @@ linux:
 
 publish:
   provider: github
-  owner: REPLACE_ME
+  owner: yunhanhai
   repo: harness-studio
   releaseType: release

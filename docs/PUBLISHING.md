@@ -1,6 +1,6 @@
 # 发布指南：GitHub 与 Gitee
 
-本文把 Harness Studio 从本地构建推到公开下载页。仓库内的所有所有者信息都用 `REPLACE_ME` 占位，发布前替换成你自己的账号。
+本文把 Harness Studio 从本地构建推到公开下载页。仓库当前已配置为 `yunhanhai/harness-studio`；如果要发布到你自己的账号，先把第 0 节的 4 处所有者改成你的用户名。
 
 ## 0. 先替换 4 处占位符
 
