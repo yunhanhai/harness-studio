@@ -21,3 +21,6 @@ Thumbs.db
 .run-insights/
 .preview/
 .edge-profile/
+.gh-*.txt
+.gh-*.mjs
+.gh-*.json
