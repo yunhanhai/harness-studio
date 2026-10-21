@@ -1,0 +1,48 @@
+name: Bug report
+description: 报告一个可复现的问题
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。请尽量附上运行日志（设置 → 高级 → 打开日志目录），并确认其中没有密钥。
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 发生了什么
+      description: 实际行为与预期行为
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开 ...
+        2. 选择工作区 ...
+        3. 看到 ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Harness Studio 版本
+      description: 设置 → 关于，或安装包文件名
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: 环境
+      description: Windows 版本、Node.js 版本、dsh 版本、是否使用便携运行时
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志或截图
+      description: 可粘贴 host-*.log 的最后 100 行
+      render: text
+    validations:
+      required: false

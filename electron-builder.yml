@@ -1,0 +1,78 @@
+appId: com.harnessstudio.desktop
+productName: Harness Studio
+copyright: Copyright © 2026 Harness Studio Contributors
+
+directories:
+  output: dist
+  buildResources: build
+
+files:
+  - out/**/*
+  - resources/**/*
+  - package.json
+
+asar: true
+asarUnpack:
+  - resources/**
+
+npmRebuild: false
+compression: normal
+
+electronDownload:
+  mirror: https://npmmirror.com/mirrors/electron/
+
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  artifactName: Harness-Studio-${version}-${arch}-Setup.${ext}
+  requestedExecutionLevel: asInvoker
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Harness Studio
+  uninstallDisplayName: Harness Studio
+  deleteAppDataOnUninstall: false
+  runAfterFinish: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  artifactName: Harness-Studio-${version}-${arch}-Setup.${ext}
+  language: "2052"
+  installerLanguages:
+    - zh_CN
+    - en_US
+
+portable:
+  artifactName: Harness-Studio-${version}-${arch}-Portable.${ext}
+
+mac:
+  icon: build/icon.png
+  category: public.app-category.developer-tools
+  target:
+    - dmg
+    - zip
+  artifactName: Harness-Studio-${version}-${arch}.${ext}
+
+linux:
+  icon: build/icon.png
+  category: Development
+  target:
+    - AppImage
+    - deb
+  artifactName: Harness-Studio-${version}-${arch}.${ext}
+
+publish:
+  provider: github
+  owner: REPLACE_ME
+  repo: harness-studio
+  releaseType: release

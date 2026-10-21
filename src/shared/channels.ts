@@ -1,0 +1,68 @@
+export const IPC = {
+  appInfo: 'app:info',
+  appMinimize: 'app:minimize',
+  appToggleMaximize: 'app:toggle-maximize',
+  appClose: 'app:close',
+  appIsMaximized: 'app:is-maximized',
+  appOpenExternal: 'app:open-external',
+  appOpenPath: 'app:open-path',
+  appShowItem: 'app:show-item',
+  appSetBadge: 'app:set-badge',
+  appQuit: 'app:quit',
+  appRelaunch: 'app:relaunch',
+
+  settingsGet: 'settings:get',
+  settingsSave: 'settings:save',
+  settingsReset: 'settings:reset',
+  settingsChanged: 'settings:changed',
+  windowState: 'window:state',
+
+  runtimeDetect: 'runtime:detect',
+  runtimeInstall: 'runtime:install',
+  runtimeCancelInstall: 'runtime:cancel-install',
+  runtimeInstallProgress: 'runtime:install-progress',
+
+  hostStart: 'host:start',
+  hostStop: 'host:stop',
+  hostRestart: 'host:restart',
+  hostStatus: 'host:status',
+  hostLogs: 'host:logs',
+  hostClearLogs: 'host:clear-logs',
+  hostStatusChanged: 'host:status-changed',
+  hostLogLine: 'host:log-line',
+  hostOpenLogsFolder: 'host:open-logs-folder',
+
+  workspacesList: 'workspaces:list',
+  workspacesAdd: 'workspaces:add',
+  workspacesRemove: 'workspaces:remove',
+  workspacesUpdate: 'workspaces:update',
+  workspacesTouch: 'workspaces:touch',
+  workspacesPick: 'workspaces:pick',
+  workspacesChanged: 'workspaces:changed',
+
+  promptsList: 'prompts:list',
+  promptsSave: 'prompts:save',
+  promptsRemove: 'prompts:remove',
+  promptsUse: 'prompts:use',
+  promptsChanged: 'prompts:changed',
+
+  action: 'studio:action',
+  runAction: 'studio:run-action',
+  paletteClose: 'studio:palette-close',
+  paletteHide: 'studio:palette-hide',
+  paletteShow: 'studio:palette-show',
+  toast: 'studio:toast',
+  checkUpdates: 'studio:check-updates',
+  openReleases: 'studio:open-releases',
+
+  clipboardWrite: 'clipboard:write',
+  clipboardRead: 'clipboard:read',
+
+  zoomGet: 'zoom:get',
+  zoomSet: 'zoom:set',
+  zoomChanged: 'zoom:changed',
+
+  guestPalette: 'guest:palette',
+  guestTheme: 'guest:theme',
+  guestShortcut: 'guest:shortcut'
+} as const

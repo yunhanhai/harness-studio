@@ -1,0 +1,27 @@
+name: Mirror to Gitee
+
+# 手动触发。需要仓库 Secrets：GITEE_USERNAME、GITEE_TOKEN。
+# Token 需具备 projects 权限；目标仓库必须已存在。
+on:
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push mirror to Gitee
+        env:
+          GITEE_USERNAME: ${{ secrets.GITEE_USERNAME }}
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          if [ -z "$GITEE_USERNAME" ] || [ -z "$GITEE_TOKEN" ]; then
+            echo "Missing GITEE_USERNAME or GITEE_TOKEN secrets"
+            exit 1
+          fi
+          git remote add gitee "https://${GITEE_USERNAME}:${GITEE_TOKEN}@gitee.com/${GITEE_USERNAME}/harness-studio.git"
+          git push gitee --mirror
