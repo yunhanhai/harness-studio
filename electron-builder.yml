@@ -16,7 +16,10 @@ asarUnpack:
   - resources/**
 
 npmRebuild: false
-compression: normal
+electronLanguages:
+  - zh-CN
+  - en-US
+compression: maximum
 
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/
