@@ -38,7 +38,8 @@ import { applyTheme } from './windows'
 import { registerGlobalShortcuts } from './shortcuts'
 import { installApplicationMenu } from './menu'
 import { createTray } from './tray'
-import { checkForUpdates } from './updater'
+import { checkForUpdates, downloadUpdate, installUpdate } from './updater'
+import { autoUpdater } from 'electron-updater'
 
 app.setName('Harness Studio')
 if (process.env.HARNESS_STUDIO_USER_DATA) {
@@ -580,6 +581,11 @@ function registerIpc(): void {
   on(IPC.toast, (payload: { message: string; kind?: string }) => sendMain(IPC.toast, payload))
 
   handle(IPC.checkUpdates, () => checkForUpdates())
+  handle(IPC.downloadUpdate, () => downloadUpdate())
+  on(IPC.installUpdate, () => {
+    quitting = true
+    void host.stop().finally(() => installUpdate())
+  })
   handle(IPC.openReleases, async () => {
     await shell.openExternal(GITHUB_REPO.startsWith('REPLACE_ME') ? GITHUB_URL : `${GITHUB_URL}/releases`)
   })
@@ -680,6 +686,13 @@ async function bootstrap(): Promise<void> {
 
   host.onStatus((status) => broadcast(IPC.hostStatusChanged, status))
   host.onLog((line) => sendMain(IPC.hostLogLine, line))
+  autoUpdater.on('download-progress', (progress) => {
+    sendMain(IPC.updateProgress, {
+      percent: progress.percent,
+      transferred: progress.transferred,
+      total: progress.total
+    })
+  })
 
   registerIpc()
   createShellWindows()

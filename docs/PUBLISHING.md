@@ -113,9 +113,10 @@ Gitee 的 Release 不会自动运行 GitHub Actions，需要手动上传：
 ## 4. 版本与更新
 
 - 版本号遵循 SemVer，`package.json` 与 git tag 保持一致；
-- Release 资产必须包含 `latest.yml`，否则客户端无法比较版本；
-- 更新检查逻辑在 `src/main/updater.ts`，当前为"检查 + 跳转下载页"，不自动安装；
-- 后续接入 `electron-updater` 时，只需要把 `checkForUpdates` 换成 `autoUpdater.checkForUpdates()`，并保证 GitHub Release 的 `latest.yml` 与安装包同批上传。
+- Release 资产必须包含 `latest.yml` 与安装包，否则客户端无法比较版本或下载；
+- 更新逻辑在 `src/main/updater.ts`，使用 `electron-updater`：检查 → 用户确认下载 → 进度 → 重启安装；
+- 发布新版本时，先改 `package.json` 版本号、提交、打 tag，Actions 会同时上传 `latest.yml` 与安装包，客户端据此发现更新；
+- 未签名安装包在下载/安装阶段仍可能触发 SmartScreen，这是代码签名问题，不是更新逻辑问题。
 
 ## 5. 常见问题
 

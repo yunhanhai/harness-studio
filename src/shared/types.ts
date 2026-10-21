@@ -137,6 +137,14 @@ export interface UpdateResult {
   version?: string
   url?: string
   message?: string
+  canDownload?: boolean
+  downloaded?: boolean
+}
+
+export interface UpdateProgress {
+  percent: number
+  transferred: number
+  total: number
 }
 
 export interface WindowState {
@@ -217,6 +225,9 @@ export interface StudioApi {
     showPalette(): void
     toast(message: string, kind?: 'info' | 'success' | 'error'): void
     checkUpdates(): Promise<UpdateResult>
+    downloadUpdate(): Promise<UpdateResult>
+    installUpdate(): void
+    onUpdateProgress(cb: (progress: UpdateProgress) => void): () => void
     openReleases(): Promise<void>
     quit(): void
     relaunch(): void

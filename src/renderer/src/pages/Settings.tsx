@@ -122,10 +122,14 @@ export function SettingsPage(): React.JSX.Element {
   const [resetOpen, setResetOpen] = useState(false)
   const [update, setUpdate] = useState<UpdateResult | null>(null)
   const [checking, setChecking] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+  const [progress, setProgress] = useState(0)
 
   useEffect(() => {
     if (!runtimeDraft && settings) setRuntimeDraft(settings.runtime)
   }, [runtimeDraft, settings])
+
+  useEffect(() => window.studio.studio.onUpdateProgress((value) => setProgress(value.percent)), [])
 
   if (!settings || !info) {
     return <div className="page" />
@@ -157,8 +161,19 @@ export function SettingsPage(): React.JSX.Element {
 
   const checkUpdate = async (): Promise<void> => {
     setChecking(true)
+    setProgress(0)
     setUpdate(await window.studio.studio.checkUpdates())
     setChecking(false)
+  }
+
+  const downloadUpdate = async (): Promise<void> => {
+    setDownloading(true)
+    setProgress(0)
+    const result = await window.studio.studio.downloadUpdate()
+    setDownloading(false)
+    setUpdate(result)
+    if (result.status === 'available') toast('更新已下载，重启应用即可安装', 'success')
+    else if (result.status === 'error') toast(result.message ?? '下载更新失败', 'error')
   }
 
   return (
@@ -602,11 +617,28 @@ export function SettingsPage(): React.JSX.Element {
                 <div className={`update-result update-${update.status}`}>
                   <Info size={15} />
                   <span>{update.message}</span>
-                  {update.status === 'available' && update.url ? (
+                  {update.status === 'available' && update.downloaded ? (
+                    <button className="button button-primary button-small" onClick={() => window.studio.studio.installUpdate()}>
+                      重启并安装
+                    </button>
+                  ) : update.status === 'available' && update.canDownload ? (
+                    <button
+                      className="button button-primary button-small"
+                      disabled={downloading}
+                      onClick={() => void downloadUpdate()}
+                    >
+                      {downloading ? `下载中 ${Math.round(progress)}%` : '下载更新'}
+                    </button>
+                  ) : update.status === 'available' && update.url ? (
                     <button className="button button-primary button-small" onClick={() => void window.studio.app.openExternal(update.url!)}>
                       前往下载
                     </button>
                   ) : null}
+                </div>
+              ) : null}
+              {downloading ? (
+                <div className="update-progress">
+                  <span style={{ width: `${Math.max(2, progress)}%` }} />
                 </div>
               ) : null}
 

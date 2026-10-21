@@ -29,7 +29,7 @@ Harness Studio takes a different angle: **make one developer's daily loop feel f
 | Command palette | — | `Ctrl+K` for commands, workspaces, prompts |
 | Themes | follow system | dark / light / system + 6 accents |
 | Tray & global keys | yes | yes, plus close/minimize to tray |
-| Updates | official channel | checks GitHub Releases, opens download |
+| Updates | official channel | checks GitHub Releases, downloads, restarts to install |
 
 ## Features
 
@@ -141,7 +141,7 @@ The repo ships CI and release workflows plus a full guide:
 ## Roadmap
 
 - [ ] Session insights: tokens, cost, daily trends
-- [ ] Auto-update via `electron-updater` with GitHub + Gitee sources
+- [x] Auto-update via `electron-updater` (GitHub Releases)
 - [ ] Multi-tab workspaces
 - [ ] Global quick-ask (`Alt+Space`)
 - [ ] Plugin marketplace entry

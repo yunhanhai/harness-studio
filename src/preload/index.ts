@@ -73,6 +73,9 @@ const api: StudioApi = {
     showPalette: () => ipcRenderer.send(IPC.paletteShow),
     toast: (message, kind = 'info') => ipcRenderer.send(IPC.toast, { message, kind }),
     checkUpdates: () => invoke(IPC.checkUpdates),
+    downloadUpdate: () => invoke(IPC.downloadUpdate),
+    installUpdate: () => ipcRenderer.send(IPC.installUpdate),
+    onUpdateProgress: (cb) => subscribe(IPC.updateProgress, cb),
     openReleases: () => invoke(IPC.openReleases),
     quit: () => ipcRenderer.send(IPC.appQuit),
     relaunch: () => ipcRenderer.send(IPC.appRelaunch)

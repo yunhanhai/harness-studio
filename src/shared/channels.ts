@@ -53,6 +53,9 @@ export const IPC = {
   paletteShow: 'studio:palette-show',
   toast: 'studio:toast',
   checkUpdates: 'studio:check-updates',
+  downloadUpdate: 'studio:download-update',
+  installUpdate: 'studio:install-update',
+  updateProgress: 'studio:update-progress',
   openReleases: 'studio:open-releases',
 
   clipboardWrite: 'clipboard:write',

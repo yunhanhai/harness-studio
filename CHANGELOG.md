@@ -23,7 +23,7 @@
 - 关闭到托盘 / 最小化到托盘 / 开机自启 / 启动最小化
 - 主题：深色、浅色、跟随系统、6 种强调色、自定义取色、界面缩放、减少动效
 - 设置页：通用、外观、运行时、高级、关于
-- 更新检查：读取 GitHub Releases 并跳转下载
+- 更新：检查 GitHub Releases，后台下载并重启安装（electron-updater）
 - Windows 安装包（NSIS）与免安装便携版
 - GitHub Actions：CI、打标签自动发布、Gitee 镜像工作流
 - 浏览器 UI 预览与截图脚本，便于无 Electron 环境做设计评审
@@ -32,6 +32,6 @@
 
 - 仅提供 Windows x64 产物；macOS / Linux 目标已配置但未验收
 - 安装包未签名，可能出现 SmartScreen 提示
-- 更新为"检查 + 跳转下载"，暂不自动安装
+- 自动更新依赖 GitHub Release 的 `latest.yml` 与安装包同批上传
 - 会话界面复用官方 Web UI，上游改版可能影响外观
 - 便携运行时依赖网络；离线环境需自备 Node.js 与 `dsh`
