@@ -5,6 +5,7 @@ import { logWarn } from './logger'
 export interface ShortcutHandlers {
   toggleWindow: () => void
   palette: () => void
+  quickAsk: () => void
 }
 
 export function registerGlobalShortcuts(settings: Settings, handlers: ShortcutHandlers): string[] {
@@ -12,7 +13,8 @@ export function registerGlobalShortcuts(settings: Settings, handlers: ShortcutHa
   const failures: string[] = []
   const entries: Array<[string, () => void]> = [
     [settings.shortcuts.toggleWindow, handlers.toggleWindow],
-    [settings.shortcuts.palette, handlers.palette]
+    [settings.shortcuts.palette, handlers.palette],
+    [settings.shortcuts.quickAsk, handlers.quickAsk]
   ]
   for (const [accelerator, handler] of entries) {
     if (!accelerator?.trim()) continue

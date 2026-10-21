@@ -162,3 +162,50 @@ export function createPaletteWindow(options: PaletteWindowOptions): BrowserWindo
 export function applyTheme(theme: 'system' | 'light' | 'dark'): void {
   nativeTheme.themeSource = theme
 }
+
+export interface QuickAskWindowOptions {
+  onHide: () => void
+}
+
+/** Compact always-on-top prompt box summoned by the global Quick Ask shortcut. */
+export function createQuickAskWindow(options: QuickAskWindowOptions): BrowserWindow {
+  const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
+  const width = 640
+  const height = 210
+  const x = Math.round(display.workArea.x + (display.workArea.width - width) / 2)
+  const y = Math.round(display.workArea.y + display.workArea.height * 0.22)
+
+  const window = new BrowserWindow({
+    width,
+    height,
+    x,
+    y,
+    show: false,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    movable: true,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    hasShadow: true,
+    backgroundColor: '#00000000',
+    webPreferences: {
+      preload: preloadPath('index'),
+      contextIsolation: true,
+      sandbox: true,
+      nodeIntegration: false,
+      spellcheck: false
+    }
+  })
+
+  window.setAlwaysOnTop(true, 'floating')
+  window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+  window.on('blur', () => {
+    if (!window.isDestroyed()) options.onHide()
+  })
+  void loadRenderer(window, '#quickask')
+  return window
+}

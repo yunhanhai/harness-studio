@@ -23,8 +23,13 @@ const SETTINGS = {
     registry: 'https://registry.npmmirror.com',
     nodeMirror: 'https://npmmirror.com/mirrors/node'
   },
-  shortcuts: { toggleWindow: 'CommandOrControl+Alt+H', palette: 'CommandOrControl+Alt+K' },
+  shortcuts: {
+    toggleWindow: 'CommandOrControl+Alt+H',
+    palette: 'CommandOrControl+Alt+K',
+    quickAsk: 'CommandOrControl+Alt+Space'
+  },
   insights: { inputPrice: 4, outputPrice: 16, cacheReadPrice: 0.4, currency: 'CNY' },
+  quickAsk: { autoSend: true, revealAfterSend: true, recentLimit: 6 },
   lastWorkspaceId: 'ws-1',
   window: { width: 1360, height: 860, maximized: false }
 }
@@ -296,6 +301,11 @@ window.studio = {
       ? { ...clone(MOCK.insights), sessions: [], totals: { ...clone(MOCK.insights).totals, sessions: 0, activeSessions: 0, totalTokens: 0, turns: 0, steps: 0, messages: 0 } }
       : clone(MOCK.insights)),
     revealSession: async () => true
+  },
+  quickAsk: {
+    submit: async () => ({ status: 'sent' }),
+    close: () => {}, hide: () => {}, open: () => {},
+    onOpen: listeners, onResult: listeners
   },
   studio: {
     onAction: listeners, onToast: listeners, runAction: () => {},

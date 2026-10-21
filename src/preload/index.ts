@@ -68,6 +68,14 @@ const api: StudioApi = {
     scan: (force) => invoke(IPC.insightsScan, force),
     revealSession: (id) => invoke(IPC.insightsReveal, id)
   },
+  quickAsk: {
+    submit: (text, options) => invoke(IPC.quickAskSubmit, text, options),
+    close: () => ipcRenderer.send(IPC.quickAskClose),
+    hide: () => ipcRenderer.send(IPC.quickAskHide),
+    open: () => ipcRenderer.send(IPC.quickAskOpen),
+    onOpen: (cb) => subscribe(IPC.quickAskOpened, cb),
+    onResult: (cb) => subscribe(IPC.quickAskResult, cb)
+  },
   studio: {
     onAction: (cb) => subscribe(IPC.action, cb),
     onToast: (cb) => subscribe(IPC.toast, cb),

@@ -62,6 +62,20 @@ Node.js 同理：自定义路径 → 便携运行时 → `C:\Program Files\nodej
 
 整个过程有阶段进度、取消和超时；失败时保留已有运行时。
 
+## 快速提问
+
+`Ctrl+Alt+Space` 呼出一个 640×210 的置顶小窗，写完 Enter 直接发到当前会话。它不经过 Harness 的私有 RPC，而是驱动真实 UI：
+
+1. **确保 guest 存在**：若主窗口不在工作区，先切过去，并等待 `did-attach-webview`（最多 15 秒）；
+2. **关闭说明弹窗**：只点「继续 / 知道了 / 跳过」这类确认按钮；含「登录 / API Key / 删除 / 重置」的弹窗一律跳过；
+3. **聚焦 composer**：找到可见的 `[contenteditable="true"]`，把光标移到末尾；SPA 刚挂载时轮询最多 6 秒；
+4. **写入文本**：调用 `webContents.insertText()`，这是 Chromium 真实输入事件，React 受控编辑器会正常接收；
+5. **可选发送**：找到可见的发送按钮并 `click()`；失败时保留已填入的文本，提示用户手动发送。
+
+相比抓内部 API，这条路在上游改版时更稳，也不会绕过 Harness 自己的发送流程（包括工作区权限、模型选择、附件校验）。
+
+关键文件：`src/main/quickask.ts`（注入逻辑）、`src/main/windows.ts`（窗口）、`src/renderer/src/components/QuickAsk.tsx`（界面）。
+
 ## 会话洞察
 
 洞察面板是只读分析层，不参与 Host 生命周期，也不接触对话正文。

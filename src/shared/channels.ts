@@ -49,6 +49,13 @@ export const IPC = {
   insightsScan: 'insights:scan',
   insightsReveal: 'insights:reveal',
 
+  quickAskSubmit: 'quickask:submit',
+  quickAskClose: 'quickask:close',
+  quickAskHide: 'quickask:hide',
+  quickAskOpen: 'quickask:open',
+  quickAskOpened: 'quickask:opened',
+  quickAskResult: 'quickask:result',
+
   action: 'studio:action',
   runAction: 'studio:run-action',
   paletteClose: 'studio:palette-close',
