@@ -27,6 +27,7 @@ import type {
   RuntimeInfo,
   Settings,
   StudioAction,
+  QuickAskResult,
   Workspace
 } from '@shared/types'
 import { log, logError, logsDirectory } from './logger'
@@ -34,8 +35,9 @@ import { createStores, deepMerge, loadStores, mergeSettings, type Stores } from 
 import { detectRuntime, resolveDshHome } from './runtime/detect'
 import { HostManager } from './runtime/host'
 import { RuntimeInstaller } from './runtime/installer'
-import { createMainWindow, createPaletteWindow, preloadPath } from './windows'
+import { createMainWindow, createPaletteWindow, createQuickAskWindow, preloadPath } from './windows'
 import { applyTheme } from './windows'
+import { injectIntoComposer } from './quickask'
 import { registerGlobalShortcuts } from './shortcuts'
 import { installApplicationMenu } from './menu'
 import { createTray } from './tray'
@@ -52,6 +54,7 @@ if (process.env.HARNESS_STUDIO_USER_DATA) {
 
 let mainWindow: BrowserWindow | null = null
 let paletteWindow: BrowserWindow | null = null
+let quickAskWindow: BrowserWindow | null = null
 let stores: Stores
 let host: HostManager
 let installer: RuntimeInstaller
@@ -59,6 +62,24 @@ let runtimeInfo: RuntimeInfo | null = null
 let quitting = false
 let closeNoticeShown = false
 let guestContents: Electron.WebContents | null = null
+let recentQuickAsks: string[] = []
+const guestWaiters: Array<(contents: Electron.WebContents) => void> = []
+
+/** Wait for the embedded Harness webview to attach (after switching to the workspace view). */
+function waitForGuest(timeoutMs = 15_000): Promise<Electron.WebContents | null> {
+  if (guestContents && !guestContents.isDestroyed()) return Promise.resolve(guestContents)
+  return new Promise((resolve) => {
+    let settled = false
+    const finish = (contents: Electron.WebContents | null): void => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      resolve(contents)
+    }
+    const timer = setTimeout(() => finish(null), timeoutMs)
+    guestWaiters.push((contents) => finish(contents))
+  })
+}
 
 const settings = (): Settings => stores.settings.get()
 const workspaceList = (): Workspace[] => stores.workspaces.get()
@@ -70,7 +91,13 @@ function isHttp(url: string): boolean {
 
 function assertTrusted(event: IpcMainEvent | IpcMainInvokeEvent): void {
   const sender = event.sender
-  if (mainWindow?.webContents === sender || paletteWindow?.webContents === sender) return
+  if (
+    mainWindow?.webContents === sender ||
+    paletteWindow?.webContents === sender ||
+    quickAskWindow?.webContents === sender
+  ) {
+    return
+  }
   throw new Error('IPC request from an untrusted renderer')
 }
 
@@ -82,9 +109,14 @@ function sendPalette(channel: string, payload?: unknown): void {
   if (paletteWindow && !paletteWindow.isDestroyed()) paletteWindow.webContents.send(channel, payload)
 }
 
+function sendQuickAsk(channel: string, payload?: unknown): void {
+  if (quickAskWindow && !quickAskWindow.isDestroyed()) quickAskWindow.webContents.send(channel, payload)
+}
+
 function broadcast(channel: string, payload?: unknown): void {
   sendMain(channel, payload)
   sendPalette(channel, payload)
+  sendQuickAsk(channel, payload)
 }
 
 function showMain(): void {
@@ -113,6 +145,73 @@ function showPalette(): void {
   paletteWindow.show()
   paletteWindow.focus()
   sendPalette(IPC.paletteShow)
+}
+
+function hideQuickAsk(): void {
+  if (quickAskWindow && !quickAskWindow.isDestroyed()) quickAskWindow.hide()
+}
+
+function showQuickAsk(): void {
+  if (!quickAskWindow) return
+  if (host.getStatus().state !== 'ready') {
+    showMain()
+    sendMain(IPC.toast, { message: '运行时尚未就绪，无法快速提问', kind: 'error' })
+    return
+  }
+  try {
+    app.focus({ steal: true })
+  } catch {
+    /* not supported on every platform */
+  }
+  quickAskWindow.show()
+  quickAskWindow.focus()
+  sendQuickAsk(IPC.quickAskOpened)
+}
+
+async function submitQuickAsk(
+  text: string,
+  options: { autoSend?: boolean; reveal?: boolean } = {}
+): Promise<QuickAskResult> {
+  const current = settings()
+  const autoSend = options.autoSend ?? current.quickAsk.autoSend
+  const reveal = options.reveal ?? current.quickAsk.revealAfterSend
+
+  if (!workspaceList().length) {
+    return { status: 'no-workspace', message: '还没有工作区' }
+  }
+
+  const status = host.getStatus()
+  if (status.state !== 'ready') {
+    return { status: 'needs-host', message: '运行时尚未就绪，请先打开工作区' }
+  }
+
+  // The composer only exists once the workspace view mounted its webview.
+  // If the user is on another page, switch there and wait for it.
+  let guest = guestContents && !guestContents.isDestroyed() ? guestContents : null
+  if (!guest) {
+    sendAction({ type: 'open-workspace', id: status.workspaceId })
+    hideQuickAsk()
+    guest = await waitForGuest()
+    if (!guest) return { status: 'needs-host', message: '会话界面没有加载完成，请稍后重试' }
+    await new Promise((resolve) => setTimeout(resolve, 1200))
+  }
+
+  const result = await injectIntoComposer(guest, text, { autoSend })
+
+  if (result.status === 'sent' || result.status === 'inserted') {
+    const limit = Math.max(1, Math.min(20, current.quickAsk.recentLimit))
+    recentQuickAsks = [text.trim(), ...recentQuickAsks.filter((item) => item !== text.trim())].slice(0, limit)
+    if (reveal) showMain()
+    hideQuickAsk()
+    sendMain(IPC.toast, {
+      message: result.status === 'sent' ? '已发送到 Harness' : (result.message ?? '已填入输入框'),
+      kind: result.status === 'sent' ? 'success' : 'info'
+    })
+  } else {
+    log('quick-ask', `submit failed: ${result.status} ${result.message ?? ''}`)
+  }
+  sendQuickAsk(IPC.quickAskResult, result)
+  return result
 }
 
 function hidePalette(): void {
@@ -213,7 +312,11 @@ function applySettings(next: Settings): void {
       logError('settings', error)
     }
   }
-  const failures = registerGlobalShortcuts(next, { toggleWindow: toggleMain, palette: showPalette })
+  const failures = registerGlobalShortcuts(next, {
+    toggleWindow: toggleMain,
+    palette: showPalette,
+    quickAsk: showQuickAsk
+  })
   if (guestContents && !guestContents.isDestroyed()) {
     guestContents.send(IPC.guestTheme, {
       theme: next.theme,
@@ -224,7 +327,7 @@ function applySettings(next: Settings): void {
   if (failures.length > 0) {
     sendMain(IPC.toast, { message: `全局快捷键被占用：${failures.join('、')}`, kind: 'error' })
   }
-  for (const win of [mainWindow, paletteWindow]) {
+  for (const win of [mainWindow, paletteWindow, quickAskWindow]) {
     if (win && !win.isDestroyed()) win.webContents.send(IPC.settingsChanged, next)
   }
 }
@@ -304,6 +407,7 @@ function configureWebviewSecurity(window: BrowserWindow): void {
 
   window.webContents.on('did-attach-webview', (_event, contents) => {
     guestContents = contents
+    for (const resolve of guestWaiters.splice(0)) resolve(contents)
     contents.once('destroyed', () => {
       if (guestContents === contents) guestContents = null
     })
@@ -524,6 +628,13 @@ function registerIpc(): void {
     return result.canceled ? null : (result.filePaths[0] ?? null)
   })
 
+  handle(IPC.quickAskSubmit, (text: string, options?: { autoSend?: boolean; reveal?: boolean }) =>
+    submitQuickAsk(text, options ?? {})
+  )
+  on(IPC.quickAskClose, () => hideQuickAsk())
+  on(IPC.quickAskHide, () => hideQuickAsk())
+  on(IPC.quickAskOpen, () => showQuickAsk())
+
   handle(IPC.insightsScan, (force?: boolean) =>
     scanSessions(
       {
@@ -672,6 +783,20 @@ function createShellWindows(): void {
     if (input.type === 'keyDown' && input.key === 'Escape') {
       event.preventDefault()
       hidePalette()
+    }
+  })
+
+  quickAskWindow = createQuickAskWindow({ onHide: () => hideQuickAsk() })
+  quickAskWindow.webContents.on('did-finish-load', () => {
+    sendQuickAsk(IPC.settingsChanged, settings())
+  })
+  quickAskWindow.on('closed', () => {
+    quickAskWindow = null
+  })
+  quickAskWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.type === 'keyDown' && input.key === 'Escape') {
+      event.preventDefault()
+      hideQuickAsk()
     }
   })
 }

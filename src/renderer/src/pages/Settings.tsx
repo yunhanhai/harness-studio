@@ -280,6 +280,42 @@ export function SettingsPage(): React.JSX.Element {
                     onBlur={(event) => void saveSettings({ shortcuts: { ...settings.shortcuts, palette: event.target.value } })}
                   />
                 </Row>
+                <Row title="全局快速提问" desc="在任何应用中呼出输入框，直接发送到当前 Harness 会话。" stacked>
+                  <input
+                    className="input mono"
+                    defaultValue={settings.shortcuts.quickAsk}
+                    onBlur={(event) => void saveSettings({ shortcuts: { ...settings.shortcuts, quickAsk: event.target.value } })}
+                  />
+                </Row>
+              </Card>
+
+              <Card title="快速提问" desc="控制全局快速提问窗口的行为。">
+                <Row title="自动发送" desc="关闭后只把内容填入输入框，由你确认后按 Enter。">
+                  <Toggle
+                    checked={settings.quickAsk.autoSend}
+                    onChange={(value) => void saveSettings({ quickAsk: { ...settings.quickAsk, autoSend: value } })}
+                  />
+                </Row>
+                <Row title="发送后显示主窗口" desc="关闭后保持在原应用，Studio 只在后台完成发送。">
+                  <Toggle
+                    checked={settings.quickAsk.revealAfterSend}
+                    onChange={(value) => void saveSettings({ quickAsk: { ...settings.quickAsk, revealAfterSend: value } })}
+                  />
+                </Row>
+                <Row title="最近记录条数" desc={`当前 ${settings.quickAsk.recentLimit} 条`} stacked>
+                  <input
+                    className="input mono"
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={settings.quickAsk.recentLimit}
+                    onChange={(event) =>
+                      void saveSettings({
+                        quickAsk: { ...settings.quickAsk, recentLimit: Number(event.target.value) }
+                      })
+                    }
+                  />
+                </Row>
               </Card>
             </>
           ) : null}

@@ -27,6 +27,7 @@ Harness Studio takes a different angle: **make one developer's daily loop feel f
 | Prompts | — | 6 built-ins + your own, tags, usage counts |
 | Logs | files on disk | live panel, filters, copy, token redaction |
 | Session insights | — | tokens, cache hit rate, cost estimate, 14-day trend, per-model and per-workspace breakdown |
+| Global quick ask | — | `Ctrl+Alt+Space` popup, sends straight to the active session |
 | Command palette | — | `Ctrl+K` for commands, workspaces, prompts |
 | Themes | follow system | dark / light / system + 6 accents |
 | Tray & global keys | yes | yes, plus close/minimize to tray |
@@ -109,6 +110,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full design.
 | `Ctrl+4` / `5` | Prompts / Logs |
 | `Ctrl+Alt+H` | Show / hide window globally |
 | `Ctrl+Alt+K` | Open palette globally |
+| `Ctrl+Alt+Space` | Global quick ask (sends to the active session) |
 
 ## Data locations
 
@@ -144,8 +146,8 @@ The repo ships CI and release workflows plus a full guide:
 
 - [x] Session insights: tokens, cache hit rate, cost, daily trends
 - [x] Auto-update via `electron-updater` (GitHub Releases)
+- [x] Global quick-ask (`Ctrl+Alt+Space`)
 - [ ] Multi-tab workspaces
-- [ ] Global quick-ask (`Alt+Space`)
 - [ ] Plugin marketplace entry
 - [ ] macOS builds and signing
 

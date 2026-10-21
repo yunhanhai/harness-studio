@@ -12,10 +12,20 @@ const waitMs = Number(waitArg || 2000)
 
 const targets = await (await fetch(`http://127.0.0.1:${debugPort}/json/list`)).json()
 const wantsPalette = process.env.TARGET === 'palette'
-const target = targets.find(
-  (item) => item.type === 'page' && (wantsPalette ? item.url.includes('#palette') : !item.url.includes('#palette'))
-)
-if (!target) throw new Error('window target not found')
+const wantsQuickAsk = process.env.TARGET === 'quickask'
+
+// The embedded Harness webview is also a CDP page target; only pick the app's
+// own renderer so screenshots and evals never hit the wrong document.
+const isAppRenderer = (item) => item.type === 'page' && item.url.includes('index.html')
+const target = wantsPalette
+  ? targets.find((item) => isAppRenderer(item) && item.url.includes('#palette'))
+  : wantsQuickAsk
+    ? targets.find((item) => isAppRenderer(item) && item.url.includes('#quickask'))
+    : targets.find((item) => isAppRenderer(item) && !item.url.includes('#'))
+if (!target) {
+  console.log('TARGETS', targets.map((item) => item.url).join(' | '))
+  throw new Error('window target not found')
+}
 
 const ws = new WebSocket(target.webSocketDebuggerUrl)
 await new Promise((resolvePromise, reject) => {

@@ -38,13 +38,19 @@ export const DEFAULT_SETTINGS: Settings = {
   },
   shortcuts: {
     toggleWindow: 'CommandOrControl+Alt+H',
-    palette: 'CommandOrControl+Alt+K'
+    palette: 'CommandOrControl+Alt+K',
+    quickAsk: 'CommandOrControl+Alt+Space'
   },
   insights: {
     inputPrice: 0,
     outputPrice: 0,
     cacheReadPrice: 0,
     currency: 'CNY'
+  },
+  quickAsk: {
+    autoSend: true,
+    revealAfterSend: true,
+    recentLimit: 6
   },
   lastWorkspaceId: '',
   window: {

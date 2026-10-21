@@ -45,6 +45,16 @@ export interface RuntimeSettings {
 export interface ShortcutSettings {
   toggleWindow: string
   palette: string
+  quickAsk: string
+}
+
+export interface QuickAskSettings {
+  /** Send immediately after inserting, instead of leaving it in the composer. */
+  autoSend: boolean
+  /** Bring the main window forward after sending. */
+  revealAfterSend: boolean
+  /** Remember the last few prompts for one-click reuse. */
+  recentLimit: number
 }
 
 export interface WindowBounds {
@@ -80,6 +90,7 @@ export interface Settings {
   runtime: RuntimeSettings
   shortcuts: ShortcutSettings
   insights: InsightsSettings
+  quickAsk: QuickAskSettings
   lastWorkspaceId: string
   window: WindowBounds
 }
@@ -156,6 +167,13 @@ export interface UpdateProgress {
   percent: number
   transferred: number
   total: number
+}
+
+export type QuickAskStatus = 'inserted' | 'sent' | 'needs-host' | 'no-workspace' | 'failed'
+
+export interface QuickAskResult {
+  status: QuickAskStatus
+  message?: string
 }
 
 export interface TokenBuckets {
@@ -307,6 +325,15 @@ export interface StudioApi {
   insights: {
     scan(force?: boolean): Promise<InsightsData>
     revealSession(id: string): Promise<boolean>
+  }
+  quickAsk: {
+    /** Submit a prompt from the Quick Ask window into the Harness composer. */
+    submit(text: string, options?: { autoSend?: boolean; reveal?: boolean }): Promise<QuickAskResult>
+    close(): void
+    hide(): void
+    open(): void
+    onOpen(cb: () => void): () => void
+    onResult(cb: (result: QuickAskResult) => void): () => void
   }
   studio: {
     onAction(cb: (action: StudioAction) => void): () => void
