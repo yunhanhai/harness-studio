@@ -304,6 +304,12 @@ window.studio = {
   },
   quickAsk: {
     submit: async () => ({ status: 'sent' }),
+    recent: async () => [
+      '帮我审一下这段改动的边界情况',
+      '把这个组件拆成两个文件',
+      '为什么构建产物变大了 30KB？',
+      '写一条提交信息'
+    ],
     close: () => {}, hide: () => {}, open: () => {},
     onOpen: listeners, onResult: listeners
   },

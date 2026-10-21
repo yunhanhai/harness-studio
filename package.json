@@ -1,6 +1,6 @@
 {
   "name": "harness-studio",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Harness Studio — a focused, feature-rich desktop workspace for DeepSeek Harness.",
   "main": "./out/main/index.js",
   "author": {

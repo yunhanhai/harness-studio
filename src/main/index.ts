@@ -62,7 +62,6 @@ let runtimeInfo: RuntimeInfo | null = null
 let quitting = false
 let closeNoticeShown = false
 let guestContents: Electron.WebContents | null = null
-let recentQuickAsks: string[] = []
 const guestWaiters: Array<(contents: Electron.WebContents) => void> = []
 
 /** Wait for the embedded Harness webview to attach (after switching to the workspace view). */
@@ -200,7 +199,10 @@ async function submitQuickAsk(
 
   if (result.status === 'sent' || result.status === 'inserted') {
     const limit = Math.max(1, Math.min(20, current.quickAsk.recentLimit))
-    recentQuickAsks = [text.trim(), ...recentQuickAsks.filter((item) => item !== text.trim())].slice(0, limit)
+    const trimmed = text.trim()
+    await stores.quickAskRecent
+      .update((current) => [trimmed, ...current.filter((item) => item !== trimmed)].slice(0, limit))
+      .catch(() => undefined)
     if (reveal) showMain()
     hideQuickAsk()
     sendMain(IPC.toast, {
@@ -628,6 +630,7 @@ function registerIpc(): void {
     return result.canceled ? null : (result.filePaths[0] ?? null)
   })
 
+  handle(IPC.quickAskRecentList, () => stores.quickAskRecent.get())
   handle(IPC.quickAskSubmit, (text: string, options?: { autoSend?: boolean; reveal?: boolean }) =>
     submitQuickAsk(text, options ?? {})
   )

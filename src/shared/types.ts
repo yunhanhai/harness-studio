@@ -329,6 +329,7 @@ export interface StudioApi {
   quickAsk: {
     /** Submit a prompt from the Quick Ask window into the Harness composer. */
     submit(text: string, options?: { autoSend?: boolean; reveal?: boolean }): Promise<QuickAskResult>
+    recent(): Promise<string[]>
     close(): void
     hide(): void
     open(): void

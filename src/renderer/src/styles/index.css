@@ -3500,6 +3500,7 @@ html[data-motion='reduce'] *::after {
   background: transparent;
 }
 .quickask-card {
+  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -3639,4 +3640,56 @@ html[data-motion='reduce'] *::after {
   opacity: 0.45;
   box-shadow: none;
   cursor: not-allowed;
+}
+.quickask-history {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 7px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  background: transparent;
+  color: #8a92a8;
+  font-size: 9.5px;
+}
+.quickask-history:hover,
+.quickask-history.is-open {
+  border-color: rgba(91, 140, 255, 0.4);
+  background: rgba(91, 140, 255, 0.12);
+  color: #b9ccff;
+}
+.quickask-recent {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 42px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  max-height: 132px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+  background: #12141d;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55);
+}
+.quickask-recent-item {
+  padding: 5px 9px;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: transparent;
+  color: #b6bccd;
+  font-size: 10.5px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.quickask-recent-item:last-child {
+  border-bottom: 0;
+}
+.quickask-recent-item:hover {
+  background: rgba(91, 140, 255, 0.14);
+  color: #eef0f7;
 }

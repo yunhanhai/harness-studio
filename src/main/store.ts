@@ -41,6 +41,7 @@ export function mergeSettings(defaults: Settings, input: unknown): Settings {
   merged.insights.outputPrice = clampPrice(merged.insights.outputPrice)
   merged.insights.cacheReadPrice = clampPrice(merged.insights.cacheReadPrice)
   if (merged.insights.currency !== 'USD') merged.insights.currency = 'CNY'
+  merged.quickAsk.recentLimit = Math.min(20, Math.max(1, Math.floor(Number(merged.quickAsk.recentLimit) || 6)))
   return merged
 }
 
@@ -131,6 +132,7 @@ export interface Stores {
   settings: JsonStore<Settings>
   workspaces: JsonStore<Workspace[]>
   prompts: JsonStore<PromptItem[]>
+  quickAskRecent: JsonStore<string[]>
 }
 
 export function createStores(userData: string): Stores {
@@ -149,11 +151,22 @@ export function createStores(userData: string): Stores {
     () => structuredClone(DEFAULT_PROMPTS),
     (input) => (Array.isArray(input) ? (input as PromptItem[]).filter((item) => typeof item?.content === 'string') : [])
   )
-  return { settings, workspaces, prompts }
+  const quickAskRecent = new JsonStore<string[]>(
+    join(userData, 'quickask-recent.json'),
+    () => [],
+    (input) =>
+      Array.isArray(input) ? input.filter((item) => typeof item === 'string' && item.trim()).slice(0, 20) : []
+  )
+  return { settings, workspaces, prompts, quickAskRecent }
 }
 
 export async function loadStores(stores: Stores): Promise<void> {
-  await Promise.all([stores.settings.load(), stores.workspaces.load(), stores.prompts.load()])
+  await Promise.all([
+    stores.settings.load(),
+    stores.workspaces.load(),
+    stores.prompts.load(),
+    stores.quickAskRecent.load()
+  ])
 }
 
 export function dataDir(): string {
