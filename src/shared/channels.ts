@@ -55,6 +55,8 @@ export const IPC = {
   quickAskOpen: 'quickask:open',
   quickAskOpened: 'quickask:opened',
   quickAskResult: 'quickask:result',
+  quickAskRecent: 'quickask:recent',
+  quickAskRecentList: 'quickask:recent-list',
 
   action: 'studio:action',
   runAction: 'studio:run-action',

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { CornerDownLeft, Loader2, Send, Sparkles, X } from 'lucide-react'
+import { CornerDownLeft, History, Loader2, Send, Sparkles, X } from 'lucide-react'
 import type { QuickAskResult, Settings } from '@shared/types'
 
 type Phase = 'idle' | 'sending' | 'error'
@@ -10,6 +10,8 @@ export default function QuickAsk(): React.JSX.Element {
   const [error, setError] = useState('')
   const [settings, setSettings] = useState<Settings | null>(null)
   const [autoSend, setAutoSend] = useState(true)
+  const [recent, setRecent] = useState<string[]>([])
+  const [showRecent, setShowRecent] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement | null>(null)
 
   useEffect(() => {
@@ -26,10 +28,16 @@ export default function QuickAsk(): React.JSX.Element {
       setAutoSend(value.quickAsk.autoSend)
     })
 
+    const loadRecent = (): void => {
+      void api.quickAsk.recent().then(setRecent).catch(() => setRecent([]))
+    }
+
     const reset = (): void => {
       setText('')
       setError('')
       setPhase('idle')
+      setShowRecent(false)
+      loadRecent()
       requestAnimationFrame(() => inputRef.current?.focus())
     }
     const offOpen = api.quickAsk.onOpen(reset)
@@ -97,6 +105,25 @@ export default function QuickAsk(): React.JSX.Element {
           </button>
         </div>
 
+        {showRecent && recent.length > 0 ? (
+          <div className="quickask-recent">
+            {recent.map((item, index) => (
+              <button
+                key={`${index}-${item.slice(0, 16)}`}
+                className="quickask-recent-item"
+                onClick={() => {
+                  setText(item)
+                  setShowRecent(false)
+                  requestAnimationFrame(() => inputRef.current?.focus())
+                }}
+                title={item}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
         <textarea
           ref={inputRef}
           className="quickask-input"
@@ -120,6 +147,16 @@ export default function QuickAsk(): React.JSX.Element {
             />
             <span>自动发送</span>
           </label>
+          {recent.length > 0 ? (
+            <button
+              className={`quickask-history ${showRecent ? 'is-open' : ''}`}
+              onClick={() => setShowRecent((value) => !value)}
+              title="最近提问"
+            >
+              <History size={11} />
+              最近 {recent.length}
+            </button>
+          ) : null}
           <span className="quickask-keys">
             <kbd>Enter</kbd> 发送
             <kbd>Shift+Enter</kbd> 换行

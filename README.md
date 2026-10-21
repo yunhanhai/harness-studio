@@ -8,7 +8,7 @@
 ![status](https://img.shields.io/badge/status-beta-F59E0B?style=flat-square)
 
 [![GitHub release](https://img.shields.io/github/v/release/yunhanhai/harness-studio?style=flat-square&color=5B8CFF)](https://github.com/yunhanhai/harness-studio/releases)
-[![Gitee release](https://img.shields.io/badge/gitee-v0.1.1-C71D23?style=flat-square)](https://gitee.com/yunhanhai/harness-studio/releases)
+[![Gitee release](https://img.shields.io/badge/gitee-v0.1.3-C71D23?style=flat-square)](https://gitee.com/yunhanhai/harness-studio/releases)
 [![GitHub stars](https://img.shields.io/github/stars/yunhanhai/harness-studio?style=flat-square&color=F59E0B)](https://github.com/yunhanhai/harness-studio/stargazers)
 
 [English](README.en.md) · [下载](#下载) · [架构说明](docs/ARCHITECTURE.md) · [发布指南](docs/PUBLISHING.md) · [参与贡献](CONTRIBUTING.md)
@@ -134,6 +134,7 @@ Harness Studio 换了一个角度：**先让一个人每天用得顺手**。
 
 - 自动发送：默认发送后关闭弹窗并显示主窗口，可改为只填入输入框
 - 自动切换到工作区：即使你停在启动台或日志页，也会自动切过去再注入
+- 最近提问：发送过的内容会被记住（默认 6 条，可调 1–20），一键回填重发
 - 首次运行的说明弹窗会被自动关掉；**登录 / API Key 弹窗不会被碰**，避免误操作账号
 - `Shift+Enter` 换行，`Esc` 关闭
 - 行为可在「设置 → 通用 → 快速提问」调整
@@ -141,6 +142,8 @@ Harness Studio 换了一个角度：**先让一个人每天用得顺手**。
 > 实现上不依赖 Harness 内部 RPC：Studio 聚焦 composer，通过 Chromium 真实输入事件写入文本，再点击发送按钮。上游改版时比抓私有 API 更稳。
 
 ![全局快速提问](docs/screenshots/quickask.png)
+
+最近提问记录保存在 `%APPDATA%\Harness Studio\quickask-recent.json`，只存文本，可随时删除。
 
 ### 桌面原生能力
 
@@ -168,8 +171,8 @@ Harness Studio 换了一个角度：**先让一个人每天用得顺手**。
 
 | 平台 | 安装版 | 便携版 |
 | --- | --- | --- |
-| **GitHub**（全球） | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.1/Harness-Studio-0.1.1-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.1/Harness-Studio-0.1.1-x64-Portable.exe) |
-| **Gitee**（国内更快） | [Setup.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.1/Harness-Studio-0.1.1-x64-Setup.exe) | [Portable.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.1/Harness-Studio-0.1.1-x64-Portable.exe) |
+| **GitHub**（全球） | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.3/Harness-Studio-0.1.3-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.3/Harness-Studio-0.1.3-x64-Portable.exe) |
+| **Gitee**（国内更快） | [Setup.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.3/Harness-Studio-0.1.3-x64-Setup.exe) | [Portable.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.3/Harness-Studio-0.1.3-x64-Portable.exe) |
 
 - **Setup.exe**（99 MB）— 安装版，创建开始菜单与桌面快捷方式，支持自动更新
 - **Portable.exe**（99 MB）— 免安装，数据写在可执行文件旁的 `HarnessStudioData/`

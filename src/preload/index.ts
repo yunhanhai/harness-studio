@@ -70,6 +70,7 @@ const api: StudioApi = {
   },
   quickAsk: {
     submit: (text, options) => invoke(IPC.quickAskSubmit, text, options),
+    recent: () => invoke(IPC.quickAskRecentList),
     close: () => ipcRenderer.send(IPC.quickAskClose),
     hide: () => ipcRenderer.send(IPC.quickAskHide),
     open: () => ipcRenderer.send(IPC.quickAskOpen),

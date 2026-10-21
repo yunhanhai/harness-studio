@@ -62,6 +62,8 @@ await new Promise((resolvePromise, reject) => {
 
 const client = cdp(ws)
 await client.send('Page.enable')
+await client.send('Network.enable')
+await client.send('Network.setCacheDisabled', { cacheDisabled: true })
 await client.send('Emulation.setDeviceMetricsOverride', {
   width,
   height,

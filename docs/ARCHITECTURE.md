@@ -115,6 +115,7 @@ Node.js 同理：自定义路径 → 便携运行时 → `C:\Program Files\nodej
 | 工作区列表 | `%APPDATA%\Harness Studio\workspaces.json` |
 | 提示词 | `%APPDATA%\Harness Studio\prompts.json` |
 | 运行日志 | `%APPDATA%\Harness Studio\logs\` |
+| 快速提问最近记录 | `%APPDATA%\Harness Studio\quickask-recent.json` |
 | 便携运行时 | `%APPDATA%\Harness Studio\runtime\` |
 | DSH 会话/凭据 | `%USERPROFILE%\.dsh`（与 `dsh` CLI 共用） |
 
