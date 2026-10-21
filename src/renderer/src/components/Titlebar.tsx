@@ -22,11 +22,13 @@ export function Titlebar(): React.JSX.Element {
       ? (workspace?.name ?? '工作区')
       : view === 'home'
         ? '启动台'
-        : view === 'prompts'
-          ? '提示词库'
-          : view === 'logs'
-            ? '运行日志'
-            : '设置'
+        : view === 'insights'
+          ? '会话洞察'
+          : view === 'prompts'
+            ? '提示词库'
+            : view === 'logs'
+              ? '运行日志'
+              : '设置'
 
   return (
     <header className="titlebar">

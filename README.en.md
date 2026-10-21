@@ -26,6 +26,7 @@ Harness Studio takes a different angle: **make one developer's daily loop feel f
 | Projects | single workspace | multiple workspaces, switch and restart the host |
 | Prompts | — | 6 built-ins + your own, tags, usage counts |
 | Logs | files on disk | live panel, filters, copy, token redaction |
+| Session insights | — | tokens, cache hit rate, cost estimate, 14-day trend, per-model and per-workspace breakdown |
 | Command palette | — | `Ctrl+K` for commands, workspaces, prompts |
 | Themes | follow system | dark / light / system + 6 accents |
 | Tray & global keys | yes | yes, plus close/minimize to tray |
@@ -39,6 +40,7 @@ Harness Studio takes a different angle: **make one developer's daily loop feel f
 - **Official conversation UI** — embedded in a locked-down `<webview>`; no fork of model or tool behavior.
 - **Prompt library** — built-ins plus your own, one-click copy into the chat.
 - **Live logs** — stdout/stderr/system, filtering, auto-follow, token redaction.
+- **Session insights** — reads `~/.dsh` locally: token usage, cache hit rate, cost estimate with configurable pricing, 14-day trend, per-model and per-workspace breakdown, sortable session table.
 - **Native shell** — tray, global shortcuts, close-to-tray, single instance, window-state restore.
 - **Theming** — dark/light/system, accent colors, UI zoom, reduced motion.
 
@@ -103,8 +105,8 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full design.
 | --- | --- |
 | `Ctrl+K` | Command palette |
 | `Ctrl+,` | Settings |
-| `Ctrl+1` / `2` / `3` / `4` | Home / Workspace / Prompts / Logs |
-| `Ctrl+Shift+L` | Live logs |
+| `Ctrl+1` / `2` / `3` | Home / Workspace / Insights |
+| `Ctrl+4` / `5` | Prompts / Logs |
 | `Ctrl+Alt+H` | Show / hide window globally |
 | `Ctrl+Alt+K` | Open palette globally |
 
@@ -140,7 +142,7 @@ The repo ships CI and release workflows plus a full guide:
 
 ## Roadmap
 
-- [ ] Session insights: tokens, cost, daily trends
+- [x] Session insights: tokens, cache hit rate, cost, daily trends
 - [x] Auto-update via `electron-updater` (GitHub Releases)
 - [ ] Multi-tab workspaces
 - [ ] Global quick-ask (`Alt+Space`)

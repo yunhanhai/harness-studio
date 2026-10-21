@@ -12,6 +12,7 @@ import {
   type IpcMainInvokeEvent
 } from 'electron'
 import { existsSync, writeFileSync } from 'node:fs'
+import { readdir } from 'node:fs/promises'
 import { writeFile } from 'node:fs/promises'
 import { basename, join, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -40,6 +41,7 @@ import { installApplicationMenu } from './menu'
 import { createTray } from './tray'
 import { checkForUpdates, downloadUpdate, installUpdate } from './updater'
 import { autoUpdater } from 'electron-updater'
+import { invalidateSessionCache, scanSessions } from './sessions'
 
 app.setName('Harness Studio')
 if (process.env.HARNESS_STUDIO_USER_DATA) {
@@ -520,6 +522,29 @@ function registerIpc(): void {
       properties: ['openDirectory', 'createDirectory']
     })
     return result.canceled ? null : (result.filePaths[0] ?? null)
+  })
+
+  handle(IPC.insightsScan, (force?: boolean) =>
+    scanSessions(
+      {
+        dshHome: resolveDshHome(settings()),
+        workspaces: workspaceList(),
+        insights: settings().insights
+      },
+      Boolean(force)
+    )
+  )
+  handle(IPC.insightsReveal, async (id: string) => {
+    const home = resolveDshHome(settings())
+    const sessionDir = join(home, 'sessions')
+    if (!existsSync(sessionDir)) return false
+    const folders = await readdir(sessionDir).catch(() => [] as string[])
+    for (const folder of folders) {
+      if (!folder.includes(id)) continue
+      await shell.openPath(join(sessionDir, folder))
+      return true
+    }
+    return false
   })
 
   handle(IPC.promptsList, () => promptList())

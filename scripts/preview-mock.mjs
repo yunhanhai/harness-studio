@@ -24,6 +24,7 @@ const SETTINGS = {
     nodeMirror: 'https://npmmirror.com/mirrors/node'
   },
   shortcuts: { toggleWindow: 'CommandOrControl+Alt+H', palette: 'CommandOrControl+Alt+K' },
+  insights: { inputPrice: 4, outputPrice: 16, cacheReadPrice: 0.4, currency: 'CNY' },
   lastWorkspaceId: 'ws-1',
   window: { width: 1360, height: 860, maximized: false }
 }
@@ -82,6 +83,122 @@ export function buildMockScript() {
     checkedAt: now
   }
   const host = { state: 'ready', url: 'http://127.0.0.1:62812/?token=preview', port: 62812, pid: 4412, workspaceId: 'ws-1', startedAt: now - 30000 }
+
+  const SESSION_SEEDS = [
+    ['打造专属 DeepSeek Harness Desktop', 'D:\\Program Files\\develop\\vscode\\her', 'ultrarouter / deepseek-v4.1-flash', 7, 451, 581223, 379793, 143815680, now - 1000 * 60 * 6],
+    ['你看下一开始的任务规划，按', 'D:\\Program Files\\develop\\HIS-BankBridge', 'ds-bq / deepseek-v4.1-flash-free', 1, 8, 66980, 3604, 189248, now - 86400000 * 2],
+    ['重构启动台的运行时卡片', 'D:\\Program Files\\develop\\vscode\\her', 'deepseek-official / deepseek-flash', 5, 132, 214880, 96420, 27184064, now - 86400000 * 1],
+    ['补齐 webview 安全边界测试', 'D:\\workspace\\aurora-web', 'deepseek-official / deepseek-flash', 4, 96, 158420, 71230, 18432128, now - 86400000 * 3],
+    ['整理发布到 GitHub 与 Gitee 的流程', 'D:\\workspace\\docs-site', 'deepseek-official / deepseek-flash', 3, 58, 96420, 38210, 6857216, now - 86400000 * 4],
+    ['排查 EPERM: cordis.yml 写入失败', 'D:\\Program Files\\develop\\vscode\\her', 'ultrarouter / deepseek-v4.1-flash', 2, 34, 51220, 21030, 3145728, now - 86400000 * 5]
+  ]
+  const sessions = SESSION_SEEDS.map((seed, index) => {
+    const [title, cwd, model, turns, steps, uncached, output, cacheRead, lastActiveAt] = seed
+    const matched = workspaces.find((w) => w.path.toLowerCase() === String(cwd).toLowerCase())
+    return {
+      id: `session-${index}0a1b2c3d4e5f`,
+      title,
+      cwd,
+      workspaceId: matched?.id,
+      workspaceName: matched?.name,
+      createdAt: now - 86400000 * (index + 2),
+      lastActiveAt,
+      messages: turns * 2,
+      turns,
+      steps,
+      blank: false,
+      tokens: { uncachedInputTokens: uncached, outputTokens: output, cacheReadTokens: cacheRead, cacheWriteTokens: 0 },
+      llmMs: steps * 5200,
+      toolMs: steps * 7400,
+      model: String(model).split(' / ')[1],
+      provider: String(model).split(' / ')[0],
+      preset: 'standard',
+      source: 'cache'
+    }
+  })
+  sessions.push({
+    id: 'session-empty01',
+    cwd: 'D:\\Users\\you\\Documents\\deepseek-harness\\default-workspace',
+    createdAt: now - 86400000 * 9,
+    lastActiveAt: now - 86400000 * 9,
+    messages: 0,
+    turns: 0,
+    steps: 0,
+    blank: true,
+    tokens: { uncachedInputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    llmMs: 0,
+    toolMs: 0,
+    preset: 'standard',
+    source: 'cache'
+  })
+
+  const sum = (pick) => sessions.reduce((total, item) => total + pick(item), 0)
+  const tokensTotal = {
+    uncachedInputTokens: sum((s) => s.tokens.uncachedInputTokens),
+    outputTokens: sum((s) => s.tokens.outputTokens),
+    cacheReadTokens: sum((s) => s.tokens.cacheReadTokens),
+    cacheWriteTokens: 0
+  }
+  const promptTokens = tokensTotal.uncachedInputTokens + tokensTotal.cacheReadTokens
+  const daily = Array.from({ length: 14 }, (_, index) => {
+    const date = new Date(now - (13 - index) * 86400000)
+    const key = date.toISOString().slice(0, 10)
+    const active = sessions.filter((s) => new Date(s.lastActiveAt).toISOString().slice(0, 10) === key)
+    return {
+      date: key,
+      sessions: active.length,
+      turns: active.reduce((total, s) => total + s.turns, 0),
+      tokens: active.reduce((total, s) => total + s.tokens.uncachedInputTokens + s.tokens.outputTokens + s.tokens.cacheReadTokens, 0)
+    }
+  })
+  const byWorkspaceMap = new Map()
+  for (const session of sessions) {
+    const baseName = String(session.cwd).split(/[\\/]/).filter(Boolean).pop() ?? '未知'
+    const entry = byWorkspaceMap.get(session.cwd) ?? {
+      path: session.cwd,
+      name: session.workspaceName ?? baseName,
+      sessions: 0,
+      turns: 0,
+      tokens: 0
+    }
+    entry.sessions += 1
+    entry.turns += session.turns
+    entry.tokens += session.tokens.uncachedInputTokens + session.tokens.outputTokens + session.tokens.cacheReadTokens
+    byWorkspaceMap.set(session.cwd, entry)
+  }
+  const byModelMap = new Map()
+  for (const session of sessions) {
+    const label = session.model ? `${session.provider} / ${session.model}` : '未记录'
+    const entry = byModelMap.get(label) ?? { label, sessions: 0, turns: 0, tokens: 0 }
+    entry.sessions += 1
+    entry.turns += session.turns
+    entry.tokens += session.tokens.uncachedInputTokens + session.tokens.outputTokens + session.tokens.cacheReadTokens
+    byModelMap.set(label, entry)
+  }
+  const insights = {
+    sessions,
+    totals: {
+      sessions: sessions.length,
+      activeSessions: sessions.filter((s) => !s.blank).length,
+      messages: sum((s) => s.messages),
+      turns: sum((s) => s.turns),
+      steps: sum((s) => s.steps),
+      tokens: tokensTotal,
+      totalTokens: promptTokens + tokensTotal.outputTokens,
+      cacheHitRate: promptTokens > 0 ? tokensTotal.cacheReadTokens / promptTokens : 0,
+      llmMs: sum((s) => s.llmMs),
+      toolMs: sum((s) => s.toolMs)
+    },
+    daily,
+    byWorkspace: [...byWorkspaceMap.values()].sort((a, b) => b.tokens - a.tokens),
+    byModel: [...byModelMap.values()].sort((a, b) => b.tokens - a.tokens),
+    scannedAt: now,
+    dshHome: 'C:\\Users\\you\\.dsh',
+    sessionsDir: 'C:\\Users\\you\\.dsh\\sessions',
+    source: 'projection-cache',
+    costEstimate: 3.42,
+    currency: 'CNY'
+  }
   const info = {
     name: 'Harness Studio',
     version: '0.1.0',
@@ -98,7 +215,7 @@ export function buildMockScript() {
     repoUrl: 'https://github.com/REPLACE_ME/harness-studio',
     giteeUrl: 'https://gitee.com/REPLACE_ME/harness-studio'
   }
-  const mock = { info, settings, workspaces, prompts, logs, runtime, host }
+  const mock = { info, settings, workspaces, prompts, logs, runtime, host, insights }
   return `
 const MOCK = ${JSON.stringify(mock)};
 const clone = (value) => JSON.parse(JSON.stringify(value));
@@ -174,11 +291,20 @@ window.studio = {
     use: async () => clone(MOCK.prompts),
     onChange: listeners
   },
+  insights: {
+    scan: async () => (params.get('insightEmpty') === '1'
+      ? { ...clone(MOCK.insights), sessions: [], totals: { ...clone(MOCK.insights).totals, sessions: 0, activeSessions: 0, totalTokens: 0, turns: 0, steps: 0, messages: 0 } }
+      : clone(MOCK.insights)),
+    revealSession: async () => true
+  },
   studio: {
     onAction: listeners, onToast: listeners, runAction: () => {},
     closePalette: () => {}, hidePalette: () => {}, showPalette: () => {},
     toast: () => {},
     checkUpdates: async () => ({ status: 'latest', version: '0.1.0', message: '已经是最新版本。' }),
+    downloadUpdate: async () => ({ status: 'latest', version: '0.1.0', message: '已经是最新版本。' }),
+    installUpdate: () => {},
+    onUpdateProgress: listeners,
     openReleases: async () => {}, quit: () => {}, relaunch: () => {}
   },
   clipboard: { write: async () => {}, read: async () => '' },

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   ArrowUpRight,
+  BarChart3,
   Check,
   ChevronRight,
   Cpu,
@@ -21,7 +22,7 @@ import {
   Wrench,
   Zap
 } from 'lucide-react'
-import type { RuntimeSettings, UpdateResult } from '@shared/types'
+import type { InsightsSettings, RuntimeSettings, UpdateResult } from '@shared/types'
 import { ACCENTS, DOCS_URL, GITEE_URL, GITHUB_URL, RELEASES_URL } from '@shared/defaults'
 import { useApp } from '../store'
 import { sourceLabel } from '../lib/format'
@@ -29,11 +30,12 @@ import { Modal } from '../components/Modal'
 import { BrandMark } from '../components/BrandMark'
 import { GithubMark } from '../components/GithubMark'
 
-type SectionId = 'general' | 'appearance' | 'runtime' | 'advanced' | 'about'
+type SectionId = 'general' | 'appearance' | 'insights' | 'runtime' | 'advanced' | 'about'
 
 const SECTIONS: Array<{ id: SectionId; label: string; icon: React.ComponentType<{ size?: number }> }> = [
   { id: 'general', label: '通用', icon: SlidersHorizontal },
   { id: 'appearance', label: '外观', icon: Palette },
+  { id: 'insights', label: '洞察', icon: BarChart3 },
   { id: 'runtime', label: '运行时', icon: Cpu },
   { id: 'advanced', label: '高级', icon: Terminal },
   { id: 'about', label: '关于', icon: Info }
@@ -113,6 +115,7 @@ export function SettingsPage(): React.JSX.Element {
   const toast = useApp((state) => state.toast)
 
   const [runtimeDraft, setRuntimeDraft] = useState<RuntimeSettings | null>(settings?.runtime ?? null)
+  const [insightsDraft, setInsightsDraft] = useState<InsightsSettings | null>(settings?.insights ?? null)
   const [argsDraft, setArgsDraft] = useState(settings?.runtime.extraArgs.join('\n') ?? '')
   const [envDraft, setEnvDraft] = useState(
     Object.entries(settings?.runtime.env ?? {})
@@ -128,6 +131,10 @@ export function SettingsPage(): React.JSX.Element {
   useEffect(() => {
     if (!runtimeDraft && settings) setRuntimeDraft(settings.runtime)
   }, [runtimeDraft, settings])
+
+  useEffect(() => {
+    if (!insightsDraft && settings) setInsightsDraft(settings.insights)
+  }, [insightsDraft, settings])
 
   useEffect(() => window.studio.studio.onUpdateProgress((value) => setProgress(value.percent)), [])
 
@@ -351,6 +358,97 @@ export function SettingsPage(): React.JSX.Element {
                     <button className="button button-ghost button-small" onClick={() => void saveSettings({ zoomFactor: 1 })}>
                       重置
                     </button>
+                  </div>
+                </Row>
+              </Card>
+            </>
+          ) : null}
+
+          {active === 'insights' ? (
+            <>
+              <Card
+                title="价格"
+                desc="用于估算会话洞察中的花费。单价按每 100 万 token 计算，全部填 0 则隐藏花费卡片。"
+              >
+                <Row title="未缓存输入（input）" stacked>
+                  <input
+                    className="input mono"
+                    type="number"
+                    min={0}
+                    step={0.1}
+                    value={insightsDraft?.inputPrice ?? 0}
+                    onChange={(event) =>
+                      insightsDraft && setInsightsDraft({ ...insightsDraft, inputPrice: Number(event.target.value) })
+                    }
+                  />
+                </Row>
+                <Row title="输出（output）" stacked>
+                  <input
+                    className="input mono"
+                    type="number"
+                    min={0}
+                    step={0.1}
+                    value={insightsDraft?.outputPrice ?? 0}
+                    onChange={(event) =>
+                      insightsDraft && setInsightsDraft({ ...insightsDraft, outputPrice: Number(event.target.value) })
+                    }
+                  />
+                </Row>
+                <Row title="缓存读取（cache read）" desc="命中缓存的输入通常远低于未缓存输入价格。" stacked>
+                  <input
+                    className="input mono"
+                    type="number"
+                    min={0}
+                    step={0.1}
+                    value={insightsDraft?.cacheReadPrice ?? 0}
+                    onChange={(event) =>
+                      insightsDraft && setInsightsDraft({ ...insightsDraft, cacheReadPrice: Number(event.target.value) })
+                    }
+                  />
+                </Row>
+                <Row title="货币">
+                  <div className="segmented">
+                    {(['CNY', 'USD'] as const).map((currency) => (
+                      <button
+                        key={currency}
+                        className={insightsDraft?.currency === currency ? 'active' : ''}
+                        onClick={() => insightsDraft && setInsightsDraft({ ...insightsDraft, currency })}
+                      >
+                        {currency === 'CNY' ? '¥ 人民币' : '$ 美元'}
+                      </button>
+                    ))}
+                  </div>
+                </Row>
+                <div className="settings-save-row">
+                  <button className="button button-ghost button-small" onClick={() => setInsightsDraft(settings.insights)}>
+                    撤销
+                  </button>
+                  <button
+                    className="button button-primary button-small"
+                    onClick={async () => {
+                      if (!insightsDraft) return
+                      await saveSettings({ insights: insightsDraft })
+                      toast('洞察设置已保存，重新扫描后生效', 'success')
+                    }}
+                  >
+                    保存
+                  </button>
+                </div>
+              </Card>
+
+              <Card title="数据来源" desc="会话洞察只读取本机文件，不上传任何对话内容。">
+                <Row title="会话目录" desc={info.dshHome}>
+                  <button
+                    className="button button-secondary button-small"
+                    onClick={() => void window.studio.app.openPath(info.dshHome)}
+                  >
+                    <FolderOpen size={14} />
+                    打开
+                  </button>
+                </Row>
+                <Row title="统计口径" desc="token 来自 DSH 的会话投影缓存；无缓存的会话退回解析日志头部。" stacked>
+                  <div className="setting-desc">
+                    会话数包含空会话；「有内容」只统计产生过回合的会话。每日趋势按会话最后活跃时间归入本地日历日。
                   </div>
                 </Row>
               </Card>

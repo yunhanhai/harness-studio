@@ -7,6 +7,7 @@ import { ToastHost } from './components/ToastHost'
 import { Splash } from './components/Splash'
 import { Home } from './pages/Home'
 import { WorkspacePage } from './pages/WorkspacePage'
+import { Insights } from './pages/Insights'
 import { Prompts } from './pages/Prompts'
 import { Logs } from './pages/Logs'
 import { SettingsPage } from './pages/Settings'
@@ -32,8 +33,9 @@ export default function App(): React.JSX.Element {
       const map: Record<string, () => void> = {
         '1': () => setView('home'),
         '2': () => setView('workspace'),
-        '3': () => setView('prompts'),
-        '4': () => setView('logs')
+        '3': () => setView('insights'),
+        '4': () => setView('prompts'),
+        '5': () => setView('logs')
       }
       const action = map[event.key]
       if (action) {
@@ -63,6 +65,7 @@ export default function App(): React.JSX.Element {
         <main className={`content view-${view}`}>
           {view === 'home' ? <Home /> : null}
           {view === 'workspace' ? <WorkspacePage /> : null}
+          {view === 'insights' ? <Insights /> : null}
           {view === 'prompts' ? <Prompts /> : null}
           {view === 'logs' ? <Logs /> : null}
           {view === 'settings' ? <SettingsPage /> : null}

@@ -40,6 +40,12 @@ export const DEFAULT_SETTINGS: Settings = {
     toggleWindow: 'CommandOrControl+Alt+H',
     palette: 'CommandOrControl+Alt+K'
   },
+  insights: {
+    inputPrice: 0,
+    outputPrice: 0,
+    cacheReadPrice: 0,
+    currency: 'CNY'
+  },
   lastWorkspaceId: '',
   window: {
     width: 1360,
