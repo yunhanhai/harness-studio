@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type {
   AppInfo,
   HostStatus,
+  InsightsData,
   InstallProgress,
   LogLine,
   PromptItem,
@@ -28,6 +29,9 @@ interface AppState {
   workspaces: Workspace[]
   prompts: PromptItem[]
   logs: LogLine[]
+  insights: InsightsData | null
+  insightsLoading: boolean
+  insightsError: string | null
   install: InstallProgress | null
   installing: boolean
   toasts: ToastItem[]
@@ -42,6 +46,8 @@ interface AppState {
   dismissToast: (id: number) => void
   saveSettings: (patch: Partial<Settings>) => Promise<void>
   resetSettings: () => Promise<void>
+  loadInsights: (force?: boolean) => Promise<void>
+  revealSession: (id: string) => Promise<void>
   refreshRuntime: () => Promise<void>
   installRuntime: () => Promise<void>
   cancelInstall: () => Promise<void>
@@ -82,6 +88,9 @@ export const useApp = create<AppState>((set, get) => ({
   workspaces: [],
   prompts: [],
   logs: [],
+  insights: null,
+  insightsLoading: false,
+  insightsError: null,
   install: null,
   installing: false,
   toasts: [],
@@ -104,7 +113,7 @@ export const useApp = create<AppState>((set, get) => ({
     set({ info, settings, workspaces, prompts, host, logs, initialized: true })
     const params = new URLSearchParams(window.location.search)
     const requestedView = params.get('view')
-    const views: ViewId[] = ['home', 'workspace', 'prompts', 'logs', 'settings']
+    const views: ViewId[] = ['home', 'workspace', 'insights', 'prompts', 'logs', 'settings']
     if (requestedView && views.includes(requestedView as ViewId)) {
       set({ view: requestedView as ViewId })
     }
@@ -165,6 +174,24 @@ export const useApp = create<AppState>((set, get) => ({
     set({ settings: next })
     refreshDocumentTheme(next)
     get().toast('设置已恢复默认值', 'success')
+  },
+
+  loadInsights: async (force = false) => {
+    if (get().insightsLoading) return
+    set({ insightsLoading: true, insightsError: null })
+    try {
+      const data = await window.studio.insights.scan(force)
+      set({ insights: data, insightsLoading: false })
+    } catch (error) {
+      set({
+        insightsLoading: false,
+        insightsError: error instanceof Error ? error.message : String(error)
+      })
+    }
+  },
+  revealSession: async (id) => {
+    const ok = await window.studio.insights.revealSession(id)
+    if (!ok) get().toast('找不到该会话目录', 'error')
   },
 
   refreshRuntime: async () => {
@@ -287,6 +314,10 @@ export const useApp = create<AppState>((set, get) => ({
         break
       case 'open-logs':
         state.setView('logs')
+        break
+      case 'open-insights':
+        state.setView('insights')
+        void state.loadInsights()
         break
       case 'check-updates':
         void window.studio.studio.checkUpdates().then((result) => {

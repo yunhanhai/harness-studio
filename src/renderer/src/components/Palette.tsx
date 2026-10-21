@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowRight,
+  BarChart3,
   ChevronRight,
   CircleStop,
   Command,
@@ -35,6 +36,7 @@ interface PaletteItem {
 const ICONS = {
   home: LayoutDashboard,
   workspace: MessagesSquare,
+  insights: BarChart3,
   prompts: Sparkles,
   logs: ScrollText,
   settings: Settings2
@@ -106,6 +108,15 @@ export default function Palette(): React.JSX.Element {
         icon: ICONS.workspace,
         keywords: 'workspace chat session',
         run: () => window.studio.studio.runAction({ type: 'open-workspace' })
+      },
+      {
+        id: 'nav-insights',
+        group: '导航',
+        title: '会话洞察',
+        subtitle: 'token 用量、缓存命中与每日趋势',
+        icon: ICONS.insights,
+        keywords: 'insights tokens usage stats analytics 统计 用量',
+        run: () => window.studio.studio.runAction({ type: 'open-insights' })
       },
       {
         id: 'nav-prompts',

@@ -33,6 +33,14 @@ export function mergeSettings(defaults: Settings, input: unknown): Settings {
   if (!Array.isArray(merged.runtime.extraArgs)) merged.runtime.extraArgs = []
   if (!isPlainObject(merged.runtime.env)) merged.runtime.env = {}
   if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(merged.runtime.profile)) merged.runtime.profile = 'studio'
+  const clampPrice = (value: unknown): number => {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) && parsed >= 0 ? Math.min(parsed, 100_000) : 0
+  }
+  merged.insights.inputPrice = clampPrice(merged.insights.inputPrice)
+  merged.insights.outputPrice = clampPrice(merged.insights.outputPrice)
+  merged.insights.cacheReadPrice = clampPrice(merged.insights.cacheReadPrice)
+  if (merged.insights.currency !== 'USD') merged.insights.currency = 'CNY'
   return merged
 }
 

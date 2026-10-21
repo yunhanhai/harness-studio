@@ -64,6 +64,10 @@ const api: StudioApi = {
     use: (id) => invoke(IPC.promptsUse, id),
     onChange: (cb) => subscribe(IPC.promptsChanged, cb)
   },
+  insights: {
+    scan: (force) => invoke(IPC.insightsScan, force),
+    revealSession: (id) => invoke(IPC.insightsReveal, id)
+  },
   studio: {
     onAction: (cb) => subscribe(IPC.action, cb),
     onToast: (cb) => subscribe(IPC.toast, cb),

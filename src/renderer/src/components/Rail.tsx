@@ -1,4 +1,13 @@
-import { LayoutDashboard, MessagesSquare, Moon, ScrollText, Settings2, Sparkles, Sun } from 'lucide-react'
+import {
+  BarChart3,
+  LayoutDashboard,
+  MessagesSquare,
+  Moon,
+  ScrollText,
+  Settings2,
+  Sparkles,
+  Sun
+} from 'lucide-react'
 import { GITHUB_URL } from '@shared/defaults'
 import { useApp } from '../store'
 import { GithubMark } from './GithubMark'
@@ -15,8 +24,9 @@ interface RailItem {
 const ITEMS: RailItem[] = [
   { id: 'home', label: '启动台', icon: LayoutDashboard, shortcut: 'Ctrl 1' },
   { id: 'workspace', label: '工作区', icon: MessagesSquare, shortcut: 'Ctrl 2' },
-  { id: 'prompts', label: '提示词库', icon: Sparkles, shortcut: 'Ctrl 3' },
-  { id: 'logs', label: '运行日志', icon: ScrollText, shortcut: 'Ctrl 4' },
+  { id: 'insights', label: '会话洞察', icon: BarChart3, shortcut: 'Ctrl 3' },
+  { id: 'prompts', label: '提示词库', icon: Sparkles, shortcut: 'Ctrl 4' },
+  { id: 'logs', label: '运行日志', icon: ScrollText, shortcut: 'Ctrl 5' },
   { id: 'settings', label: '设置', icon: Settings2, shortcut: 'Ctrl ,' }
 ]
 

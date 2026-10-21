@@ -46,6 +46,9 @@ export const IPC = {
   promptsUse: 'prompts:use',
   promptsChanged: 'prompts:changed',
 
+  insightsScan: 'insights:scan',
+  insightsReveal: 'insights:reveal',
+
   action: 'studio:action',
   runAction: 'studio:run-action',
   paletteClose: 'studio:palette-close',

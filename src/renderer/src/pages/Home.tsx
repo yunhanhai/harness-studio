@@ -1,6 +1,8 @@
+import { useEffect } from 'react'
 import {
   ArrowRight,
   ArrowUpRight,
+  BarChart3,
   CheckCircle2,
   CircleDot,
   Cpu,
@@ -15,7 +17,7 @@ import {
   Zap
 } from 'lucide-react'
 import { useApp } from '../store'
-import { greeting, hostStateLabel, relativeTime, shortPath, sourceLabel } from '../lib/format'
+import { compactTokens, greeting, hostStateLabel, relativeTime, shortPath, sourceLabel } from '../lib/format'
 import { BrandMark } from '../components/BrandMark'
 
 export function Home(): React.JSX.Element {
@@ -34,6 +36,12 @@ export function Home(): React.JSX.Element {
   const updateWorkspace = useApp((state) => state.updateWorkspace)
   const refreshRuntime = useApp((state) => state.refreshRuntime)
   const installRuntime = useApp((state) => state.installRuntime)
+  const insights = useApp((state) => state.insights)
+  const loadInsights = useApp((state) => state.loadInsights)
+
+  useEffect(() => {
+    if (!insights) void loadInsights()
+  }, [insights, loadInsights])
 
   const current =
     workspaces.find((item) => item.id === host.workspaceId) ??
@@ -193,13 +201,15 @@ export function Home(): React.JSX.Element {
         </div>
         <div className="stat-card">
           <div className="stat-icon accent-mint">
-            <CheckCircle2 size={17} />
+            <BarChart3 size={17} />
           </div>
           <div className="stat-body">
-            <div className="stat-value">{ready ? '就绪' : starting ? '启动中' : '待命'}</div>
-            <div className="stat-label">会话服务</div>
+            <div className="stat-value">{insights ? compactTokens(insights.totals.totalTokens) : '—'}</div>
+            <div className="stat-label">累计 Token</div>
           </div>
-          <span className={`mini-chip ${ready ? 'ok' : ''}`}>{ready ? 'ONLINE' : 'IDLE'}</span>
+          <button className="stat-action" onClick={() => setView('insights')} title="打开会话洞察">
+            <ArrowUpRight size={15} />
+          </button>
         </div>
         <div className="stat-card">
           <div className="stat-icon accent-amber">
@@ -342,19 +352,25 @@ export function Home(): React.JSX.Element {
                 <kbd>K</kbd>
               </span>
             </div>
+            <div className="shortcut-row" onClick={() => setView('insights')}>
+              <span>会话洞察</span>
+              <span className="keys">
+                <kbd>Ctrl</kbd>
+                <kbd>3</kbd>
+              </span>
+            </div>
             <div className="shortcut-row" onClick={() => setView('prompts')}>
               <span>提示词库</span>
               <span className="keys">
                 <kbd>Ctrl</kbd>
-                <kbd>3</kbd>
+                <kbd>4</kbd>
               </span>
             </div>
             <div className="shortcut-row" onClick={() => setView('logs')}>
               <span>运行日志</span>
               <span className="keys">
                 <kbd>Ctrl</kbd>
-                <kbd>Shift</kbd>
-                <kbd>L</kbd>
+                <kbd>5</kbd>
               </span>
             </div>
             <div className="shortcut-row" onClick={() => setView('settings')}>

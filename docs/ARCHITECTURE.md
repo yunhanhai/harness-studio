@@ -62,6 +62,37 @@ Node.js 同理：自定义路径 → 便携运行时 → `C:\Program Files\nodej
 
 整个过程有阶段进度、取消和超时；失败时保留已有运行时。
 
+## 会话洞察
+
+洞察面板是只读分析层，不参与 Host 生命周期，也不接触对话正文。
+
+### 数据来源
+
+| 优先级 | 路径 | 说明 |
+| --- | --- | --- |
+| 1 | `$DSH_HOME/storages/session_projcache/sessions/*.json` | DSH 自己的会话投影缓存，含 `tokenUsage.totals`、`sessionStats`、`modelSelection`、`sessionListMetadata` |
+| 2 | `$DSH_HOME/sessions/**/session.v*.jsonl.zstd` | 回退方案，只解压首个 zstd 帧读取会话头（cwd / createdAt） |
+
+投影缓存是首选：它已经是聚合后的数字，无需解压 GB 级日志，也不会碰到消息内容。只有当某个 `$DSH_HOME` 完全没有投影缓存时，才退回日志头扫描。
+
+### 结构
+
+- `src/main/sessions.ts` — 扫描、聚合、60 秒内存缓存、按需强制刷新；
+- `src/shared/types.ts` — `InsightsData` / `SessionSummary` / `DailyBucket` / `WorkspaceBucket` / `ModelBucket`；
+- `src/renderer/src/pages/Insights.tsx` — 总览卡片、14 天趋势、模型/工作区分布、会话明细表。
+
+### 统计口径
+
+- **会话数**：所有会话目录，包含 0 回合的空会话；
+- **有内容**：`sessionListMetadata.blank === false` 的会话；
+- **每日趋势**：按会话最后活跃时间归入本地日历日，取最近 14 天；
+- **缓存命中率**：`cacheRead / (uncachedInput + cacheRead)`；
+- **花费估算**：只用设置里的单价乘以 token，不查询任何在线价格。
+
+### 隐私
+
+扫描过程只读文件名与缓存中的数值字段，不读取消息文本，也不做任何网络请求。
+
 ## 数据位置
 
 | 数据 | 默认路径 |

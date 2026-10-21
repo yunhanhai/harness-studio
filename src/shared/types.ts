@@ -1,6 +1,6 @@
 export type ThemeMode = 'system' | 'light' | 'dark'
 export type LanguageSetting = 'system' | 'zh-CN' | 'en-US'
-export type ViewId = 'home' | 'workspace' | 'prompts' | 'logs' | 'settings'
+export type ViewId = 'home' | 'workspace' | 'insights' | 'prompts' | 'logs' | 'settings'
 
 export type HostState = 'stopped' | 'starting' | 'ready' | 'stopping' | 'error'
 export type RuntimeState = 'unknown' | 'checking' | 'missing' | 'ready' | 'error'
@@ -55,6 +55,16 @@ export interface WindowBounds {
   maximized: boolean
 }
 
+export interface InsightsSettings {
+  /** Price per 1M uncached input tokens. 0 hides the cost estimate. */
+  inputPrice: number
+  /** Price per 1M output tokens. 0 hides the cost estimate. */
+  outputPrice: number
+  /** Price per 1M cached input tokens. 0 hides the cost estimate. */
+  cacheReadPrice: number
+  currency: 'CNY' | 'USD'
+}
+
 export interface Settings {
   version: number
   language: LanguageSetting
@@ -69,6 +79,7 @@ export interface Settings {
   checkUpdatesOnStart: boolean
   runtime: RuntimeSettings
   shortcuts: ShortcutSettings
+  insights: InsightsSettings
   lastWorkspaceId: string
   window: WindowBounds
 }
@@ -147,6 +158,82 @@ export interface UpdateProgress {
   total: number
 }
 
+export interface TokenBuckets {
+  uncachedInputTokens: number
+  outputTokens: number
+  cacheReadTokens: number
+  cacheWriteTokens: number
+}
+
+export interface SessionSummary {
+  id: string
+  title?: string
+  cwd: string
+  workspaceId?: string
+  workspaceName?: string
+  createdAt: number
+  lastActiveAt: number
+  messages: number
+  turns: number
+  steps: number
+  blank: boolean
+  tokens: TokenBuckets
+  llmMs: number
+  toolMs: number
+  model?: string
+  provider?: string
+  preset?: string
+  source: 'cache' | 'log'
+}
+
+export interface DailyBucket {
+  /** Local calendar day, YYYY-MM-DD. */
+  date: string
+  sessions: number
+  turns: number
+  tokens: number
+}
+
+export interface WorkspaceBucket {
+  path: string
+  name: string
+  sessions: number
+  turns: number
+  tokens: number
+}
+
+export interface ModelBucket {
+  label: string
+  sessions: number
+  turns: number
+  tokens: number
+}
+
+export interface InsightsData {
+  sessions: SessionSummary[]
+  totals: {
+    sessions: number
+    activeSessions: number
+    messages: number
+    turns: number
+    steps: number
+    tokens: TokenBuckets
+    totalTokens: number
+    cacheHitRate: number
+    llmMs: number
+    toolMs: number
+  }
+  daily: DailyBucket[]
+  byWorkspace: WorkspaceBucket[]
+  byModel: ModelBucket[]
+  scannedAt: number
+  dshHome: string
+  sessionsDir: string
+  source: 'projection-cache' | 'session-logs' | 'none'
+  costEstimate?: number
+  currency?: string
+}
+
 export interface WindowState {
   maximized: boolean
   fullscreen: boolean
@@ -160,6 +247,7 @@ export type StudioAction =
   | { type: 'restart-host' }
   | { type: 'open-settings'; section?: string }
   | { type: 'open-logs' }
+  | { type: 'open-insights' }
   | { type: 'toggle-theme' }
   | { type: 'check-updates' }
   | { type: 'show-about' }
@@ -215,6 +303,10 @@ export interface StudioApi {
     remove(id: string): Promise<PromptItem[]>
     use(id: string): Promise<PromptItem[]>
     onChange(cb: (items: PromptItem[]) => void): () => void
+  }
+  insights: {
+    scan(force?: boolean): Promise<InsightsData>
+    revealSession(id: string): Promise<boolean>
   }
   studio: {
     onAction(cb: (action: StudioAction) => void): () => void
