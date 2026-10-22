@@ -30,6 +30,7 @@ $env:ELECTRON_MIRROR = "https://github.com/electron/electron/releases/download/"
 | `npm run dev` | 启动 Electron 开发模式（含 HMR） |
 | `npm run install:local` | 构建并原地安装到本机，刷新桌面快捷方式 |
 | `npm run clean:dist` | 清理预览副本、旧安装包与 `win-unpacked` |
+| `npm run status` | 查看磁盘占用、检查是否有重复安装 |
 | `npm run typecheck` | 主进程 + 渲染进程类型检查 |
 | `npm run build` | 构建 `out/` |
 | `npm run preview:ui` | 无需 Electron 的浏览器 UI 预览 |

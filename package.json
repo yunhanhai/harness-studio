@@ -26,7 +26,8 @@
     "dist:dir": "electron-vite build && electron-builder --win --dir",
     "dist:portable": "electron-vite build && electron-builder --win portable",
     "install:local": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-local.ps1",
-    "clean:dist": "node scripts/clean-dist.mjs"
+    "clean:dist": "node scripts/clean-dist.mjs",
+    "status": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/status.ps1"
   },
   "engines": {
     "node": ">=22"
