@@ -29,3 +29,7 @@ Thumbs.db
 .gh-*.txt
 .gh-*.mjs
 .gh-*.json
+
+# 临时截图与验证产物
+.verify-*.png
+.final-*.png
