@@ -11,7 +11,7 @@
 [![Gitee release](https://img.shields.io/badge/gitee-v0.1.3-C71D23?style=flat-square)](https://gitee.com/yunhanhai/harness-studio/releases)
 [![GitHub stars](https://img.shields.io/github/stars/yunhanhai/harness-studio?style=flat-square&color=F59E0B)](https://github.com/yunhanhai/harness-studio/stargazers)
 
-[English](README.en.md) · [下载](#下载) · [架构说明](docs/ARCHITECTURE.md) · [发布指南](docs/PUBLISHING.md) · [参与贡献](CONTRIBUTING.md)
+[English](README.en.md) · [下载](#下载) · [架构说明](docs/ARCHITECTURE.md) · [发布指南](docs/PUBLISHING.md) · [参与贡献](CONTRIBUTING.md) · [开发接手](docs/HANDOFF.md)
 
 > Harness Studio 是独立的开源项目，**不是 DeepSeek 官方产品**。它复用 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的 Web 运行时与会话能力，不包含模型权重、账号或任何闭源服务。
 
@@ -239,7 +239,7 @@ npm run dist
 - 主进程负责一切特权操作；渲染进程没有 Node 权限；
 - 内嵌界面使用独立 session 分区，只信任当前 Host origin；
 - 启动 URL 带一次性令牌，日志中自动脱敏；
-- 详细设计见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
+- 详细设计见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)；想参与开发先读 [docs/HANDOFF.md](docs/HANDOFF.md)。
 
 ---
 
