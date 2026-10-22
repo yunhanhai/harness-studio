@@ -42,6 +42,27 @@ Harness Studio 是一个 Electron 外壳，不重写模型能力，也不复制 
 
 访问令牌只存在于内存和 Webview 的启动 URL 中；写入日志前会被替换为 `token=***`。
 
+### 崩溃自动恢复
+
+Host 进程**非主动**退出时，`HostManager` 会用指数退避自动重启，而不是把用户丢在错误页：
+
+| 字段 | 含义 |
+| --- | --- |
+| `HostStatus.recovery.attempt` | 当前第几次重试（从 1 开始） |
+| `HostStatus.recovery.maxAttempts` | 上限，当前为 3 |
+| `HostStatus.recovery.nextAttemptAt` | 下次重试的时间戳，驱动 UI 倒计时 |
+| `HostStatus.recovery.reason` | 崩溃原因，直接展示给用户 |
+
+退避间隔为 2s → 5s → 15s。重启成功后计数归零；三次都失败则保留错误状态不再重试。
+
+**不会触发恢复的情况**（避免误重启）：
+
+- 用户主动停止、切换工作区、退出应用（`stopping` 标志 + `recoveryCancelled`）；
+- 配置档案被占用（日志出现 `EPERM` + `cordis.yml`）：重试必然失败，直接提示用户退出其他 `dsh web`；
+- 启动时权限不足（`EPERM` / `EACCES`）。
+
+启动超时（150 秒）也纳入恢复流程：超时后先结束进程树，再按退避重试。
+
 ## 运行时检测顺序
 
 | 顺序 | 来源 | 说明 |

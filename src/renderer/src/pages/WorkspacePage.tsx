@@ -61,6 +61,19 @@ export function WorkspacePage(): React.JSX.Element {
   const current = workspaces.find((item) => item.id === host.workspaceId) ?? workspaces[0]
   const ready = host.state === 'ready' && Boolean(host.url)
   const starting = host.state === 'starting'
+  const recovery = host.recovery
+  const [recoverySeconds, setRecoverySeconds] = useState(0)
+
+  useEffect(() => {
+    if (!recovery) {
+      setRecoverySeconds(0)
+      return
+    }
+    const tick = (): void => setRecoverySeconds(Math.max(0, Math.ceil((recovery.nextAttemptAt - Date.now()) / 1000)))
+    tick()
+    const timer = setInterval(tick, 500)
+    return () => clearInterval(timer)
+  }, [recovery])
   const sorted = [...workspaces].sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.lastOpenedAt - a.lastOpenedAt)
 
   useEffect(() => {
@@ -286,8 +299,25 @@ export function WorkspacePage(): React.JSX.Element {
                 <div className="stage-error-icon">
                   <Wrench size={26} />
                 </div>
-                <h2>{host.state === 'stopping' ? '正在停止运行时…' : '运行时没有就绪'}</h2>
-                <p className="stage-error">{host.error ?? runtime?.error ?? '点击下方按钮启动本地 Harness 服务。'}</p>
+                <h2>
+                  {host.recovery
+                    ? '运行时已退出，正在自动恢复'
+                    : host.state === 'stopping'
+                      ? '正在停止运行时…'
+                      : '运行时没有就绪'}
+                </h2>
+                {host.recovery ? (
+                  <p className="stage-error">
+                    {host.recovery.reason}
+                    <br />
+                    <span className="stage-recovery">
+                      第 {host.recovery.attempt}/{host.recovery.maxAttempts} 次重试，
+                      {recoverySeconds > 0 ? `${recoverySeconds} 秒后开始` : '即将开始'}…
+                    </span>
+                  </p>
+                ) : (
+                  <p className="stage-error">{host.error ?? runtime?.error ?? '点击下方按钮启动本地 Harness 服务。'}</p>
+                )}
                 <div className="stage-log">
                   {logs.slice(-6).map((line) => (
                     <div key={line.id} className={`stage-log-line ${line.stream}`}>
