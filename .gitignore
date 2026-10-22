@@ -1,26 +1,31 @@
+# 依赖与构建产物
 node_modules/
 out/
 dist/
+.icon-build/
+.desktop-build/
+
+# 本地测试与截图产物（scripts/clean-dist.mjs 会清理）
 .preview/
+.edge-profile/
+.edge-qa/
 .dev-userdata/
 .research/
 .npm-cache/
 .electron-cache/
-.edge-profile/
-.icon-build/
-.desktop-build/
+.run-*/
+.qa-*
+
+# 日志与临时文件
 *.log
 *.tmp
 .DS_Store
 Thumbs.db
+
+# 密钥与本地配置（绝不提交）
 .env
 .env.local
-.run-test/
-
 .tools/
-.run-insights/
-.preview/
-.edge-profile/
 .gh-*.txt
 .gh-*.mjs
 .gh-*.json

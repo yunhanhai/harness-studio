@@ -24,7 +24,9 @@
     "preview:ui": "node scripts/preview-server.mjs",
     "dist": "electron-vite build && electron-builder --win",
     "dist:dir": "electron-vite build && electron-builder --win --dir",
-    "dist:portable": "electron-vite build && electron-builder --win portable"
+    "dist:portable": "electron-vite build && electron-builder --win portable",
+    "install:local": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-local.ps1",
+    "clean:dist": "node scripts/clean-dist.mjs"
   },
   "engines": {
     "node": ">=22"

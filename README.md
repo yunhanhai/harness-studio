@@ -11,7 +11,7 @@
 [![Gitee release](https://img.shields.io/badge/gitee-v0.1.4-C71D23?style=flat-square)](https://gitee.com/yunhanhai/harness-studio/releases)
 [![GitHub stars](https://img.shields.io/github/stars/yunhanhai/harness-studio?style=flat-square&color=F59E0B)](https://github.com/yunhanhai/harness-studio/stargazers)
 
-[English](README.en.md) · [下载](#下载) · [架构说明](docs/ARCHITECTURE.md) · [发布指南](docs/PUBLISHING.md) · [参与贡献](CONTRIBUTING.md) · [开发接手](docs/HANDOFF.md)
+[English](README.en.md) · [下载](#下载) · [架构说明](docs/ARCHITECTURE.md) · [发布指南](docs/PUBLISHING.md) · [参与贡献](CONTRIBUTING.md) · [开发接手](docs/HANDOFF.md) · [本地安装](docs/LOCAL-INSTALL.md)
 
 > Harness Studio 是独立的开源项目，**不是 DeepSeek 官方产品**。它复用 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的 Web 运行时与会话能力，不包含模型权重、账号或任何闭源服务。
 
@@ -181,6 +181,19 @@ Harness Studio 换了一个角度：**先让一个人每天用得顺手**。
 完整发布页：[GitHub Releases](https://github.com/yunhanhai/harness-studio/releases) · [Gitee 发行版](https://gitee.com/yunhanhai/harness-studio/releases)
 
 > 当前安装包未做代码签名，Windows SmartScreen 可能提示"未知发布者"。选择「更多信息 → 仍要运行」即可。介意的话可以自行从源码构建。
+
+### 从源码安装到本机（推荐开发者）
+
+```powershell
+npm install --ignore-scripts
+$env:ELECTRON_MIRROR = "https://npmmirror.com/mirrors/electron/"
+node node_modules/electron/install.js
+npm run install:local
+```
+
+`install:local` 会构建并**原地部署**到 `%LOCALAPPDATA%\Programs\Harness Studio`，同时创建桌面与开始菜单快捷方式。之后再改代码，重复执行这一条就能升级——旧文件会被清空覆盖，不会堆出多个副本；用户数据在 `%APPDATA%\Harness Studio`，升级不受影响。
+
+细节见 [docs/LOCAL-INSTALL.md](docs/LOCAL-INSTALL.md)。
 
 ### 首次使用
 
