@@ -13,6 +13,8 @@ const URL_PATTERN = /dsh web:\s*(https?:\/\/\S+)/
 const MAX_LOG_LINES = 4000
 const READY_TIMEOUT_MS = 150_000
 const STOP_TIMEOUT_MS = 8_000
+/** Backoff between automatic restarts after an unexpected crash. */
+const RECOVERY_DELAYS_MS = [2_000, 5_000, 15_000]
 
 function maskToken(text: string): string {
   return text.replace(/([?&]token=)[^&\s]+/g, '$1***')
@@ -93,6 +95,13 @@ export class HostManager {
   private logQueue: string[] = []
   private flushing = false
   private lifecycle: Promise<unknown> = Promise.resolve()
+  /** Options from the last successful start, reused when recovering. */
+  private lastOptions: StartHostOptions | null = null
+  /** How many automatic restarts we have attempted for the current outage. */
+  private recoveryAttempt = 0
+  private recoveryTimer: NodeJS.Timeout | null = null
+  /** Set when recovery must stop (manual stop, restart, or app quit). */
+  private recoveryCancelled = false
 
   private enqueue<T>(task: () => Promise<T>): Promise<T> {
     const run = this.lifecycle.then(task, task)
@@ -123,6 +132,20 @@ export class HostManager {
 
   clearLogs(): void {
     this.logs = []
+  }
+
+  private clearRecoveryTimer(): void {
+    if (this.recoveryTimer) {
+      clearTimeout(this.recoveryTimer)
+      this.recoveryTimer = null
+    }
+  }
+
+  /** Reset recovery bookkeeping; called on any deliberate state change. */
+  private resetRecovery(): void {
+    this.clearRecoveryTimer()
+    this.recoveryAttempt = 0
+    this.recoveryCancelled = true
   }
 
   private emitStatus(patch: Partial<HostStatus>): void {
@@ -197,13 +220,16 @@ export class HostManager {
     }
 
     this.stopping = false
+    this.lastOptions = options
+    this.recoveryCancelled = false
+    this.clearRecoveryTimer()
     this.clearLogs()
     this.status = {
       state: 'starting',
       workspaceId: options.workspaceId,
       startedAt: Date.now()
     }
-    this.emitStatus({})
+    this.emitStatus({ recovery: undefined })
 
     const logDir = logsDirectory()
     this.logFile = join(logDir, `host-${todayStamp()}.log`)
@@ -270,7 +296,7 @@ export class HostManager {
         if (stderrBuffer.trim()) this.handleOutput('err', stderrBuffer)
         if (wasStopping) {
           this.append('sys', 'Host 已停止。')
-          this.emitStatus({ state: 'stopped', url: undefined, port: undefined, pid: undefined, startedAt: undefined, error: undefined })
+          this.emitStatus({ state: 'stopped', url: undefined, port: undefined, pid: undefined, startedAt: undefined, error: undefined, recovery: undefined })
         } else {
           const locked = this.logs
             .slice(-40)
@@ -279,7 +305,16 @@ export class HostManager {
             ? 'Host 无法写入配置档案，可能被另一个 dsh 进程占用。请退出其他 dsh web 实例，或在设置 → 运行时中更换配置档案。'
             : `Host 进程意外退出（${signal ? `信号 ${signal}` : `退出码 ${code ?? '未知'}`}）。`
           this.append('sys', reason)
-          this.emitStatus({ state: 'error', error: reason, url: undefined, pid: undefined })
+          this.emitStatus({ state: 'error', error: reason, url: undefined, port: undefined, pid: undefined })
+
+          // A locked profile will stay locked on retry, so fail fast with the
+          // actionable message above instead of looping.
+          if (locked) {
+            this.append('sys', '配置档案被占用，已跳过自动重启。')
+            this.resetRecovery()
+          } else {
+            this.scheduleRecovery(reason)
+          }
         }
       })
 
@@ -289,15 +324,69 @@ export class HostManager {
         this.append('sys', error)
         this.emitStatus({ state: 'error', error })
         void this.killTree()
+        if (this.recoveryAttempt > 0) this.scheduleRecovery(error)
       }, READY_TIMEOUT_MS)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       this.append('sys', `无法启动 Host: ${message}`)
       this.emitStatus({ state: 'error', error: message })
+      // A retry that fails to even spawn should keep backing off, unless the
+      // failure is a permission problem that will not resolve by waiting.
+      const permissionDenied = /EPERM|EACCES|operation not permitted/i.test(message)
+      if (this.recoveryAttempt > 0) {
+        if (permissionDenied) {
+          this.append('sys', '权限不足，已跳过自动重启。')
+          this.resetRecovery()
+        } else {
+          this.scheduleRecovery(message)
+        }
+      }
     }
 
     void writeLogLine('host', 'info', `start requested (cwd=${cwd}, port=${port})`)
     return this.getStatus()
+  }
+
+  /**
+   * Schedule an automatic restart after an unexpected exit.
+   * Backs off 2s → 5s → 15s, then gives up and leaves the error visible.
+   */
+  private scheduleRecovery(reason: string): void {
+    const options = this.lastOptions
+    if (this.recoveryCancelled || !options) return
+
+    const attempt = this.recoveryAttempt + 1
+    if (attempt > RECOVERY_DELAYS_MS.length) {
+      this.append('sys', `自动重启已尝试 ${RECOVERY_DELAYS_MS.length} 次仍失败，已停止重试。`)
+      this.emitStatus({ recovery: undefined })
+      return
+    }
+
+    const delay = RECOVERY_DELAYS_MS[attempt - 1]
+    this.recoveryAttempt = attempt
+    this.clearRecoveryTimer()
+
+    this.emitStatus({
+      recovery: {
+        attempt,
+        maxAttempts: RECOVERY_DELAYS_MS.length,
+        nextAttemptAt: Date.now() + delay,
+        reason
+      }
+    })
+    this.append('sys', `将在 ${Math.round(delay / 1000)} 秒后自动重启（第 ${attempt}/${RECOVERY_DELAYS_MS.length} 次）。`)
+
+    this.recoveryTimer = setTimeout(() => {
+      this.recoveryTimer = null
+      if (this.recoveryCancelled || !this.lastOptions) return
+      this.append('sys', '正在自动重启 Host…')
+      void this.enqueue(async () => {
+        if (this.recoveryCancelled || !this.lastOptions) return
+        // Clear the terminal error so startInternal is allowed to run again.
+        this.status = { ...this.status, state: 'stopped', error: undefined, recovery: undefined }
+        await this.startInternal(this.lastOptions)
+      })
+    }, delay)
   }
 
   private handleOutput(stream: 'out' | 'err', rawLine: string): void {
@@ -315,7 +404,11 @@ export class HostManager {
         port = undefined
       }
       this.append('sys', `Host 已就绪，监听端口 ${port ?? '未知'}。`)
-      this.emitStatus({ state: 'ready', url, port, error: undefined })
+      if (this.recoveryAttempt > 0) {
+        this.append('sys', `自动重启成功（第 ${this.recoveryAttempt} 次尝试）。`)
+        this.recoveryAttempt = 0
+      }
+      this.emitStatus({ state: 'ready', url, port, error: undefined, recovery: undefined })
     }
   }
 
@@ -331,8 +424,10 @@ export class HostManager {
   }
 
   private async stopInternal(): Promise<HostStatus> {
+    // A deliberate stop always wins over a pending automatic restart.
+    this.resetRecovery()
     if (!this.child) {
-      this.status = { state: 'stopped', startedAt: undefined, url: undefined, port: undefined }
+      this.status = { state: 'stopped', startedAt: undefined, url: undefined, port: undefined, error: undefined, recovery: undefined }
       this.emitStatus({})
       return this.getStatus()
     }
@@ -382,6 +477,7 @@ export class HostManager {
 
   /** Synchronous best-effort termination used on app quit. */
   killNow(): void {
+    this.resetRecovery()
     this.stopping = true
     if (this.child?.pid) {
       if (process.platform === 'win32') {

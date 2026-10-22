@@ -136,6 +136,19 @@ export interface HostStatus {
   workspaceId?: string
   startedAt?: number
   error?: string
+  /** Present while an automatic restart is pending or running. */
+  recovery?: HostRecovery
+}
+
+export interface HostRecovery {
+  /** 1-based attempt number currently scheduled. */
+  attempt: number
+  /** Upper bound before we give up and stay in the error state. */
+  maxAttempts: number
+  /** Epoch ms when the next attempt fires (drives the UI countdown). */
+  nextAttemptAt: number
+  /** Why the host went down, shown to the user. */
+  reason: string
 }
 
 export type LogStream = 'out' | 'err' | 'sys'

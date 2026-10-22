@@ -3693,3 +3693,11 @@ html[data-motion='reduce'] *::after {
   background: rgba(91, 140, 255, 0.14);
   color: #eef0f7;
 }
+
+/* ---------- host auto-recovery ---------- */
+.stage-recovery {
+  display: inline-block;
+  margin-top: 6px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
