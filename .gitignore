@@ -33,3 +33,7 @@ Thumbs.db
 # 临时截图与验证产物
 .verify-*.png
 .final-*.png
+
+# 临时验证截图
+.*-check.png
+.direct.png

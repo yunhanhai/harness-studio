@@ -71,6 +71,9 @@ $targets = @(
 foreach ($lnk in $targets) {
   $shortcut = $shell.CreateShortcut($lnk)
   $shortcut.TargetPath = $exePath
+  # Jump straight into the chat view once the host is ready, so a double-click
+  # lands on the conversation instead of the launcher page.
+  $shortcut.Arguments = '--open-workspace'
   $shortcut.WorkingDirectory = $installDir
   $shortcut.IconLocation = "$exePath,0"
   $shortcut.Description = 'Harness Studio - DeepSeek Harness desktop workspace'

@@ -881,6 +881,20 @@ async function bootstrap(): Promise<void> {
       const workspace = pickWorkspace()
       if (workspace) void startHost(workspace.id)
     }
+
+    // `--open-workspace` jumps straight into the chat view, which is what the
+    // desktop shortcut and shell aliases use for everyday use.
+    if (process.argv.includes('--open-workspace') && pickWorkspace()) {
+      const openWhenReady = setInterval(() => {
+        if (!mainWindow || mainWindow.isDestroyed()) return
+        const snapshot = host.getStatus()
+        if (snapshot.state === 'ready') {
+          clearInterval(openWhenReady)
+          sendAction({ type: 'open-workspace' })
+        }
+      }, 800)
+      setTimeout(() => clearInterval(openWhenReady), 90_000)
+    }
   })()
 
   if (settings().checkUpdatesOnStart) {
