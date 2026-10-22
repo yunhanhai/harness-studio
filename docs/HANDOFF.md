@@ -6,16 +6,16 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 版本 | `0.1.3` |
-| 本地 HEAD | `4490098`（`git log --oneline -1` 确认） |
+| 版本 | `0.1.4` |
+| 本地 HEAD | `git log --oneline -1` 确认 |
 | 工作区 | 干净，无未提交改动 |
-| 已发布 | v0.1.0 / v0.1.1 / v0.1.2 / v0.1.3，GitHub 与 Gitee 双平台齐全 |
+| 已发布 | v0.1.0 / v0.1.1 / v0.1.2 / v0.1.3 / v0.1.4，GitHub 与 Gitee 双平台齐全 |
 | 远端 | `origin` → GitHub，`gitee` → Gitee |
 | 平台 | Windows 10/11 x64（主要目标） |
 
-> **注意**：GitHub 上的 commit SHA 与本地不同（例如本地 `4490098` 对应 GitHub `6388786`）。这是通过 Git Data API 推送时 GitHub 重新规范化提交对象导致的。**tree SHA 是一致的**，所以文件内容逐字节相同。校验同步是否成功时，比较 `git rev-parse HEAD^{tree}` 与远端 commit 的 tree，不要比较 commit SHA。
+> **注意**：GitHub 上的 commit SHA 与本地不同（通过 Git Data API 推送时 GitHub 会重新规范化提交对象）。**tree SHA 是一致的**，所以文件内容逐字节相同。校验同步时比较 `git rev-parse HEAD^{tree}` 与远端 commit 的 tree，不要比较 commit SHA。
 
-四个版本的功能：
+五个版本的功能：
 
 | 版本 | 内容 |
 | --- | --- |
@@ -23,6 +23,7 @@
 | v0.1.1 | 会话洞察（token / 缓存命中 / 成本估算 / 14 天趋势 / 模型与工作区分布） |
 | v0.1.2 | 全局快速提问 `Ctrl+Alt+Space` |
 | v0.1.3 | 快速提问历史记录（持久化 + 一键回填） |
+| v0.1.4 | Host 崩溃自动恢复（指数退避 + 界面倒计时） |
 
 ## 在新对话中如何继续
 
@@ -160,17 +161,7 @@ node scripts/app-shot.mjs .run-test/shot.png "@.run-test/expr.js"
 
 按我评估的性价比排序：
 
-### 1. Host 崩溃自动恢复（推荐，改动小）
-
-现状：`src/main/runtime/host.ts` 里 `child.on('exit')` 检测到非主动退出后，直接进入 `error` 状态，不会重试。用户得手动点重启。
-
-方向：加指数退避自动重启（比如最多 3 次，间隔 2s / 5s / 15s），状态里暴露 `recovery` 字段让 UI 显示倒计时。注意：
-
-- 主动 `stop()` 不能触发重试（已有 `stopping` 标志可复用）；
-- EPERM 锁 profile 的情况重试没意义，应直接失败并给出现在那条友好提示；
-- `HostStatus` 在 `src/shared/types.ts`，加字段后 UI（`Workspace.tsx`、`Home.tsx`）也要跟上。
-
-### 2. 多标签工作区（改动大，路线图里呼声最高）
+### 1. 多标签工作区（改动大，路线图里呼声最高）
 
 现状：单个 `HostManager` 实例，切换工作区靠 `host.restart()` 杀旧起新，已打开的会话会中断。
 
@@ -185,6 +176,10 @@ node scripts/app-shot.mjs .run-test/shot.png "@.run-test/expr.js"
 - **macOS 构建**：`.github/workflows/release.yml` 加 `macos-latest` job 即可，但本环境无法验收，需要真机测试。
 - **插件市场入口**：只需在 UI 里做一个跳转入口，工作量最小但价值也有限。
 - **界面英文化**：`README.en.md` 已有，界面文案目前全是中文硬编码，需要引入 i18n 层。
+
+### 已完成（v0.1.4）
+
+Host 崩溃自动恢复已实现并验证：非主动退出后按 2s → 5s → 15s 退避重启，最多 3 次；`HostStatus.recovery` 暴露倒计时供 UI 展示；主动停止 / profile 被占用 / 权限不足时不重试。详见 `docs/ARCHITECTURE.md` 的「崩溃自动恢复」一节。
 
 ## 不要做的事
 
