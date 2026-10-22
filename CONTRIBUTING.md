@@ -28,12 +28,16 @@ $env:ELECTRON_MIRROR = "https://github.com/electron/electron/releases/download/"
 | 命令 | 作用 |
 | --- | --- |
 | `npm run dev` | 启动 Electron 开发模式（含 HMR） |
+| `npm run install:local` | 构建并原地安装到本机，刷新桌面快捷方式 |
+| `npm run clean:dist` | 清理预览副本、旧安装包与 `win-unpacked` |
 | `npm run typecheck` | 主进程 + 渲染进程类型检查 |
 | `npm run build` | 构建 `out/` |
 | `npm run preview:ui` | 无需 Electron 的浏览器 UI 预览 |
 | `npm run icons` | 从 `resources/brand.svg` 重新生成图标 |
 | `npm run dist` | Windows 安装包 + 便携版 |
 | `npm run dist:dir` | 仅生成 `dist/win-unpacked` |
+
+改完代码想在桌面上直接用新版本，跑 `npm run install:local` 即可原地升级，不会堆积目录。详见 [docs/LOCAL-INSTALL.md](docs/LOCAL-INSTALL.md)。
 
 浏览器预览的 mock 数据在 `scripts/preview-mock.mjs`，适合改样式和截图：
 
