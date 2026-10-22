@@ -7,11 +7,13 @@
 | 项目 | 值 |
 | --- | --- |
 | 版本 | `0.1.3` |
-| 本地 HEAD | `66d1515` |
+| 本地 HEAD | `4490098`（`git log --oneline -1` 确认） |
 | 工作区 | 干净，无未提交改动 |
 | 已发布 | v0.1.0 / v0.1.1 / v0.1.2 / v0.1.3，GitHub 与 Gitee 双平台齐全 |
 | 远端 | `origin` → GitHub，`gitee` → Gitee |
 | 平台 | Windows 10/11 x64（主要目标） |
+
+> **注意**：GitHub 上的 commit SHA 与本地不同（例如本地 `4490098` 对应 GitHub `6388786`）。这是通过 Git Data API 推送时 GitHub 重新规范化提交对象导致的。**tree SHA 是一致的**，所以文件内容逐字节相同。校验同步是否成功时，比较 `git rev-parse HEAD^{tree}` 与远端 commit 的 tree，不要比较 commit SHA。
 
 四个版本的功能：
 
@@ -21,6 +23,48 @@
 | v0.1.1 | 会话洞察（token / 缓存命中 / 成本估算 / 14 天趋势 / 模型与工作区分布） |
 | v0.1.2 | 全局快速提问 `Ctrl+Alt+Space` |
 | v0.1.3 | 快速提问历史记录（持久化 + 一键回填） |
+
+## 在新对话中如何继续
+
+工作区就在 `D:\Program Files\develop\vscode\her`（以 `pwd` 为准），新对话里直接说清楚下面三件事即可：
+
+**1. 指明工作目录**
+
+> 在 `D:\Program Files\develop\vscode\her` 继续开发 Harness Studio，先读 `docs/HANDOFF.md`。
+
+**2. 说明要做什么**
+
+从下面挑一个，或者提你自己的需求：
+
+- "实现 Host 崩溃自动恢复，按 HANDOFF 里第 1 项的建议做"
+- "实现多标签工作区，按 HANDOFF 里第 2 项做"
+- "给 xxx 页面加 yyy 功能"
+
+**3. 需要时提供凭据**
+
+推送 GitHub 需要一个有 `repo` + `workflow` 权限的 PAT；推 Gitee 需要一个 `projects` 权限的私有令牌。这两个都不在仓库里（`.gitignore` 已屏蔽相关文件），需要你在新对话里重新提供。
+
+### 新对话的第一条消息可以直接复制
+
+```text
+在 D:\Program Files\develop\vscode\her 继续开发 Harness Studio。
+先读 docs/HANDOFF.md 和 docs/ARCHITECTURE.md 了解现状，
+然后实现 Host 崩溃自动恢复。完成后跑 typecheck 与 build，
+提交、推送 GitHub 与 Gitee，并按 docs/PUBLISHING.md 发布新版本。
+我的 GitHub PAT 是 xxx，Gitee 令牌是 xxx。
+```
+
+如果这条消息里包含令牌，注意它们会留在对话记录里，事后应当轮换。
+
+### 不需要重新做的事
+
+- 仓库已建好、双平台已发布，不用重新初始化；
+- 依赖已装好（`node_modules` 在），除非你要升级依赖；
+- `dist/` 里有 v0.1.3 的构建产物，但发布新版本时会重新生成。
+
+### 如果新对话里 `npm install` 报 EPERM
+
+说明换了环境。按"环境注意事项"里的方式拆开装，或者直接 `npm run typecheck`——只要 `node_modules` 还在就不用重装。
 
 ## 最快上手
 
