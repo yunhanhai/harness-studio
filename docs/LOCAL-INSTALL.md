@@ -7,6 +7,29 @@
 | 安装使用 | 日常使用，双击桌面图标 | `npm run install:local` |
 | 开发调试 | 改代码、看热更新 | `npm run dev` |
 
+## 随时检查有没有堆积
+
+```powershell
+npm run status
+```
+
+只读检查，输出类似：
+
+```text
+  Program (replaced on upgrade)      324.8 MB
+  User data (kept on upgrade)         25.4 MB
+  Installers in dist                 198.1 MB
+  Total: 548.3 MB
+
+Duplicate check
+  [ok] exactly one program folder
+  [ok] 2 shortcuts (Desktop + Start Menu)
+  [ok] installed exe present (version 0.1.4.0)
+  [ok] no staging copy left behind
+```
+
+出现 `[warn]` 就说明有多余副本或临时产物，按提示跑 `npm run clean:dist` 或 `npm run install:local` 即可。
+
 ## 一次装好，之后原地升级
 
 ```powershell
@@ -18,7 +41,10 @@ npm run install:local
 1. 构建应用（`dist:dir`）；
 2. 结束正在运行的实例；
 3. **清空并覆盖** `%LOCALAPPDATA%\Programs\Harness Studio`，旧版本文件不会残留；
-4. 重建桌面与开始菜单快捷方式（始终指向同一路径，不会堆出多个图标）。
+4. 重建桌面与开始菜单快捷方式（始终指向同一路径，不会堆出多个图标）；
+5. 删除 `dist\win-unpacked` 这个 325 MB 的临时产物。
+
+快捷方式带 `--open-workspace` 参数，双击后等 Host 就绪会**直接进入会话界面**，跳过启动台。
 
 只想重新部署、不重新构建：
 
