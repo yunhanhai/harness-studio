@@ -75,6 +75,17 @@ export interface InsightsSettings {
   currency: 'CNY' | 'USD'
 }
 
+export interface ComposerSettings {
+  /**
+   * Ask before a message leaves the composer. The embedded UI sends on the spot,
+   * which makes an accidental Enter — or a queued message riding along with it —
+   * unrecoverable.
+   */
+  confirmSend: boolean
+  /** Also confirm when the send would submit the queued messages too. */
+  confirmQueued: boolean
+}
+
 export interface Settings {
   version: number
   language: LanguageSetting
@@ -91,6 +102,7 @@ export interface Settings {
   shortcuts: ShortcutSettings
   insights: InsightsSettings
   quickAsk: QuickAskSettings
+  composer: ComposerSettings
   lastWorkspaceId: string
   window: WindowBounds
 }
@@ -149,6 +161,50 @@ export interface HostRecovery {
   nextAttemptAt: number
   /** Why the host went down, shown to the user. */
   reason: string
+}
+
+/** One DeepSeek Harness process found on this machine. */
+export interface DshProcess {
+  pid: number
+  parentPid: number
+  /** Profile the process opened, read from its command line when possible. */
+  profile: string
+  mode: 'web' | 'cli' | 'other'
+  commandLine: string
+  /** True for the host process this Studio instance spawned. */
+  self: boolean
+}
+
+export interface DshProcessReport {
+  processes: DshProcess[]
+  scannedAt: number
+  /** How many processes the scan could enumerate at all. */
+  totalProcesses: number
+  /**
+   * True when the scan could not even see itself, which means the process list
+   * is a partial view (restricted token) and "none found" must not be trusted.
+   */
+  restricted: boolean
+  /** Set when the process scan itself failed (e.g. WMI is unavailable). */
+  error?: string
+}
+
+export interface DshKillResult {
+  cancelled: boolean
+  killed: number[]
+  failed: number[]
+  report: DshProcessReport
+}
+
+/**
+ * A notice mirrored out of the embedded Harness UI. The official toast is not
+ * selectable and disappears on its own, so Studio re-renders it as its own
+ * dismissible toast.
+ */
+export interface GuestNotice {
+  text: string
+  /** DSH error code when the text maps to a known failure. */
+  code?: string
 }
 
 export type LogStream = 'out' | 'err' | 'sys'
@@ -318,6 +374,10 @@ export interface StudioApi {
     onStatus(cb: (status: HostStatus) => void): () => void
     onLog(cb: (line: LogLine) => void): () => void
     openLogsFolder(): Promise<void>
+    /** Every DSH process on this machine, so the user can spot a profile or session conflict. */
+    instances(): Promise<DshProcessReport>
+    /** Ask for confirmation, then end the given processes. */
+    killInstances(pids: number[]): Promise<DshKillResult>
   }
   workspaces: {
     list(): Promise<Workspace[]>
@@ -351,7 +411,15 @@ export interface StudioApi {
   }
   studio: {
     onAction(cb: (action: StudioAction) => void): () => void
-    onToast(cb: (payload: { message: string; kind?: 'info' | 'success' | 'error' }) => void): () => void
+    onToast(
+      cb: (payload: {
+        message: string
+        kind?: 'info' | 'success' | 'error'
+        sticky?: boolean
+        code?: string
+        action?: 'kill-other-dsh'
+      }) => void
+    ): () => void
     runAction(action: StudioAction): void
     closePalette(): void
     hidePalette(): void

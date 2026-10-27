@@ -1,6 +1,6 @@
 {
   "name": "harness-studio",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Harness Studio — a focused, feature-rich desktop workspace for DeepSeek Harness.",
   "main": "./out/main/index.js",
   "author": {
@@ -16,15 +16,15 @@
   "scripts": {
     "dev": "electron-vite dev",
     "start": "electron-vite preview",
-    "build": "electron-vite build",
+    "build": "electron-vite build && node scripts/check-preload.mjs",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "icons": "node scripts/generate-icons.mjs",
     "preview:ui": "node scripts/preview-server.mjs",
-    "dist": "electron-vite build && electron-builder --win",
-    "dist:dir": "electron-vite build && electron-builder --win --dir",
-    "dist:portable": "electron-vite build && electron-builder --win portable",
+    "dist": "electron-vite build && node scripts/check-preload.mjs && electron-builder --win",
+    "dist:dir": "electron-vite build && node scripts/check-preload.mjs && electron-builder --win --dir",
+    "dist:portable": "electron-vite build && node scripts/check-preload.mjs && electron-builder --win portable",
     "install:local": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-local.ps1",
     "clean:dist": "node scripts/clean-dist.mjs",
     "status": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/status.ps1"

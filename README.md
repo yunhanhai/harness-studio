@@ -8,7 +8,7 @@
 ![status](https://img.shields.io/badge/status-beta-F59E0B?style=flat-square)
 
 [![GitHub release](https://img.shields.io/github/v/release/yunhanhai/harness-studio?style=flat-square&color=5B8CFF)](https://github.com/yunhanhai/harness-studio/releases)
-[![Gitee release](https://img.shields.io/badge/gitee-v0.1.4-C71D23?style=flat-square)](https://gitee.com/yunhanhai/harness-studio/releases)
+[![Gitee release](https://img.shields.io/badge/gitee-v0.1.5-C71D23?style=flat-square)](https://gitee.com/yunhanhai/harness-studio/releases)
 [![GitHub stars](https://img.shields.io/github/stars/yunhanhai/harness-studio?style=flat-square&color=F59E0B)](https://github.com/yunhanhai/harness-studio/stargazers)
 
 [English](README.en.md) · [下载](#下载) · [架构说明](docs/ARCHITECTURE.md) · [发布指南](docs/PUBLISHING.md) · [参与贡献](CONTRIBUTING.md) · [开发接手](docs/HANDOFF.md) · [本地安装](docs/LOCAL-INSTALL.md)
@@ -46,7 +46,7 @@ Harness Studio 换了一个角度：**先让一个人每天用得顺手**。
 | --- | --- | --- |
 | 获取方式 | 源码构建 | Setup 安装包 / 免安装便携版 |
 | 运行时 | 随包内置、专用 profile | 自动检测本机 `dsh`，或一键安装便携运行时 |
-| 多项目 | 单工作区 | 多工作区，一键切换并重启独立 Host |
+| 多项目 | 单工作区 | 多工作区，切换时复用 Host，避免重复启动 |
 | 提示词 | 无 | 内置 6 条 + 自建、标签、使用次数 |
 | 日志 | 写文件，需自己找 | 实时面板、筛选、复制、令牌脱敏 |
 | 会话洞察 | 无 | token / 缓存命中 / 成本估算 / 14 天趋势 / 按模型与工作区分布 |
@@ -71,13 +71,18 @@ Harness Studio 换了一个角度：**先让一个人每天用得顺手**。
 
 ### 多工作区
 
-每个工作区绑定一个项目目录。切换工作时，Studio 会：
-
-1. 停止当前 `dsh web` 子进程；
-2. 用新目录作为 `cwd` 重新启动；
-3. 把新的带令牌 URL 交给内嵌界面。
+每个工作区绑定一个项目目录，切换时**复用同一个 Host 进程**（DSH 本身是多工作区服务，每个会话自带工作目录），不会重新启动本地服务，因此切换是瞬时的。
 
 会话、凭据仍由 `~/.dsh` 管理，与 `dsh` CLI 共用。配置档案默认使用独立的 `studio`（首次启动从 `web` 复制），避免和正在运行的 `dsh web` 争用同一个 profile。
+
+### 发送确认
+
+内嵌界面按下回车就立即发送，误触无法撤回，而且队列里的待发消息会被一并提交。开启后 Studio 会在发送前问一次：
+
+- 「每次发送前确认」——拦截回车与发送按钮，确认后才真正发出；
+- 「发送会带上排队消息时额外提醒」——队列非空时，确认框明确写出「会连同 N 条排队消息一起提交」（默认开启）。
+
+两个开关都在「设置 → 通用 → 发送确认」。拿不到确认答复时一律放行，不会因为外壳异常堵住发送。
 
 ### 一键运行时
 
@@ -145,6 +150,17 @@ Harness Studio 换了一个角度：**先让一个人每天用得顺手**。
 
 最近提问记录保存在 `%APPDATA%\Harness Studio\quickask-recent.json`，只存文本，可随时删除。
 
+### 占用诊断
+
+Harness 对「一个 profile 只能被一个进程写入」和「一个会话只能被一个写入者持有」做了跨进程加锁。当你在别处还开着 `dsh web`、桌面端或另一个 Studio 时，发消息会得到「当前会话已被占用」。
+
+Studio 让这条提示真正可操作：
+
+- 官方那条瞬态提示既不能选中也没有关闭按钮，3 秒后自己消失。Studio 把它镜像成自己的提示：**可选中、可复制、有关闭按钮、不会自己跑掉**，并隐藏原始的那一份；
+- 提示里直接带「结束其他 DSH 进程」按钮，点开就是本机的 `dsh` 进程列表；
+- 「设置 → 运行时 → 其他 DSH 进程」列出每个进程的 PID、profile、Web/命令行模式与完整命令行，Studio 自己的那条会高亮且不可误杀；结束前会弹确认框；
+- 如果当前权限只能看到机器的一部分进程（Low 完整性令牌），面板会明确显示琥珀色警告，而不是错误地告诉你「没有其他 DSH 进程」。
+
 ### 桌面原生能力
 
 - 托盘菜单：打开、切换工作区、重启运行时、日志、设置、退出
@@ -172,8 +188,8 @@ Harness Studio 换了一个角度：**先让一个人每天用得顺手**。
 
 | 平台 | 安装版 | 便携版 |
 | --- | --- | --- |
-| **GitHub**（全球） | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.4/Harness-Studio-0.1.4-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.4/Harness-Studio-0.1.4-x64-Portable.exe) |
-| **Gitee**（国内更快） | [Setup.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.4/Harness-Studio-0.1.4-x64-Setup.exe) | [Portable.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.4/Harness-Studio-0.1.4-x64-Portable.exe) |
+| **GitHub**（全球） | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.5/Harness-Studio-0.1.5-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.5/Harness-Studio-0.1.5-x64-Portable.exe) |
+| **Gitee**（国内更快） | [Setup.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.5/Harness-Studio-0.1.5-x64-Setup.exe) | [Portable.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.5/Harness-Studio-0.1.5-x64-Portable.exe) |
 
 - **Setup.exe**（99 MB）— 安装版，创建开始菜单与桌面快捷方式，支持自动更新
 - **Portable.exe**（99 MB）— 免安装，数据写在可执行文件旁的 `HarnessStudioData/`

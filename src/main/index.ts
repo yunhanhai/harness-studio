@@ -31,6 +31,7 @@ import type {
   Workspace
 } from '@shared/types'
 import { log, logError, logsDirectory } from './logger'
+import { listDshProcesses, killProcesses } from './instances'
 import { createStores, deepMerge, loadStores, mergeSettings, type Stores } from './store'
 import { detectRuntime, resolveDshHome } from './runtime/detect'
 import { HostManager } from './runtime/host'
@@ -292,6 +293,19 @@ async function startHost(workspaceId?: string): Promise<HostStatus> {
     tempDir: join(app.getPath('userData'), 'tmp')
   }
 
+  // Booting the host costs ~10s in the launcher itself (measured: the cost is
+  // independent of plugin count and not network-bound). Restarting it just to
+  // change the default working directory would make every workspace switch pay
+  // that again, so keep the process and tell it about the new workspace instead
+  // when the runtime, home and profile are unchanged.
+  if (current.state === 'ready' && host.canAdoptWorkspace(hostOptions)) {
+    const adopted = host.adoptWorkspace(hostOptions)
+    if (adopted) {
+      log('host', `adopted existing host for workspace ${workspace.id}`)
+      return host.getStatus()
+    }
+  }
+
   if (current.state === 'ready' || current.state === 'starting') {
     return host.restart(hostOptions)
   }
@@ -323,7 +337,9 @@ function applySettings(next: Settings): void {
     guestContents.send(IPC.guestTheme, {
       theme: next.theme,
       accent: next.accent,
-      reduceMotion: next.reduceMotion
+      reduceMotion: next.reduceMotion,
+      confirmSend: next.composer.confirmSend,
+      confirmQueued: next.composer.confirmQueued
     })
   }
   if (failures.length > 0) {
@@ -429,11 +445,30 @@ function configureWebviewSecurity(window: BrowserWindow): void {
       if (isHttp(url)) void shell.openExternal(url)
     })
     contents.on('before-input-event', (event, input) => handleShortcut(event, input))
+    contents.on('ipc-message', (_ipcEvent, channel, payload) => {
+      if (channel !== IPC.guestNotice) return
+      const notice = payload as { text?: unknown; code?: unknown } | undefined
+      const text = typeof notice?.text === 'string' ? notice.text.trim() : ''
+      if (!text) return
+      const code = typeof notice?.code === 'string' ? notice.code : undefined
+      // Harness only uses this channel for transient failure toasts; surface the
+      // text where it can be selected, copied, and closed.
+      sendMain(IPC.toast, {
+        message: text,
+        kind: 'error',
+        sticky: true,
+        code,
+        action: code === 'session/writer-held' || code === 'profile/locked' ? 'kill-other-dsh' : undefined
+      })
+    })
     contents.on('dom-ready', () => {
+      const current = settings()
       contents.send(IPC.guestTheme, {
-        theme: settings().theme,
-        accent: settings().accent,
-        reduceMotion: settings().reduceMotion
+        theme: current.theme,
+        accent: current.accent,
+        reduceMotion: current.reduceMotion,
+        confirmSend: current.composer.confirmSend,
+        confirmQueued: current.composer.confirmQueued
       })
     })
   })
@@ -479,8 +514,57 @@ function handleShortcut(event: Electron.Event, input: Electron.Input): void {
   }
 }
 
-function registerIpc(): void {
-  const handle = (channel: string, fn: (...args: never[]) => unknown): void => {
+/**
+ * Ask the user before a composer send goes out.
+ *
+ * The embedded UI submits immediately, so this is the only place a stray Enter —
+ * or queued messages riding along with an unrelated send — can still be stopped.
+ * A native modal is used rather than an in-page prompt because the caller is a
+ * capture-phase event handler that must answer synchronously.
+ */
+function confirmSend(request: { kind?: string; preview?: string; queued?: number }): boolean {
+  const composer = settings().composer
+  const queued = Number(request.queued) || 0
+  const isQueuedSend = request.kind === 'queued'
+
+  // `confirmQueued` guards the narrower case: this send will also flush the queue.
+  if (isQueuedSend) {
+    if (!composer.confirmQueued) return true
+  } else if (!composer.confirmSend) {
+    return true
+  }
+
+  const preview = (request.preview ?? '').trim()
+  const window = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined
+
+  const detailLines: string[] = []
+  if (preview) detailLines.push(preview.length > 160 ? `${preview.slice(0, 160)}…` : preview)
+  if (queued > 0) {
+    detailLines.push('')
+    detailLines.push(
+      `注意：队列里还有 ${queued} 条消息，本次发送会连同它们一起提交。` +
+        '如果不想一起发出，先取消，在队列面板里删除或插话发送。'
+    )
+  }
+
+  const options: Electron.MessageBoxSyncOptions = {
+    type: queued > 0 ? 'warning' : 'question',
+    title: '确认发送',
+    message: queued > 0 ? `发送这条消息，并连同 ${queued} 条排队消息？` : '发送这条消息？',
+    detail: detailLines.join('\n'),
+    buttons: ['发送', '取消'],
+    defaultId: 0,
+    cancelId: 1,
+    noLink: true
+  }
+
+  const choice = window
+    ? dialog.showMessageBoxSync(window, options)
+    : dialog.showMessageBoxSync(options)
+  return choice === 0
+}
+
+function registerIpc(): void {  const handle = (channel: string, fn: (...args: never[]) => unknown): void => {
     ipcMain.handle(channel, async (event, ...args) => {
       assertTrusted(event)
       return fn(...(args as never[]))
@@ -492,6 +576,25 @@ function registerIpc(): void {
       fn(...(args as never[]))
     })
   }
+  /**
+   * Synchronous ask-and-answer used by the composer guard. The webview has to
+   * decide inside a capture-phase keydown/click handler, where a promise cannot
+   * hold the event back, so the reply must arrive before the handler returns.
+   */
+  ipcMain.on(IPC.guestConfirmSend, (event, payload: unknown) => {
+    const request = payload as { kind?: string; preview?: string; queued?: number } | undefined
+    // A settings query has to stay answerable even before a window exists.
+    if (request?.kind === 'settings') {
+      const current = settings().composer
+      event.returnValue = { confirmSend: current.confirmSend, confirmQueued: current.confirmQueued }
+      return
+    }
+    if (mainWindow?.webContents !== event.sender && guestContents !== event.sender) {
+      event.returnValue = true
+      return
+    }
+    event.returnValue = confirmSend(request ?? {})
+  })
 
   handle(IPC.appInfo, () => buildAppInfo())
   on(IPC.appMinimize, () => mainWindow?.minimize())
@@ -560,6 +663,50 @@ function registerIpc(): void {
   handle(IPC.hostLogs, () => host.getLogs())
   handle(IPC.hostClearLogs, () => host.clearLogs())
   handle(IPC.hostOpenLogsFolder, () => shell.openPath(logsDirectory()))
+  handle(IPC.hostInstances, () => listDshProcesses(host.getStatus().pid ? [host.getStatus().pid!] : []))
+  handle(IPC.hostKillInstances, async (pids: number[]) => {
+    const report = await listDshProcesses(host.getStatus().pid ? [host.getStatus().pid!] : [])
+    const requested = new Set(pids.filter((pid) => Number.isInteger(pid) && pid > 0))
+    const targets = report.processes.filter((item) => requested.has(item.pid))
+    if (targets.length === 0) {
+      return { cancelled: false, killed: [], failed: [], report }
+    }
+    const selfHost = targets.find((item) => item.self)
+    if (selfHost) {
+      sendMain(IPC.toast, { message: '不能在这里结束 Studio 自己的运行时，请使用「重启运行时」。', kind: 'error' })
+      return { cancelled: true, killed: [], failed: [], report }
+    }
+    const detail = targets
+      .map((item) => `· PID ${item.pid}（profile: ${item.profile}，${item.mode === 'web' ? 'web' : item.mode === 'cli' ? '命令行' : '其他'}）`)
+      .join('\n')
+    const choice = dialog.showMessageBoxSync(mainWindow!, {
+      type: 'warning',
+      title: '结束其他 DSH 进程',
+      message: `将强制结束 ${targets.length} 个 DeepSeek Harness 进程。`,
+      detail: `${detail}\n\n这些进程里正在运行的会话会被中断。若只是想避免「会话已被占用」，结束后回到会话界面重试即可。`,
+      buttons: ['结束这些进程', '取消'],
+      defaultId: 1,
+      cancelId: 1,
+      noLink: true
+    })
+    if (choice !== 0) return { cancelled: true, killed: [], failed: [], report }
+
+    const { killed, failed } = await killProcesses(targets.map((item) => item.pid))
+    log('instances', `killed ${killed.join(',') || '-'} failed ${failed.join(',') || '-'}`)
+    if (killed.length > 0) {
+      sendMain(IPC.toast, {
+        message: `已结束 ${killed.length} 个 DSH 进程，回到会话界面重试即可。`,
+        kind: 'success'
+      })
+    }
+    if (failed.length > 0) {
+      sendMain(IPC.toast, {
+        message: `${failed.length} 个进程无法结束（可能权限不足或已退出）。`,
+        kind: 'error'
+      })
+    }
+    return { cancelled: false, killed, failed, report: await listDshProcesses(host.getStatus().pid ? [host.getStatus().pid!] : []) }
+  })
 
   handle(IPC.workspacesList, () => workspaceList())
   handle(IPC.workspacesAdd, async (pathArg?: string) => {
@@ -853,6 +1000,20 @@ async function bootstrap(): Promise<void> {
   applyTheme(settings().theme)
   applySettings(settings())
 
+  // Booting the host is the slowest part of a cold start (~10s, dominated by the
+  // launcher itself). Start the runtime probe as soon as the shell exists — in
+  // parallel with the renderer loading and with update checks — so the wait
+  // overlaps the window coming up instead of following it.
+  const warmup = (async () => {
+    runtimeInfo = await detectRuntime(settings(), app.getPath('userData'))
+    log('runtime', `detected: ${runtimeInfo.state} ${runtimeInfo.version ?? ''} ${runtimeInfo.cliPath ?? ''}`)
+    if (settings().runtime.autoStart && runtimeInfo.state === 'ready') {
+      const workspace = pickWorkspace()
+      if (workspace) await startHost(workspace.id)
+    }
+    return runtimeInfo
+  })()
+
   app.on('second-instance', () => showMain())
   app.on('activate', () => showMain())
 
@@ -875,12 +1036,9 @@ async function bootstrap(): Promise<void> {
   }
 
   void (async () => {
-    runtimeInfo = await detectRuntime(settings(), app.getPath('userData'))
-    log('runtime', `detected: ${runtimeInfo.state} ${runtimeInfo.version ?? ''} ${runtimeInfo.cliPath ?? ''}`)
-    if (settings().runtime.autoStart && runtimeInfo.state === 'ready') {
-      const workspace = pickWorkspace()
-      if (workspace) void startHost(workspace.id)
-    }
+    // The runtime probe and autostart already run as `warmup`; just wait for it
+    // rather than detecting a second time.
+    await warmup
 
     // `--open-workspace` jumps straight into the chat view, which is what the
     // desktop shortcut and shell aliases use for everyday use.
@@ -892,7 +1050,7 @@ async function bootstrap(): Promise<void> {
           clearInterval(openWhenReady)
           sendAction({ type: 'open-workspace' })
         }
-      }, 800)
+      }, 350)
       setTimeout(() => clearInterval(openWhenReady), 90_000)
     }
   })()

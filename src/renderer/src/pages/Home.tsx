@@ -227,7 +227,7 @@ export function Home(): React.JSX.Element {
         <div className="section-head">
           <div>
             <h2>最近的工作区</h2>
-            <p>每个工作区拥有独立的目录、会话上下文与运行时实例。</p>
+            <p>每个工作区绑定自己的目录与会话上下文，切换时复用同一个 Host。</p>
           </div>
           <button className="button button-ghost button-small" onClick={() => void addWorkspace()}>
             <FolderPlus size={14} />

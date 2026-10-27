@@ -30,6 +30,7 @@ const SETTINGS = {
   },
   insights: { inputPrice: 4, outputPrice: 16, cacheReadPrice: 0.4, currency: 'CNY' },
   quickAsk: { autoSend: true, revealAfterSend: true, recentLimit: 6 },
+  composer: { confirmSend: false, confirmQueued: true },
   lastWorkspaceId: 'ws-1',
   window: { width: 1360, height: 860, maximized: false }
 }
@@ -47,9 +48,9 @@ export function buildMockScript() {
   const now = Date.now()
   const settings = JSON.parse(JSON.stringify(SETTINGS))
   const workspaces = [
-    { id: 'ws-1', name: 'her', path: 'D:\\Program Files\\develop\\vscode\\her', color: '#5B8CFF', pinned: true, createdAt: now - 86400000 * 12, lastOpenedAt: now - 1000 * 60 * 8 },
-    { id: 'ws-2', name: 'aurora-web', path: 'D:\\workspace\\aurora-web', color: '#22D3EE', pinned: false, createdAt: now - 86400000 * 30, lastOpenedAt: now - 1000 * 60 * 60 * 5 },
-    { id: 'ws-3', name: 'docs-site', path: 'D:\\workspace\\docs-site', color: '#8B5CF6', pinned: false, createdAt: now - 86400000 * 3, lastOpenedAt: now - 86400000 * 2 }
+    { id: 'ws-1', name: 'harness-studio', path: 'D:\\Projects\\harness-studio', color: '#5B8CFF', pinned: true, createdAt: now - 86400000 * 12, lastOpenedAt: now - 1000 * 60 * 8 },
+    { id: 'ws-2', name: 'atlas-web', path: 'D:\\Projects\\atlas-web', color: '#22D3EE', pinned: false, createdAt: now - 86400000 * 30, lastOpenedAt: now - 1000 * 60 * 60 * 5 },
+    { id: 'ws-3', name: 'docs-portal', path: 'D:\\Projects\\docs-portal', color: '#8B5CF6', pinned: false, createdAt: now - 86400000 * 3, lastOpenedAt: now - 86400000 * 2 }
   ]
   const prompts = PROMPT_BODIES.map(([title, content, tags], index) => ({
     id: `builtin-${index}`,
@@ -66,7 +67,7 @@ export function buildMockScript() {
     'loaded 42 plugins from bundle layer',
     'webserver listening on 127.0.0.1:62812',
     'connection ready: launch token accepted',
-    'workspace mounted at D:\\Program Files\\develop\\vscode\\her',
+    'workspace mounted at D:\\Projects\\harness-studio',
     'agent preset: standard',
     'session projection cache warm',
     'awaiting first message'
@@ -90,12 +91,12 @@ export function buildMockScript() {
   const host = { state: 'ready', url: 'http://127.0.0.1:62812/?token=preview', port: 62812, pid: 4412, workspaceId: 'ws-1', startedAt: now - 30000 }
 
   const SESSION_SEEDS = [
-    ['打造专属 DeepSeek Harness Desktop', 'D:\\Program Files\\develop\\vscode\\her', 'ultrarouter / deepseek-v4.1-flash', 7, 451, 581223, 379793, 143815680, now - 1000 * 60 * 6],
-    ['你看下一开始的任务规划，按', 'D:\\Program Files\\develop\\HIS-BankBridge', 'ds-bq / deepseek-v4.1-flash-free', 1, 8, 66980, 3604, 189248, now - 86400000 * 2],
-    ['重构启动台的运行时卡片', 'D:\\Program Files\\develop\\vscode\\her', 'deepseek-official / deepseek-flash', 5, 132, 214880, 96420, 27184064, now - 86400000 * 1],
-    ['补齐 webview 安全边界测试', 'D:\\workspace\\aurora-web', 'deepseek-official / deepseek-flash', 4, 96, 158420, 71230, 18432128, now - 86400000 * 3],
-    ['整理发布到 GitHub 与 Gitee 的流程', 'D:\\workspace\\docs-site', 'deepseek-official / deepseek-flash', 3, 58, 96420, 38210, 6857216, now - 86400000 * 4],
-    ['排查 EPERM: cordis.yml 写入失败', 'D:\\Program Files\\develop\\vscode\\her', 'ultrarouter / deepseek-v4.1-flash', 2, 34, 51220, 21030, 3145728, now - 86400000 * 5]
+    ['打造专属 DeepSeek Harness Desktop', 'D:\\Projects\\harness-studio', 'deepseek-official / deepseek-flash', 7, 451, 581223, 379793, 143815680, now - 1000 * 60 * 6],
+    ['梳理公开版本的发布清单', 'D:\\Projects\\release-notes', 'deepseek-official / deepseek-flash', 1, 8, 66980, 3604, 189248, now - 86400000 * 2],
+    ['重构工作区切换状态机', 'D:\\Projects\\harness-studio', 'deepseek-official / deepseek-reasoner', 5, 132, 214880, 96420, 27184064, now - 86400000 * 1],
+    ['补齐 webview 安全边界测试', 'D:\\Projects\\atlas-web', 'deepseek-official / deepseek-flash', 4, 96, 158420, 71230, 18432128, now - 86400000 * 3],
+    ['整理 GitHub 与 Gitee 发布流程', 'D:\\Projects\\docs-portal', 'deepseek-official / deepseek-flash', 3, 58, 96420, 38210, 6857216, now - 86400000 * 4],
+    ['排查配置文件写入冲突', 'D:\\Projects\\harness-studio', 'custom-provider / deepseek-flash', 2, 34, 51220, 21030, 3145728, now - 86400000 * 5]
   ]
   const sessions = SESSION_SEEDS.map((seed, index) => {
     const [title, cwd, model, turns, steps, uncached, output, cacheRead, lastActiveAt] = seed
@@ -204,9 +205,8 @@ export function buildMockScript() {
     costEstimate: 3.42,
     currency: 'CNY'
   }
-  const info = {
-    name: 'Harness Studio',
-    version: '0.1.0',
+  const info = {    name: 'Harness Studio',
+    version: '0.1.5',
     platform: 'win32',
     arch: 'x64',
     electron: '44.9.3',
@@ -217,12 +217,47 @@ export function buildMockScript() {
     logsDir: 'C:\\Users\\you\\AppData\\Roaming\\Harness Studio\\logs',
     dshHome: 'C:\\Users\\you\\.dsh',
     isPackaged: false,
-    repoUrl: 'https://github.com/REPLACE_ME/harness-studio',
-    giteeUrl: 'https://gitee.com/REPLACE_ME/harness-studio'
+    repoUrl: 'https://github.com/yunhanhai/harness-studio',
+    giteeUrl: 'https://gitee.com/yunhanhai/harness-studio'
   }
   const mock = { info, settings, workspaces, prompts, logs, runtime, host, insights }
+  const instances = {
+    scannedAt: now,
+    totalProcesses: 348,
+    restricted: false,
+    processes: [
+      {
+        pid: 4412,
+        parentPid: 3300,
+        profile: 'studio',
+        mode: 'web',
+        self: true,
+        commandLine:
+          '"C:\\Program Files\\nodejs\\node.exe" C:\\Users\\you\\AppData\\Roaming\\npm\\node_modules\\@deepseek-ai\\dsh\\lib\\bin.js --profile studio --no-open --port 0'
+      },
+      {
+        pid: 23204,
+        parentPid: 21620,
+        profile: 'web',
+        mode: 'web',
+        self: false,
+        commandLine:
+          '"C:\\Program Files\\nodejs\\node.exe" "C:\\Users\\you\\AppData\\Roaming\\npm\\node_modules\\@deepseek-ai\\dsh\\lib\\bin.js" web --no-open'
+      },
+      {
+        pid: 18720,
+        parentPid: 17400,
+        profile: 'tui',
+        mode: 'cli',
+        self: false,
+        commandLine:
+          '"C:\\Program Files\\nodejs\\node.exe" C:\\Users\\you\\AppData\\Roaming\\npm\\node_modules\\@deepseek-ai\\dsh\\lib\\bin.js --profile tui'
+      }
+    ]
+  }
   return `
 const MOCK = ${JSON.stringify(mock)};
+const MOCK_INSTANCES = ${JSON.stringify(instances)};
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const listeners = () => () => {};
 const merge = (base, patch) => {
@@ -278,7 +313,14 @@ window.studio = {
     status: async () => clone(MOCK.host),
     logs: async () => clone(MOCK.logs),
     clearLogs: async () => {},
-    onStatus: listeners, onLog: listeners, openLogsFolder: async () => {}
+    onStatus: listeners, onLog: listeners, openLogsFolder: async () => {},
+    instances: async () => clone(MOCK_INSTANCES),
+    killInstances: async (pids) => ({
+      cancelled: false,
+      killed: pids,
+      failed: [],
+      report: { ...clone(MOCK_INSTANCES), processes: MOCK_INSTANCES.processes.filter((item) => !pids.includes(item.pid)) }
+    })
   },
   workspaces: {
     list: async () => clone(MOCK.workspaces),
@@ -314,11 +356,30 @@ window.studio = {
     onOpen: listeners, onResult: listeners
   },
   studio: {
-    onAction: listeners, onToast: listeners, runAction: () => {},
+    onAction: listeners,
+    // Append ?toast=session to the preview URL to reproduce the mirrored
+    // "session already in use" notice without Electron.
+    onToast: (cb) => {
+      if (params.get('toast') === 'session') {
+        setTimeout(
+          () =>
+            cb({
+              message:
+                '当前会话已被占用，可能是其他正在运行的 DSH 导致的（如其他 dsh web、桌面端），请退出其他正在运行的 DSH 后重试。',
+              kind: 'error',
+              sticky: true,
+              action: 'kill-other-dsh'
+            }),
+          600
+        )
+      }
+      return () => {}
+    },
+    runAction: () => {},
     closePalette: () => {}, hidePalette: () => {}, showPalette: () => {},
     toast: () => {},
-    checkUpdates: async () => ({ status: 'latest', version: '0.1.0', message: '已经是最新版本。' }),
-    downloadUpdate: async () => ({ status: 'latest', version: '0.1.0', message: '已经是最新版本。' }),
+    checkUpdates: async () => ({ status: 'latest', version: '0.1.5', message: '已经是最新版本。' }),
+    downloadUpdate: async () => ({ status: 'latest', version: '0.1.5', message: '已经是最新版本。' }),
     installUpdate: () => {},
     onUpdateProgress: listeners,
     openReleases: async () => {}, quit: () => {}, relaunch: () => {}

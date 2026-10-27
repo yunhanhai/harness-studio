@@ -42,6 +42,10 @@ export function mergeSettings(defaults: Settings, input: unknown): Settings {
   merged.insights.cacheReadPrice = clampPrice(merged.insights.cacheReadPrice)
   if (merged.insights.currency !== 'USD') merged.insights.currency = 'CNY'
   merged.quickAsk.recentLimit = Math.min(20, Math.max(1, Math.floor(Number(merged.quickAsk.recentLimit) || 6)))
+  if (typeof merged.composer?.confirmSend !== 'boolean') merged.composer.confirmSend = defaults.composer.confirmSend
+  if (typeof merged.composer?.confirmQueued !== 'boolean') {
+    merged.composer.confirmQueued = defaults.composer.confirmQueued
+  }
   return merged
 }
 

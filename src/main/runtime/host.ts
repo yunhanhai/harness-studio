@@ -39,6 +39,20 @@ export interface StartHostOptions {
   tempDir?: string
 }
 
+/** The parts of the environment that a running host cannot be talked out of. */
+function processIdentity(options: StartHostOptions): string {
+  const { runtime, settings } = options
+  return JSON.stringify([
+    runtime.nodePath ?? '',
+    runtime.cliPath ?? '',
+    runtime.dshHome || process.env.DSH_HOME || join(homedir(), '.dsh'),
+    settings.runtime.profile || 'studio',
+    settings.runtime.port || 0,
+    settings.runtime.extraArgs,
+    settings.runtime.env
+  ])
+}
+
 /**
  * Studio avoids fighting the user's running `dsh web` over the same profile.
  * On first use it clones the `web` profile config into an isolated profile.
@@ -191,6 +205,39 @@ export class HostManager {
     return this.enqueue(() => this.startInternal(options))
   }
 
+  /**
+   * Whether a running host can serve a different workspace without being
+   * restarted.
+   *
+   * DSH is a multi-workspace service: workspaces are registered with
+   * `ctx.workspaceRegistry` and every session carries its own `cwd`, so the
+   * process's own working directory is only a default. Restarting it to change
+   * that default would make each workspace switch pay the full boot cost
+   * (~10s, measured to be launcher-bound rather than plugin- or network-bound).
+   *
+   * The host cannot be talked out of its runtime, home, profile, port or extra
+   * arguments, so any change there still requires a real restart.
+   */
+  canAdoptWorkspace(options: StartHostOptions): boolean {
+    if (this.status.state !== 'ready' || !this.child) return false
+    if (!this.lastOptions) return false
+    if (!options.workspacePath?.trim()) return false
+    return processIdentity(this.lastOptions) === processIdentity(options)
+  }
+
+  /**
+   * Point the status at another workspace without touching the process. The
+   * embedded UI opens the workspace through the host's own workspace registry,
+   * so all this has to do is record which workspace the shell is showing.
+   */
+  adoptWorkspace(options: StartHostOptions): boolean {
+    if (!this.canAdoptWorkspace(options)) return false
+    this.lastOptions = options
+    this.emitStatus({ workspaceId: options.workspaceId, error: undefined })
+    this.append('sys', `切换工作区（复用运行中的 Host）: ${options.workspacePath}`)
+    return true
+  }
+
   private async startInternal(options: StartHostOptions): Promise<HostStatus> {
     const { runtime, settings } = options
     if (this.status.state === 'ready' || this.status.state === 'starting') return this.getStatus()
@@ -302,7 +349,7 @@ export class HostManager {
             .slice(-40)
             .some((line) => line.text.includes('EPERM') && line.text.includes('cordis.yml'))
           const reason = locked
-            ? 'Host 无法写入配置档案，可能被另一个 dsh 进程占用。请退出其他 dsh web 实例，或在设置 → 运行时中更换配置档案。'
+            ? 'Host 无法写入配置档案，已被另一个 DSH 进程占用。可在「设置 → 运行时 → 其他 DSH 进程」里看清是哪个进程并结束它，或更换配置档案后重试。'
             : `Host 进程意外退出（${signal ? `信号 ${signal}` : `退出码 ${code ?? '未知'}`}）。`
           this.append('sys', reason)
           this.emitStatus({ state: 'error', error: reason, url: undefined, port: undefined, pid: undefined })

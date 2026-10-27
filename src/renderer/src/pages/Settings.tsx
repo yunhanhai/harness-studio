@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
+  AlertTriangle,
   ArrowUpRight,
   BarChart3,
   Check,
@@ -113,6 +114,11 @@ export function SettingsPage(): React.JSX.Element {
   const installRuntime = useApp((state) => state.installRuntime)
   const cancelInstall = useApp((state) => state.cancelInstall)
   const toast = useApp((state) => state.toast)
+  const instances = useApp((state) => state.instances)
+  const instancesLoading = useApp((state) => state.instancesLoading)
+  const scanInstances = useApp((state) => state.scanInstances)
+  const killInstances = useApp((state) => state.killInstances)
+  const killOtherDsh = useApp((state) => state.killOtherDsh)
 
   const [runtimeDraft, setRuntimeDraft] = useState<RuntimeSettings | null>(settings?.runtime ?? null)
   const [insightsDraft, setInsightsDraft] = useState<InsightsSettings | null>(settings?.insights ?? null)
@@ -138,14 +144,20 @@ export function SettingsPage(): React.JSX.Element {
 
   useEffect(() => window.studio.studio.onUpdateProgress((value) => setProgress(value.percent)), [])
 
+  // Show the process list without an extra click: a profile/session conflict is
+  // the reason most people open this section in the first place.
+  const activeSection = (section as SectionId) || 'general'
+  useEffect(() => {
+    if (activeSection === 'runtime' && !instances && !instancesLoading) void scanInstances()
+  }, [activeSection, instances, instancesLoading, scanInstances])
+
   if (!settings || !info) {
     return <div className="page" />
   }
 
   const active = (section as SectionId) || 'general'
 
-  const saveRuntimeDraft = async (): Promise<void> => {
-    if (!runtimeDraft) return
+  const saveRuntimeDraft = async (): Promise<void> => {    if (!runtimeDraft) return
     await saveSettings({ runtime: runtimeDraft })
     toast('运行时设置已保存', 'success')
   }
@@ -315,6 +327,32 @@ export function SettingsPage(): React.JSX.Element {
                       })
                     }
                   />
+                </Row>
+              </Card>
+
+              <Card
+                title="发送确认"
+                desc="内嵌界面按下回车就会立即发送，误触无法撤回。这里可以让 Studio 在发送前先问你一次。"
+              >
+                <Row title="每次发送前确认" desc="拦截回车与发送按钮，弹窗确认后才真正发出。">
+                  <Toggle
+                    checked={settings.composer.confirmSend}
+                    onChange={(value) => void saveSettings({ composer: { ...settings.composer, confirmSend: value } })}
+                  />
+                </Row>
+                <Row
+                  title="发送会带上排队消息时额外提醒"
+                  desc="队列里有待发消息时，本次发送会把它们一起提交；开启后会在确认框里明确指出条数。"
+                >
+                  <Toggle
+                    checked={settings.composer.confirmQueued}
+                    onChange={(value) => void saveSettings({ composer: { ...settings.composer, confirmQueued: value } })}
+                  />
+                </Row>
+                <Row title="说明" stacked>
+                  <div className="setting-desc">
+                    拦截发生在内嵌界面内部（webview preload），依赖官方输入框结构；如果上游改版导致拦截失效，发送会退回原先的「直接发送」行为。
+                  </div>
                 </Row>
               </Card>
             </>
@@ -622,6 +660,90 @@ export function SettingsPage(): React.JSX.Element {
                     保存运行时设置
                   </button>
                 </div>
+              </Card>
+
+              <Card
+                title="其他 DSH 进程"
+                desc="Harness 同一时间只允许一个进程写入某个 profile 或某个会话。出现「会话已被占用」或 profile 写入失败（EPERM）时，在这里看清是谁占着，并一键结束。"
+              >
+                <Row
+                  title="扫描本机"
+                  desc={
+                    instances?.error
+                      ? `扫描失败：${instances.error}`
+                      : instances
+                        ? `上次扫描：${new Date(instances.scannedAt).toLocaleTimeString('zh-CN', { hour12: false })} · 可见 ${instances.totalProcesses} 个进程`
+                        : '尚未扫描'
+                  }
+                >
+                  <button
+                    className="button button-secondary button-small"
+                    disabled={instancesLoading}
+                    onClick={() => void scanInstances()}
+                  >
+                    <RefreshCw size={14} className={instancesLoading ? 'spin' : undefined} />
+                    {instancesLoading ? '扫描中…' : '扫描'}
+                  </button>
+                </Row>
+                {instances?.restricted ? (
+                  <div className="instance-warning">
+                    <AlertTriangle size={14} />
+                    <span>
+                      当前权限下只能看到本机的一部分进程，因此「没找到」并不代表真的没有。请用任务管理器确认，或手动退出其他 dsh web /
+                      桌面端后重试。
+                    </span>
+                  </div>
+                ) : null}
+                {instances && instances.processes.length > 0 ? (
+                  <ul className="instance-list">
+                    {instances.processes.map((item) => (
+                      <li key={item.pid} className={`instance-row ${item.self ? 'is-self' : ''}`}>
+                        <span className={`instance-dot ${item.self ? 'self' : ''}`} />
+                        <div className="instance-copy">
+                          <span className="instance-title">
+                            PID {item.pid}
+                            <span className="instance-badge">profile: {item.profile}</span>
+                            <span className="instance-badge">
+                              {item.mode === 'web' ? 'Web 服务' : item.mode === 'cli' ? '命令行' : '其他'}
+                            </span>
+                            {item.self ? <span className="instance-badge is-self">Studio 自己的运行时</span> : null}
+                          </span>
+                          <span className="instance-command" title={item.commandLine}>
+                            {item.commandLine}
+                          </span>
+                        </div>
+                        <button
+                          className="button button-ghost button-small"
+                          disabled={item.self}
+                          title={item.self ? '请用「重启运行时」' : '结束这个进程及其子进程'}
+                          onClick={() => void killInstances([item.pid])}
+                        >
+                          结束
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <Row title="结果">
+                    <span className="setting-desc">
+                      {instances
+                        ? instances.restricted
+                          ? '没有可用的结果。'
+                          : '没有发现其他 DSH 进程。'
+                        : '点击「扫描」查看正在运行的 DSH 进程。'}
+                    </span>
+                  </Row>
+                )}
+                {instances && instances.processes.some((item) => !item.self) ? (
+                  <div className="settings-save-row">
+                    <button
+                      className="button button-primary button-small"
+                      onClick={() => void killOtherDsh()}
+                    >
+                      结束所有其他 DSH 进程
+                    </button>
+                  </div>
+                ) : null}
               </Card>
 
               <Card title="下载镜像" desc="网络受限时，可以替换为其他 npm / Node.js 镜像。">

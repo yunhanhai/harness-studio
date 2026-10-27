@@ -6,6 +6,7 @@ import {
   ChevronDown,
   FolderOpen,
   FolderPlus,
+  ListTree,
   Loader2,
   Maximize2,
   Minimize2,
@@ -47,6 +48,8 @@ export function WorkspacePage(): React.JSX.Element {
   const stopHost = useApp((state) => state.stopHost)
   const restartHost = useApp((state) => state.restartHost)
   const setView = useApp((state) => state.setView)
+  const setSettingsSection = useApp((state) => state.setSettingsSection)
+  const scanInstances = useApp((state) => state.scanInstances)
   const installRuntime = useApp((state) => state.installRuntime)
   const logs = useApp((state) => state.logs)
 
@@ -154,7 +157,7 @@ export function WorkspacePage(): React.JSX.Element {
           </div>
           <h1>选择一个项目，开始 Harness 会话</h1>
           <p>
-            每个工作区都绑定自己的目录与上下文。Studio 会在你切换项目时重启本地运行时，并为每个项目保留独立的会话历史。
+            每个工作区都绑定自己的目录与上下文。Studio 复用同一个本地 Host，切换项目时不必重新启动服务，并为每个项目保留独立的会话历史。
           </p>
           <div className="onboarding-points">
             <div>
@@ -329,6 +332,18 @@ export function WorkspacePage(): React.JSX.Element {
                   <button className="button button-primary" onClick={() => void startHost(current.id)}>
                     <Play size={15} />
                     启动运行时
+                  </button>
+                  <button
+                    className="button button-secondary"
+                    onClick={() => {
+                      void scanInstances()
+                      setView('settings')
+                      setSettingsSection('runtime')
+                    }}
+                    title="查看本机正在运行的 DSH 进程，必要时结束占用的那个"
+                  >
+                    <ListTree size={14} />
+                    查看其他 DSH 进程
                   </button>
                   {runtime?.state !== 'ready' ? (
                     <button className="button button-secondary" onClick={() => void installRuntime()}>
