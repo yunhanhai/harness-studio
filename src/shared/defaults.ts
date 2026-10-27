@@ -52,6 +52,10 @@ export const DEFAULT_SETTINGS: Settings = {
     revealAfterSend: true,
     recentLimit: 6
   },
+  composer: {
+    confirmSend: false,
+    confirmQueued: true
+  },
   lastWorkspaceId: '',
   window: {
     width: 1360,

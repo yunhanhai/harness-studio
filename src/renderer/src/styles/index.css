@@ -2479,10 +2479,10 @@ select.input {
 }
 .toast {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 9px;
   min-width: 240px;
-  max-width: 380px;
+  max-width: 460px;
   padding: 10px 11px;
   border: 1px solid var(--border-strong);
   border-radius: 11px;
@@ -2493,11 +2493,46 @@ select.input {
   pointer-events: auto;
   animation: toast-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
+/* Mirrored Harness notices can be long; let the user read, select and copy them. */
+.toast-message {
+  flex: 1;
+  min-width: 0;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.toast-body {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+}
+.toast.is-sticky {
+  border-color: color-mix(in srgb, var(--red) 42%, var(--border-strong));
+  background: color-mix(in srgb, var(--bg-soft) 92%, var(--red));
+}
+.toast-action {
+  align-self: flex-start;
+  padding: 3px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 7px;
+  background: var(--accent-soft);
+  color: color-mix(in srgb, var(--accent) 88%, var(--text));
+  font-size: 11px;
+  font-weight: 550;
+}
+.toast-action:hover {
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+}
 :root[data-theme='light'] .toast {
   background: #fff;
 }
 .toast-icon {
   flex: none;
+  margin-top: 1px;
 }
 .toast-success .toast-icon {
   color: var(--green);
@@ -2508,11 +2543,9 @@ select.input {
 .toast-info .toast-icon {
   color: var(--accent);
 }
-.toast-message {
-  flex: 1;
-}
 .toast-close {
   display: grid;
+  flex: none;
   place-items: center;
   width: 20px;
   height: 20px;
@@ -2524,6 +2557,97 @@ select.input {
 .toast-close:hover {
   background: var(--surface-2);
   color: var(--text);
+}
+
+/* ---------- DSH instances (settings → runtime) ---------- */
+.instance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.instance-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+}
+.instance-row.is-self {
+  border-color: color-mix(in srgb, var(--accent) 26%, var(--border));
+  background: var(--accent-soft);
+}
+.instance-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 99px;
+  background: var(--amber);
+}
+.instance-dot.self {
+  background: var(--accent);
+}
+.instance-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+.instance-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.instance-badge {
+  padding: 1px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  color: var(--muted);
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 9.5px;
+  font-weight: 500;
+}
+.instance-badge.is-self {
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  color: color-mix(in srgb, var(--accent) 85%, var(--text));
+}
+.instance-command {
+  overflow: hidden;
+  color: var(--muted);
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 9.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.instance-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--amber) 34%, var(--border));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--amber) 9%, transparent);
+  color: color-mix(in srgb, var(--amber) 42%, var(--text));
+  font-size: 11px;
+  line-height: 1.65;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.instance-warning svg {
+  flex: none;
+  margin-top: 2px;
 }
 
 /* ---------- splash ---------- */

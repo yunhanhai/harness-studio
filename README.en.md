@@ -23,7 +23,7 @@ Harness Studio takes a different angle: **make one developer's daily loop feel f
 | --- | --- | --- |
 | Distribution | build from source | Setup installer / portable exe |
 | Runtime | bundled signed runtime | detects your `dsh`, or installs a portable runtime |
-| Projects | single workspace | multiple workspaces, switch and restart the host |
+| Projects | single workspace | multiple workspaces, switch without restarting the host |
 | Prompts | — | 6 built-ins + your own, tags, usage counts |
 | Logs | files on disk | live panel, filters, copy, token redaction |
 | Session insights | — | tokens, cache hit rate, cost estimate, 14-day trend, per-model and per-workspace breakdown |

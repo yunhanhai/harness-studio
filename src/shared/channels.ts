@@ -31,6 +31,8 @@ export const IPC = {
   hostStatusChanged: 'host:status-changed',
   hostLogLine: 'host:log-line',
   hostOpenLogsFolder: 'host:open-logs-folder',
+  hostInstances: 'host:instances',
+  hostKillInstances: 'host:kill-instances',
 
   workspacesList: 'workspaces:list',
   workspacesAdd: 'workspaces:add',
@@ -79,5 +81,8 @@ export const IPC = {
 
   guestPalette: 'guest:palette',
   guestTheme: 'guest:theme',
-  guestShortcut: 'guest:shortcut'
+  guestShortcut: 'guest:shortcut',
+  guestNotice: 'guest:notice',
+  guestConfirmSend: 'guest:confirm-send',
+  guestReveal: 'guest:reveal'
 } as const

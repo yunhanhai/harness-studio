@@ -46,7 +46,9 @@ const api: StudioApi = {
     clearLogs: () => invoke(IPC.hostClearLogs),
     onStatus: (cb) => subscribe(IPC.hostStatusChanged, cb),
     onLog: (cb) => subscribe(IPC.hostLogLine, cb),
-    openLogsFolder: () => invoke(IPC.hostOpenLogsFolder)
+    openLogsFolder: () => invoke(IPC.hostOpenLogsFolder),
+    instances: () => invoke(IPC.hostInstances),
+    killInstances: (pids) => invoke(IPC.hostKillInstances, pids)
   },
   workspaces: {
     list: () => invoke(IPC.workspacesList),

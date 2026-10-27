@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type {
   AppInfo,
+  DshProcessReport,
   HostStatus,
   InsightsData,
   InstallProgress,
@@ -18,6 +19,10 @@ export interface ToastItem {
   id: number
   message: string
   kind: 'info' | 'success' | 'error'
+  /** Sticky toasts stay until dismissed, so long error text can be read or copied. */
+  sticky?: boolean
+  /** Optional one-click recovery action. */
+  action?: { label: string; run: () => void }
 }
 
 interface AppState {
@@ -35,6 +40,9 @@ interface AppState {
   install: InstallProgress | null
   installing: boolean
   toasts: ToastItem[]
+  /** Other DeepSeek Harness processes on this machine. */
+  instances: DshProcessReport | null
+  instancesLoading: boolean
   view: ViewId
   focusMode: boolean
   settingsSection: string
@@ -43,6 +51,7 @@ interface AppState {
   setFocusMode: (value: boolean) => void
   setSettingsSection: (section: string) => void
   toast: (message: string, kind?: ToastItem['kind']) => void
+  stickyToast: (message: string, kind?: ToastItem['kind'], action?: ToastItem['action']) => void
   dismissToast: (id: number) => void
   saveSettings: (patch: Partial<Settings>) => Promise<void>
   resetSettings: () => Promise<void>
@@ -62,6 +71,9 @@ interface AppState {
   deletePrompt: (id: string) => Promise<void>
   usePrompt: (item: PromptItem) => Promise<void>
   clearLogs: () => Promise<void>
+  scanInstances: () => Promise<void>
+  killInstances: (pids: number[]) => Promise<void>
+  killOtherDsh: () => Promise<void>
   handleAction: (action: StudioAction) => void
 }
 
@@ -94,6 +106,8 @@ export const useApp = create<AppState>((set, get) => ({
   install: null,
   installing: false,
   toasts: [],
+  instances: null,
+  instancesLoading: false,
   view: 'home',
   focusMode: false,
   settingsSection: 'general',
@@ -142,7 +156,17 @@ export const useApp = create<AppState>((set, get) => ({
       set({ install: progress, installing: progress.phase !== 'done' && progress.phase !== 'error' })
     })
     api.studio.onAction((action) => get().handleAction(action))
-    api.studio.onToast((payload) => get().toast(payload.message, payload.kind ?? 'info'))
+    api.studio.onToast((payload) => {
+      if (payload.sticky) {
+        const action =
+          payload.action === 'kill-other-dsh'
+            ? { label: '结束其他 DSH 进程', run: () => void get().killOtherDsh() }
+            : undefined
+        get().stickyToast(payload.message, payload.kind ?? 'error', action)
+      } else {
+        get().toast(payload.message, payload.kind ?? 'info')
+      }
+    })
 
     void api.runtime.detect().then((runtime) => set({ runtime }))
   },
@@ -157,6 +181,16 @@ export const useApp = create<AppState>((set, get) => ({
     setTimeout(() => get().dismissToast(id), kind === 'error' ? 6500 : 3800)
   },
   dismissToast: (id) => set((state) => ({ toasts: state.toasts.filter((item) => item.id !== id) })),
+
+  /** A toast that waits for the user: long errors and mirrored Harness notices. */
+  stickyToast: (message, kind = 'error', action) => {
+    // Harness can repeat the same failure on every send attempt; one copy is
+    // enough, otherwise the toast stack fills with identical text.
+    const existing = get().toasts.find((item) => item.sticky && item.message === message)
+    if (existing) return
+    const id = ++toastSeq
+    set((state) => ({ toasts: [...state.toasts.slice(-3), { id, message, kind, sticky: true, action }] }))
+  },
 
   saveSettings: async (patch) => {
     const current = get().settings
@@ -286,6 +320,39 @@ export const useApp = create<AppState>((set, get) => ({
   clearLogs: async () => {
     await window.studio.host.clearLogs()
     set({ logs: [] })
+  },
+
+  scanInstances: async () => {
+    if (get().instancesLoading) return
+    set({ instancesLoading: true })
+    try {
+      const report = await window.studio.host.instances()
+      set({ instances: report, instancesLoading: false })
+    } catch (error) {
+      set({ instancesLoading: false })
+      get().toast(error instanceof Error ? error.message : String(error), 'error')
+    }
+  },
+  killInstances: async (pids) => {
+    const result = await window.studio.host.killInstances(pids)
+    set({ instances: result.report })
+  },
+  killOtherDsh: async () => {
+    const report = await window.studio.host.instances()
+    set({ instances: report })
+    if (report.restricted) {
+      get().stickyToast(
+        '无法枚举本机进程（Studio 当前权限受限），不能确认是哪个进程占用了会话。请手动退出其他 dsh web 或桌面端，或在「设置 → 运行时」更换配置档案。',
+        'error'
+      )
+      return
+    }
+    const targets = report.processes.filter((item) => !item.self)
+    if (targets.length === 0) {
+      get().toast('没有发现其他正在运行的 DSH 进程', 'info')
+      return
+    }
+    await get().killInstances(targets.map((item) => item.pid))
   },
 
   handleAction: (action) => {
