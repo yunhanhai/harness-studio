@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
@@ -21,26 +21,21 @@ import {
 import { useApp } from '../store'
 import { hostStateLabel, shortPath } from '../lib/format'
 import { BrandMark } from '../components/BrandMark'
+import { TabStrip } from '../components/TabStrip'
+import { HarnessPane } from './HarnessPane'
+import type { PaneState, WebviewElement } from './HarnessPane'
 
-interface WebviewElement extends HTMLElement {
-  src: string
-  reload(): void
-  goBack(): void
-  goForward(): void
-  canGoBack(): boolean
-  canGoForward(): boolean
-  getURL(): string
-  getZoomFactor(): number
-  setZoomFactor(factor: number): void
-  openDevTools(): void
-  isDevToolsOpened(): boolean
-}
+const INITIAL_PANE: PaneState = { loading: true, failed: false, canBack: false, canForward: false }
 
 export function WorkspacePage(): React.JSX.Element {
   const host = useApp((state) => state.host)
   const runtime = useApp((state) => state.runtime)
   const workspaces = useApp((state) => state.workspaces)
   const focusMode = useApp((state) => state.focusMode)
+  const onScreen = useApp((state) => state.view === 'workspace')
+  const tabs = useApp((state) => state.tabs)
+  const activeTabId = useApp((state) => state.activeTabId)
+  const activeGuestId = useApp((state) => state.tabs.find((tab) => tab.id === state.activeTabId)?.guestId)
   const setFocusMode = useApp((state) => state.setFocusMode)
   const addWorkspace = useApp((state) => state.addWorkspace)
   const openWorkspace = useApp((state) => state.openWorkspace)
@@ -53,19 +48,18 @@ export function WorkspacePage(): React.JSX.Element {
   const installRuntime = useApp((state) => state.installRuntime)
   const logs = useApp((state) => state.logs)
 
-  const webviewRef = useRef<WebviewElement | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [failed, setFailed] = useState(false)
+  /** Webview elements by tab id, so the toolbar can drive the tab in front. */
+  const framesRef = useRef(new Map<string, WebviewElement>())
+  const [panes, setPanes] = useState<Record<string, PaneState>>({})
   const [zoom, setZoom] = useState(1)
   const [elapsed, setElapsed] = useState(0)
-  const [canBack, setCanBack] = useState(false)
-  const [canForward, setCanForward] = useState(false)
 
   const current = workspaces.find((item) => item.id === host.workspaceId) ?? workspaces[0]
   const ready = host.state === 'ready' && Boolean(host.url)
   const starting = host.state === 'starting'
   const recovery = host.recovery
   const [recoverySeconds, setRecoverySeconds] = useState(0)
+  const activePane = panes[activeTabId] ?? INITIAL_PANE
 
   useEffect(() => {
     if (!recovery) {
@@ -88,57 +82,48 @@ export function WorkspacePage(): React.JSX.Element {
     return () => clearInterval(timer)
   }, [starting])
 
-  useEffect(() => {
-    const element = webviewRef.current
-    if (!element || !ready) return
-    const onStart = (): void => {
-      setLoading(true)
-      setFailed(false)
-    }
-    const onStop = (): void => {
-      setLoading(false)
-      setCanBack(element.canGoBack())
-      setCanForward(element.canGoForward())
-      try {
-        setZoom(element.getZoomFactor())
-      } catch {
-        /* ignore */
+  const updatePane = useCallback((id: string, patch: Partial<PaneState> | null): void => {
+    setPanes((previous) => {
+      if (patch === null) {
+        if (!(id in previous)) return previous
+        const next = { ...previous }
+        delete next[id]
+        return next
       }
-    }
-    const onFail = (event: Event): void => {
-      const detail = event as unknown as { errorCode?: number; isMainFrame?: boolean }
-      if (detail.isMainFrame === false) return
-      if (detail.errorCode === -3) return
-      setLoading(false)
-      setFailed(true)
-    }
-    const onTitle = (): void => {
-      setCanBack(element.canGoBack())
-      setCanForward(element.canGoForward())
-    }
-    element.addEventListener('did-start-loading', onStart)
-    element.addEventListener('did-stop-loading', onStop)
-    element.addEventListener('did-fail-load', onFail)
-    element.addEventListener('did-navigate', onTitle)
-    element.addEventListener('did-navigate-in-page', onTitle)
-    return () => {
-      element.removeEventListener('did-start-loading', onStart)
-      element.removeEventListener('did-stop-loading', onStop)
-      element.removeEventListener('did-fail-load', onFail)
-      element.removeEventListener('did-navigate', onTitle)
-      element.removeEventListener('did-navigate-in-page', onTitle)
-    }
-  }, [ready, host.url])
+      return { ...previous, [id]: { ...(previous[id] ?? INITIAL_PANE), ...patch } }
+    })
+  }, [])
 
+  const registerFrame = useCallback((id: string, element: WebviewElement | null): void => {
+    if (element) framesRef.current.set(id, element)
+    else framesRef.current.delete(id)
+  }, [])
+
+  // Quick Ask types into the guest the user is looking at.
   useEffect(() => {
-    if (!ready) setLoading(true)
-  }, [ready])
+    window.studio.tabs.setActiveGuest(ready ? (activeGuestId ?? null) : null)
+  }, [ready, activeTabId, activeGuestId])
+
+  const activeFrame = (): WebviewElement | undefined => framesRef.current.get(activeTabId)
 
   const changeZoom = (delta: number): void => {
-    const element = webviewRef.current
+    const element = activeFrame()
     if (!element) return
-    const next = Math.min(1.75, Math.max(0.6, Number((element.getZoomFactor() + delta).toFixed(2))))
-    element.setZoomFactor(next)
+    let base = zoom
+    try {
+      base = element.getZoomFactor()
+    } catch {
+      /* a brand-new tab whose guest has not attached yet */
+    }
+    const next = Math.min(1.75, Math.max(0.6, Number((base + delta).toFixed(2))))
+    // Chromium keeps zoom per origin and every tab shares one, so they move together.
+    for (const frame of framesRef.current.values()) {
+      try {
+        frame.setZoomFactor(next)
+      } catch {
+        /* guest not attached yet */
+      }
+    }
     setZoom(next)
   }
 
@@ -209,19 +194,21 @@ export function WorkspacePage(): React.JSX.Element {
           </span>
         </div>
 
+        <TabStrip ready={ready} />
+
         <div className="toolbar-right">
           <button
             className="icon-button"
-            disabled={!ready || !canBack}
-            onClick={() => webviewRef.current?.goBack()}
+            disabled={!ready || !activePane.canBack}
+            onClick={() => activeFrame()?.goBack()}
             title="后退"
           >
             <ArrowLeft size={15} />
           </button>
           <button
             className="icon-button"
-            disabled={!ready || !canForward}
-            onClick={() => webviewRef.current?.goForward()}
+            disabled={!ready || !activePane.canForward}
+            onClick={() => activeFrame()?.goForward()}
             title="前进"
           >
             <ArrowRight size={15} />
@@ -230,8 +217,8 @@ export function WorkspacePage(): React.JSX.Element {
             className="icon-button"
             disabled={!ready}
             onClick={() => {
-              setLoading(true)
-              webviewRef.current?.reload()
+              updatePane(activeTabId, { loading: true })
+              activeFrame()?.reload()
             }}
             title="刷新会话界面"
           >
@@ -249,7 +236,7 @@ export function WorkspacePage(): React.JSX.Element {
           <button
             className="icon-button"
             disabled={!ready}
-            onClick={() => webviewRef.current?.openDevTools()}
+            onClick={() => activeFrame()?.openDevTools()}
             title="开发者工具"
           >
             <Bug size={15} />
@@ -364,47 +351,26 @@ export function WorkspacePage(): React.JSX.Element {
             )}
           </div>
         ) : (
-          <>
-            <webview
-              ref={webviewRef as unknown as React.Ref<HTMLElement>}
-              className="dsh-frame"
-              src={host.url}
-              partition="persist:harness-studio"
+          // One pane per tab, all mounted and stacked; only the active one shows.
+          tabs.map((tab) => (
+            <HarnessPane
+              key={tab.id}
+              tab={tab}
+              url={host.url ?? ''}
+              active={tab.id === activeTabId}
+              focused={onScreen && tab.id === activeTabId}
+              pane={panes[tab.id] ?? INITIAL_PANE}
+              onState={updatePane}
+              onFrame={registerFrame}
+              onZoom={setZoom}
             />
-            {loading && !failed ? (
-              <div className="webview-loading">
-                <div className="loading-mark">
-                  <BrandMark size={40} />
-                </div>
-                <div className="loading-text">正在载入 Harness 会话界面…</div>
-                <div className="loading-bar">
-                  <span />
-                </div>
-              </div>
-            ) : null}
-            {failed ? (
-              <div className="webview-failed">
-                <h3>界面加载失败</h3>
-                <p>本地服务已就绪，但渲染进程没有完成加载。可以尝试刷新或重启运行时。</p>
-                <div className="stage-actions">
-                  <button className="button button-primary" onClick={() => webviewRef.current?.reload()}>
-                    <RefreshCw size={14} />
-                    重新加载
-                  </button>
-                  <button className="button button-secondary" onClick={() => void restartHost()}>
-                    <RotateCcw size={14} />
-                    重启运行时
-                  </button>
-                </div>
-              </div>
-            ) : null}
-          </>
+          ))
         )}
       </div>
 
       {ready ? (
         <div className="workspace-footnote" title={current.path}>
-          <Loader2 size={11} className={loading ? 'spin' : 'hidden'} />
+          <Loader2 size={11} className={activePane.loading ? 'spin' : 'hidden'} />
           <span>{shortPath(current.path, 88)}</span>
         </div>
       ) : null}

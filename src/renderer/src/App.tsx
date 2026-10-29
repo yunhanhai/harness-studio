@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useApp } from './store'
 import { Titlebar } from './components/Titlebar'
 import { Rail } from './components/Rail'
@@ -21,23 +21,45 @@ export default function App(): React.JSX.Element {
   const installing = useApp((state) => state.installing)
   const init = useApp((state) => state.init)
   const setView = useApp((state) => state.setView)
+  const newTab = useApp((state) => state.newTab)
+  const closeTab = useApp((state) => state.closeTab)
+  const cycleTab = useApp((state) => state.cycleTab)
+
+  // The workspace page holds one webview per session tab, and unmounting it
+  // would destroy them all, so after its first visit it stays mounted and is
+  // only parked while another page is shown. Until then it is not rendered at
+  // all: a cold start must not create a webview the user never opened.
+  const [workspaceMounted, setWorkspaceMounted] = useState(false)
+  if (view === 'workspace' && !workspaceMounted) setWorkspaceMounted(true)
 
   useEffect(() => {
     void init()
   }, [init])
 
+  // Only sees keys while focus is in Studio's own DOM. Keys typed inside a
+  // session webview reach the store as actions from the workspace preload.
   useEffect(() => {
     const listener = (event: KeyboardEvent): void => {
       const mod = event.ctrlKey || event.metaKey
-      if (!mod || event.shiftKey || event.altKey) return
+      if (!mod || event.altKey) return
+      const inWorkspace = useApp.getState().view === 'workspace'
+      if (event.key === 'Tab' && event.ctrlKey && inWorkspace) {
+        event.preventDefault()
+        cycleTab(event.shiftKey ? -1 : 1)
+        return
+      }
+      if (event.shiftKey) return
+      const key = event.key.toLowerCase()
       const map: Record<string, () => void> = {
         '1': () => setView('home'),
         '2': () => setView('workspace'),
         '3': () => setView('insights'),
         '4': () => setView('prompts'),
-        '5': () => setView('logs')
+        '5': () => setView('logs'),
+        t: () => newTab()
       }
-      const action = map[event.key]
+      if (inWorkspace) map.w = () => closeTab()
+      const action = map[key]
       if (action) {
         event.preventDefault()
         action()
@@ -45,7 +67,7 @@ export default function App(): React.JSX.Element {
     }
     window.addEventListener('keydown', listener)
     return () => window.removeEventListener('keydown', listener)
-  }, [setView])
+  }, [setView, newTab, closeTab, cycleTab])
 
   if (!initialized) return <Splash />
 
@@ -64,7 +86,11 @@ export default function App(): React.JSX.Element {
         {focused ? null : <Rail />}
         <main className={`content view-${view}`}>
           {view === 'home' ? <Home /> : null}
-          {view === 'workspace' ? <WorkspacePage /> : null}
+          {workspaceMounted ? (
+            <div className={`workspace-pane ${view === 'workspace' ? 'is-active' : 'is-parked'}`}>
+              <WorkspacePage />
+            </div>
+          ) : null}
           {view === 'insights' ? <Insights /> : null}
           {view === 'prompts' ? <Prompts /> : null}
           {view === 'logs' ? <Logs /> : null}

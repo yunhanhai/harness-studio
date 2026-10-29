@@ -86,6 +86,14 @@ export interface ComposerSettings {
   confirmQueued: boolean
 }
 
+export interface TabSettings {
+  /**
+   * How many session tabs may be open at once. Every tab is a separate webview
+   * renderer process against the same host, so this is the memory budget.
+   */
+  limit: number
+}
+
 export interface Settings {
   version: number
   language: LanguageSetting
@@ -103,6 +111,7 @@ export interface Settings {
   insights: InsightsSettings
   quickAsk: QuickAskSettings
   composer: ComposerSettings
+  tabs: TabSettings
   lastWorkspaceId: string
   window: WindowBounds
 }
@@ -326,6 +335,13 @@ export interface WindowState {
   fullscreen: boolean
 }
 
+/**
+ * Session tab commands. They arrive from Studio's own keyboard handling, the
+ * palette, and the workspace preload (`guest:shortcut`, payload
+ * `{ action: TabCommand }`) when the key was pressed inside the embedded UI.
+ */
+export type TabCommand = 'new-tab' | 'close-tab' | 'next-tab' | 'prev-tab'
+
 export type StudioAction =
   | { type: 'navigate'; view: ViewId }
   | { type: 'open-workspace'; id?: string; path?: string }
@@ -338,6 +354,7 @@ export type StudioAction =
   | { type: 'toggle-theme' }
   | { type: 'check-updates' }
   | { type: 'show-about' }
+  | { type: TabCommand }
 
 export interface StudioApi {
   app: {
@@ -398,6 +415,14 @@ export interface StudioApi {
   insights: {
     scan(force?: boolean): Promise<InsightsData>
     revealSession(id: string): Promise<boolean>
+  }
+  tabs: {
+    /**
+     * Tell the shell which embedded webview is in front (its webContents id,
+     * from `<webview>.getWebContentsId()`), so Quick Ask types into the tab the
+     * user is looking at. `null` when no tab has a ready guest.
+     */
+    setActiveGuest(webContentsId: number | null): void
   }
   quickAsk: {
     /** Submit a prompt from the Quick Ask window into the Harness composer. */

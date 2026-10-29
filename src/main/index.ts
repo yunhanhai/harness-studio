@@ -27,6 +27,7 @@ import type {
   RuntimeInfo,
   Settings,
   StudioAction,
+  TabCommand,
   QuickAskResult,
   Workspace
 } from '@shared/types'
@@ -62,12 +63,32 @@ let installer: RuntimeInstaller
 let runtimeInfo: RuntimeInfo | null = null
 let quitting = false
 let closeNoticeShown = false
-let guestContents: Electron.WebContents | null = null
+/**
+ * Every embedded Harness webview, keyed by `webContents.id`. Each session tab is
+ * its own guest against the same host; the renderer reports which one is in
+ * front (`tabs:active-guest`) so Quick Ask types into the tab the user sees.
+ */
+const guests = new Map<number, Electron.WebContents>()
+let activeGuestId: number | null = null
 const guestWaiters: Array<(contents: Electron.WebContents) => void> = []
+
+function liveGuest(id: number | null): Electron.WebContents | null {
+  const contents = id === null ? undefined : guests.get(id)
+  return contents && !contents.isDestroyed() ? contents : null
+}
+
+/** The guest in front, else the most recently attached live one. */
+function activeGuest(): Electron.WebContents | null {
+  const front = liveGuest(activeGuestId)
+  if (front) return front
+  // A Map iterates in insertion order, so the newest guest is last.
+  return [...guests.values()].reverse().find((contents) => !contents.isDestroyed()) ?? null
+}
 
 /** Wait for the embedded Harness webview to attach (after switching to the workspace view). */
 function waitForGuest(timeoutMs = 15_000): Promise<Electron.WebContents | null> {
-  if (guestContents && !guestContents.isDestroyed()) return Promise.resolve(guestContents)
+  const ready = activeGuest()
+  if (ready) return Promise.resolve(ready)
   return new Promise((resolve) => {
     let settled = false
     const finish = (contents: Electron.WebContents | null): void => {
@@ -87,6 +108,18 @@ const promptList = (): PromptItem[] => stores.prompts.get()
 
 function isHttp(url: string): boolean {
   return /^https?:\/\//i.test(url)
+}
+
+/** Tab commands the workspace preload may forward over `guest:shortcut`. */
+const TAB_COMMANDS: Record<TabCommand, true> = {
+  'new-tab': true,
+  'close-tab': true,
+  'next-tab': true,
+  'prev-tab': true
+}
+
+function isTabCommand(value: unknown): value is TabCommand {
+  return typeof value === 'string' && Object.hasOwn(TAB_COMMANDS, value)
 }
 
 function assertTrusted(event: IpcMainEvent | IpcMainInvokeEvent): void {
@@ -186,9 +219,14 @@ async function submitQuickAsk(
   }
 
   // The composer only exists once the workspace view mounted its webview.
-  // If the user is on another page, switch there and wait for it.
-  let guest = guestContents && !guestContents.isDestroyed() ? guestContents : null
-  if (!guest) {
+  // If it has not yet, open the workspace and wait for a guest to attach.
+  let guest = activeGuest()
+  if (guest) {
+    // The workspace view stays mounted (hidden) behind other pages, so a live
+    // guest may be off screen. Bring it forward so the conversation receiving
+    // the text is the one the user sees.
+    sendMain(IPC.action, { type: 'navigate', view: 'workspace' } satisfies StudioAction)
+  } else {
     sendAction({ type: 'open-workspace', id: status.workspaceId })
     hideQuickAsk()
     guest = await waitForGuest()
@@ -333,14 +371,16 @@ function applySettings(next: Settings): void {
     palette: showPalette,
     quickAsk: showQuickAsk
   })
-  if (guestContents && !guestContents.isDestroyed()) {
-    guestContents.send(IPC.guestTheme, {
-      theme: next.theme,
-      accent: next.accent,
-      reduceMotion: next.reduceMotion,
-      confirmSend: next.composer.confirmSend,
-      confirmQueued: next.composer.confirmQueued
-    })
+  const guestPayload = {
+    theme: next.theme,
+    accent: next.accent,
+    reduceMotion: next.reduceMotion,
+    confirmSend: next.composer.confirmSend,
+    confirmQueued: next.composer.confirmQueued
+  }
+  // Every tab, including the ones behind the active one, follows the settings.
+  for (const contents of guests.values()) {
+    if (!contents.isDestroyed()) contents.send(IPC.guestTheme, guestPayload)
   }
   if (failures.length > 0) {
     sendMain(IPC.toast, { message: `全局快捷键被占用：${failures.join('、')}`, kind: 'error' })
@@ -424,10 +464,15 @@ function configureWebviewSecurity(window: BrowserWindow): void {
   })
 
   window.webContents.on('did-attach-webview', (_event, contents) => {
-    guestContents = contents
+    // One guest per session tab. The renderer reports which one is in front;
+    // until it does, a new guest takes Quick Ask only if no live guest has it.
+    const id = contents.id
+    guests.set(id, contents)
+    if (!liveGuest(activeGuestId)) activeGuestId = id
     for (const resolve of guestWaiters.splice(0)) resolve(contents)
     contents.once('destroyed', () => {
-      if (guestContents === contents) guestContents = null
+      guests.delete(id)
+      if (activeGuestId === id) activeGuestId = activeGuest()?.id ?? null
     })
     contents.setWindowOpenHandler(({ url }) => {
       if (isHttp(url)) void shell.openExternal(url)
@@ -446,6 +491,14 @@ function configureWebviewSecurity(window: BrowserWindow): void {
     })
     contents.on('before-input-event', (event, input) => handleShortcut(event, input))
     contents.on('ipc-message', (_ipcEvent, channel, payload) => {
+      if (channel === IPC.guestShortcut) {
+        // A tab key pressed inside the embedded UI. The workspace preload decides
+        // which keys are ours (it can see whether the terminal has focus); the
+        // renderer owns the tab list, so hand the command over as an action.
+        const action = (payload as { action?: unknown } | undefined)?.action
+        if (isTabCommand(action)) sendMain(IPC.action, { type: action } satisfies StudioAction)
+        return
+      }
       if (channel !== IPC.guestNotice) return
       const notice = payload as { text?: unknown; code?: unknown } | undefined
       const text = typeof notice?.text === 'string' ? notice.text.trim() : ''
@@ -589,11 +642,20 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
       event.returnValue = { confirmSend: current.confirmSend, confirmQueued: current.confirmQueued }
       return
     }
-    if (mainWindow?.webContents !== event.sender && guestContents !== event.sender) {
+    if (mainWindow?.webContents !== event.sender && guests.get(event.sender.id) !== event.sender) {
       event.returnValue = true
       return
     }
     event.returnValue = confirmSend(request ?? {})
+  })
+  /**
+   * The renderer reports which tab is in front so Quick Ask types into the
+   * conversation the user is looking at. Only the main window may say so, and
+   * only about a guest it attached; anything else is dropped without an error.
+   */
+  ipcMain.on(IPC.tabsActiveGuest, (event, id: unknown) => {
+    if (!mainWindow || mainWindow.isDestroyed() || mainWindow.webContents !== event.sender) return
+    if (id === null || (typeof id === 'number' && guests.has(id))) activeGuestId = id
   })
 
   handle(IPC.appInfo, () => buildAppInfo())

@@ -46,6 +46,7 @@ export function mergeSettings(defaults: Settings, input: unknown): Settings {
   if (typeof merged.composer?.confirmQueued !== 'boolean') {
     merged.composer.confirmQueued = defaults.composer.confirmQueued
   }
+  merged.tabs.limit = Math.min(8, Math.max(1, Math.floor(Number(merged.tabs.limit) || defaults.tabs.limit)))
   return merged
 }
 

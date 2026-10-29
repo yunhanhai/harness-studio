@@ -6,16 +6,16 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 版本 | `0.1.5` |
+| 版本 | `0.1.6`（本地已提交，**未发布、未推送**） |
 | 本地 HEAD | `git log --oneline -1` 确认 |
-| 工作区 | 干净，无未提交改动 |
+| 工作区 | `git status` 确认 |
 | 已发布 | v0.1.0 / v0.1.1 / v0.1.2 / v0.1.3 / v0.1.4 / v0.1.5，GitHub 与 Gitee 双平台齐全 |
 | 远端 | `origin` → GitHub，`gitee` → Gitee |
 | 平台 | Windows 10/11 x64（主要目标） |
 
 > **注意**：GitHub 上的 commit SHA 与本地不同（通过 Git Data API 推送时 GitHub 会重新规范化提交对象）。**tree SHA 是一致的**，所以文件内容逐字节相同。校验同步时比较 `git rev-parse HEAD^{tree}` 与远端 commit 的 tree，不要比较 commit SHA。
 
-六个版本的功能：
+各版本的功能：
 
 | 版本 | 内容 |
 | --- | --- |
@@ -25,6 +25,7 @@
 | v0.1.3 | 快速提问历史记录（持久化 + 一键回填） |
 | v0.1.4 | Host 崩溃自动恢复（指数退避 + 界面倒计时） |
 | v0.1.5 | 会话/档案被占用诊断：提示可选中可关闭、DSH 进程列表与一键结束 |
+| v0.1.6（未发布） | 会话标签页：一个 Host 上并排打开多个会话；工作区页面常驻，切页不再重新加载 |
 
 ## 在新对话中如何继续
 
@@ -38,8 +39,8 @@
 
 从下面挑一个，或者提你自己的需求：
 
-- "实现 Host 崩溃自动恢复，按 HANDOFF 里第 1 项的建议做"
-- "实现多标签工作区，按 HANDOFF 里第 2 项做"
+- "发布 v0.1.6，按 HANDOFF「当前收尾状态」做"
+- "做界面英文化，按 HANDOFF「下一步建议 → 其他」里的方向"
 - "给 xxx 页面加 yyy 功能"
 
 **3. 需要时提供凭据**
@@ -50,32 +51,49 @@
 
 ```text
 在 D:\Program Files\develop\vscode\her 继续开发 Harness Studio。
-先读 docs/HANDOFF.md（尤其「当前未完成的收尾」一节）和 docs/ARCHITECTURE.md，
-然后完成 v0.1.5 的收尾：跑 npm run install:local 原地更新桌面版、
-npm run status 确认无堆积，最后提交并推送 GitHub 与 Gitee。
+先读 docs/HANDOFF.md（尤其「当前收尾状态」一节）和 docs/ARCHITECTURE.md，
+然后发布 v0.1.6：跑 npm run install:local 原地更新桌面版、
+npm run status 确认无堆积，按 docs/PUBLISHING.md 打标签、构建并推送 GitHub 与 Gitee。
 我的 GitHub PAT 是 xxx，Gitee 令牌是 xxx。
 ```
 
 如果这条消息里包含令牌，注意它们会留在对话记录里，事后应当轮换。
 
-## 当前收尾状态（v0.1.5）
+## 当前收尾状态（v0.1.6）
 
-v0.1.5 的代码、文档、本地安装与状态审计都已完成；功能改动已提交并推送到 GitHub 与 Gitee。验证结果：
+v0.1.6（会话标签页）的代码与文档已完成并**在本地提交**，还**没有**推送、打标签、发布，也没有跑 `install:local`。验证结果：
 
 | 项目 | 结果 |
 | --- | --- |
-| 本地桌面版 | 已通过 `npm run install:local -- -SkipBuild` 更新到 `0.1.5.0` |
-| 状态审计 | `npm run status` 显示唯一程序目录、两个快捷方式、已安装版本 `0.1.5.0`，且无 staging 副本 |
 | 代码检查 | `npm run typecheck` 与 `npm run build` 均通过；preload 自包含检查通过 |
-| 发布产物 | GitHub 与 Gitee 的 v0.1.5 已包含 `Setup.exe` 与 `Portable.exe` |
+| 真机验证 | 用仓库内 Electron 跑 `out/`，独立 `userData` + 独立 `DSH_HOME`（不碰 `~/.dsh`），CDP 驱动，结果见下 |
+| 版本号 | `package.json` / `package-lock.json` 已是 `0.1.6`；README 下载链接与 Gitee 徽章仍指向已发布的 v0.1.5，发布时再改 |
 
-**剩余人工确认**：发送确认的拦截逻辑（状态机、选择器、按钮识别）已自动验证，但 Lexical 忽略 CDP 合成事件，所以「真实按键是否被拦下」需要手动试一次——开启「每次发送前确认」，在输入框里输入文字按回车，应弹出确认框。
+真机验证覆盖的行为（全部通过）：
+
+- 冷启动停在启动台时不创建任何 webview；第一次进入工作区才挂载；
+- 两个标签用同一个带令牌的 `host.url` 都能进入会话界面；
+- 切标签、切到启动台再切回，两个标签的页面都没有重新加载，各自的输入框内容还在；
+- 停在启动台时，藏起来的工作区页面不接收点击（真实鼠标事件只落到启动台）；
+- 快速提问只写入前台标签；切标签后跟着换目标；停在启动台时先切回工作区再写入；关掉一个标签、重启运行时之后都还能找到正确的 guest；
+- `Ctrl+T` / `Ctrl+W` / `Ctrl+Tab` / `Ctrl+Shift+Tab` 在 Studio 界面和内嵌会话界面里都生效；焦点在 `.xterm` 内时按键原样交给终端，不新建也不关闭；最后一个标签按 `Ctrl+W` 不会被关掉；
+- 达到上限时「+」禁用、提示上限文案；从命令面板在别的页面「关闭当前会话标签页」会先切回工作区；
+- 重启运行时后收拢成一个标签，指向新端口；主题切换推到所有标签；
+- 1040px 最小窗口宽度下 4 个长标题标签与工具栏同在一行，不换行、不重叠；
+- 多开一个空会话标签，Electron 进程私有内存合计从 368 MB 到 474 MB（单次测量，会话内容越多占用越大）。
+
+**剩余人工确认**：
+
+- 真实键盘焦点：`Ctrl+Tab` 切换后，Studio 一侧的 `document.activeElement` 已确认指向新标签的 webview，但测试窗口拿不到系统焦点，「接着打字是否落在新标签」需要手动试一次；
+- v0.1.5 遗留：开启「每次发送前确认」后，在输入框里真实按回车应弹出确认框（Lexical 忽略 CDP 合成事件，无法自动验证）。
+
+**发布前还要做**：`npm run install:local` 原地更新桌面版、`npm run status` 确认无堆积、把 README 下载链接与徽章改到 v0.1.6，然后按 `docs/PUBLISHING.md` 打标签、构建、推送 GitHub 与 Gitee，并给 Gitee 发行版手动上传安装包。
 
 ### 不需要重新做的事
 
 - 仓库已建好、双平台已发布，不用重新初始化；
 - 依赖已装好（`node_modules` 在），除非你要升级依赖；
-- v0.1.5 的功能改动、typecheck、build 与真机验证都已完成，不用重做（见下方「已完成（v0.1.5）」）。
+- v0.1.6 的功能、typecheck、build 与真机验证都已完成，不用重做（见下方「已完成（v0.1.6）」）。
 
 ### 已经改过、但**不在仓库里**的配置（重要）
 
@@ -127,7 +145,9 @@ src/
   preload/workspace.ts     webview 主题注入 + 官方 toast 镜像（必须自包含，见下）
   renderer/src/
     pages/                 Home / Workspace / Insights / Prompts / Logs / Settings
+    pages/HarnessPane.tsx  每个会话标签一个 <webview>，常驻挂载，只切可见性
     components/            Rail、Titlebar、Palette、QuickAsk、ErrorBoundary 等
+    components/TabStrip.tsx 工作区工具栏里的会话标签条
     store.ts               zustand 全局状态
     styles/index.css       全部样式（约 3800 行，Tailwind v4 + 自定义 CSS 变量）
   shared/
@@ -157,6 +177,7 @@ scripts/
 - **从 DSH 自己的沙箱 shell 启动 Electron 做验证，会拿到 Low 完整性令牌**：只能枚举到 33 个左右的进程，`Get-Process -Name node` 返回 0，`whoami /groups` 显示 `S-1-16-4096`。这不是代码问题，但会让「其他 DSH 进程」这类功能看起来失效。要验证真实行为，用 High/Medium 完整性的 shell（比如直接在本机终端跑），或用 `Invoke-CimMethod Win32_Process Create` 从非沙箱进程启动。
 - 用 `Start-Process -PassThru` 启动 Electron 有时会一直阻塞；改用 `Invoke-CimMethod -ClassName Win32_Process -MethodName Create`。
 - `--user-data-dir` 的路径含空格时必须带引号，否则参数会被截断、应用起不来。
+- **从 VS Code 集成终端（包括其中的 AI 助手）启动 Electron 前要清掉 `ELECTRON_RUN_AS_NODE`**：VS Code 会导出 `ELECTRON_RUN_AS_NODE=1`，Electron 随之当成纯 Node 运行，`out/main/index.js` 一加载就报 `Cannot read properties of undefined (reading 'getVersion')`（electron-updater 拿不到 `app`）。
 - **模型凭据与路由在 `~/.dsh/profiles/<name>/cordis.patch.yml`，不在本仓库**。本机 `studio` 与 `web` 两个 profile 都走中转：`primerelay`（默认模型 `deepseek-v4.1-flash-1017`，注意该中转**已不再提供** `deepseek-v4.1-flash`，用错 id 会得到 404 `model_not_found`）、`ultrarouter`、`wzw`。改这个文件前先备份，且必须用 Node 脚本写（PowerShell 会写 BOM，DSH 解析 `package.json` 时会直接报 `Unexpected token '\uFEFF'` 起不来）。
 - 排查模型请求问题最有效的手段是**在 `baseURL` 前挂一个抓包代理**，把 profile 临时指向 `http://127.0.0.1:<port>/v1`，就能看到 DSH 实际发出的请求体（roles、字段、重试次数）与提供方返回体。比翻日志快得多，也是确认 `reasoning_content` 这类字段问题的唯一可靠方式。
 - 验证多轮场景用 `dsh --profile <name> --json "<task>"` 拿到 `sessionId`，再用 `--session-id <id>` 续跑——只有续跑那次请求才会带上 assistant 历史。
@@ -194,35 +215,32 @@ node scripts/app-shot.mjs .run-test/shot.png "@.run-test/expr.js"
 
 `scripts/app-shot.mjs` 只匹配应用自己的 renderer（`index.html` 且不含 `#`），不会误连到内嵌的 Harness webview。`scripts/preview-eval.mjs` 可以在截图前先断言 DOM，避免"图看起来对但其实是旧构建"。
 
+**不想碰本机 `~/.dsh` 时**（v0.1.6 的真机验证就是这么做的）：在隔离的 `userData` 里写一份 `settings.json`，把 `runtime.dshHome` 指向一个空目录、`shortcuts` 三项设为空字符串（不抢本机全局快捷键），再用 `HARNESS_STUDIO_USER_DATA` 指向它启动。首次启动会从内置模板建 `studio` 档案（本机实测约 47 秒），之后几秒就绪。没有凭据也能进入会话界面，只是会弹「开始使用」登录框。注意内嵌界面仍会把「默认工作区」放在系统「文档」目录下的 `deepseek-harness\default-workspace`。
+
 **注意**：截图脚本必须禁用缓存，否则会拿到旧构建的图（这个坑踩过）。`shot.mjs` 已加 `Network.setCacheDisabled`。
 
 ## 下一步建议
 
 按我评估的性价比排序：
 
-### 1. 多标签工作区（改动大，路线图里呼声最高）
+### 1. 让「切换工作区」名副其实（先决定方向）
 
-现状：单个 `HostManager` 实例，切换工作区已经**不再重启进程**（`canAdoptWorkspace` / `adoptWorkspace`，见 v0.1.5），但同一时刻只服务一个工作区视图。
+v0.1.6 真机验证时确认：Studio 的工作区切换（工具栏下拉、启动台「打开」）只改 Studio 自己的标签与 `HostStatus.workspaceId`，**内嵌界面既不重新加载，显示的工作区也不变**。内嵌界面的工作区列表由 Host 的注册表决定，Host 的启动目录不会被自动登记（隔离环境里只出现了「默认工作区」，看不到 Studio 的两个工作区目录）。v0.1.5 改成复用 Host 之后，切换连启动目录都不再改变。
 
-方向：把 `HostManager` 改成按 workspaceId 索引的实例池，每个实例独立端口与日志。需要处理：
+可选方向，需要先定：
 
-- `src/main/index.ts` 里所有 `host.xxx()` 调用点（目前 18 处）都要改成"取当前标签对应的实例"；
-- 渲染进程的 `<webview>` 要按标签维护多个实例，切换时只显示激活的那个；
-- 内存与端口占用随标签数增长，建议限制并发上限（比如 4 个）并回收长时间未激活的实例。
+- 让 Studio 把目录登记进 Host 并打开它：内嵌界面没有 URL 路由，只能走私有 RPC（`workspace/create` 等）或模拟点击，二者都比 webview 本身脆弱；
+- 承认两套列表各管各的：Studio 的「工作区」只作为项目书签与默认启动目录，界面文案说清楚，在内嵌界面左侧选择真正要用的工作区。
 
-> 补充：`git stash@{0}` 里有一份未完成的多标签改动，因内存占用暂未启用。
-
-**注意**：DSH 本身是多工作区服务，一个 Host 就能服务多个目录。如果目标只是"快速切换"，当前复用方案已经够用；只有当需要**并行**（两个工作区同时跑任务）时才需要实例池。
-
-### 3. 对话界面内部的定制
+### 2. 对话界面内部的定制
 
 凡属"对话界面内部"的能力（排队消息拖动排序、逐字流式的渲染细节等）都在 DSH 上游。npm 分发的 `@deepseek-ai/dsh-*` 是**压缩产物、不含源码**，因此只能注入或打补丁。
 
 自建会话界面的可行性已实测（结论见 `docs/ARCHITECTURE.md` 的「能不能不用官方 Web UI」一节）：ACP/SDK 能驱动会话，但两条线路都**没有逐字流式**、**没有队列编辑/插话**。要拿到这两项，只能继续用官方 Web UI。
 
-### 4. 其他
+### 3. 其他
 
-- **macOS 构建**：`.github/workflows/release.yml` 加 `macos-latest` job 即可，但本环境无法验收，需要真机测试。
+- **macOS 构建**：`.github/workflows/release.yml` 加 `macos-latest` job 即可，但本环境无法验收，需要真机测试。另外 `src/main/menu.ts` 把 `Command+W` 绑在「隐藏窗口」上，而会话标签页把 `Cmd+W` 用作关闭标签：页面 `preventDefault` 之后菜单大概率收不到，结果是 `Cmd+W` 只关标签、焦点在终端时才隐藏窗口。做 macOS 构建前要在真机上确认并决定保留哪一个。
 - **插件市场入口**：只需在 UI 里做一个跳转入口，工作量最小但价值也有限。
 - **界面英文化**：`README.en.md` 已有，界面文案目前全是中文硬编码，需要引入 i18n 层。
 
@@ -252,6 +270,22 @@ Host 崩溃自动恢复已实现并验证：非主动退出后按 2s → 5s → 
 
 - `win-unpacked` 里的 `Harness Studio.exe` 若还在运行，`npm run dist:dir` 会因 `EBUSY` 失败。打包前先结束进程。
 - 发送确认的**拦截逻辑**已自动化验证（状态机、选择器、按钮识别、隔离世界可见性），但「合成按键驱动 Lexical 输入」无法自动验证——Lexical 忽略 CDP 合成事件。**真实的键盘拦截需要人工确认一次**。
+
+### 已完成（v0.1.6）
+
+会话标签页，详见 `docs/ARCHITECTURE.md` 的「会话标签页」一节：
+
+- 一个 Host、每个标签一个 `<webview>`，共用 `persist:harness-studio` 分区；没有采用 `stash@{0}` 里那份每个标签一个 Host 的方案（冷启动、内存、profile 写锁三重代价）。那份 stash 已被取代，确认不需要后可以 `git stash drop`；
+- 工作区页面第一次进入后常驻，离开时只藏起来（`visibility: hidden`），切页不再重新加载；
+- 主进程按 `webContents.id` 记录所有 guest，快速提问写入前台标签；快捷键按焦点分三路处理，内嵌终端里的按键不拦截；
+- 设置 → 通用 → 会话标签页：上限 1–8（默认 4）；
+- 版本号升到 `0.1.6` 时顺手修了 `package-lock.json` 的两处旧错：`duplexer2` 曾被批量替换成 `0.1.5`（实际 tarball 是 `0.1.4`），根包条目一直停在 `0.1.1`。以后升版本只改这两个根字段，不要全文替换。
+
+**遗留的小事**：
+
+- `src/preload/workspace.ts` 开头的注释说主进程会校验 preload 里就地写的通道名，其实没有任何校验。改了 `channels.ts` 里的 `guest:*` 名称而忘了同步，内嵌界面里的快捷键、提示镜像、发送确认会静默失效。可以在 `scripts/check-preload.mjs` 里加一次比对；
+- 同一个文件对 `guest:theme` 注册了两个监听（一个写字面量、一个用常量），功能无碍，但会重复应用主题；
+- 内嵌界面会把输入草稿存进浏览器存储，新标签打开某个会话时会带出这个会话之前保存的草稿；之后各标签里的输入互不影响（真机验证过）。
 
 ## 不要做的事
 

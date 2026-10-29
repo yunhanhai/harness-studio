@@ -16,6 +16,8 @@ import {
   Search,
   Settings2,
   Sparkles,
+  SquarePlus,
+  SquareX,
   Sun,
   Zap
 } from 'lucide-react'
@@ -108,6 +110,24 @@ export default function Palette(): React.JSX.Element {
         icon: ICONS.workspace,
         keywords: 'workspace chat session',
         run: () => window.studio.studio.runAction({ type: 'open-workspace' })
+      },
+      {
+        id: 'action-new-tab',
+        group: '导航',
+        title: '新建会话标签页',
+        subtitle: '在工作区里并排再开一个会话 · Ctrl+T',
+        icon: SquarePlus,
+        keywords: 'tab new session 标签 新建',
+        run: () => window.studio.studio.runAction({ type: 'new-tab' })
+      },
+      {
+        id: 'action-close-tab',
+        group: '导航',
+        title: '关闭当前会话标签页',
+        subtitle: '只关闭这个视图，会话不会被删除 · Ctrl+W',
+        icon: SquareX,
+        keywords: 'tab close session 标签 关闭',
+        run: () => window.studio.studio.runAction({ type: 'close-tab' })
       },
       {
         id: 'nav-insights',

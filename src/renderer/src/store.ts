@@ -25,6 +25,21 @@ export interface ToastItem {
   action?: { label: string; run: () => void }
 }
 
+/**
+ * One embedded Harness conversation in the workspace view. Every tab is its own
+ * <webview> against the same host, so tabs only differ in what the user opened.
+ */
+export interface WorkspaceTab {
+  /** Unique for the renderer's lifetime and used as the React key: a new id means a new webview. */
+  id: string
+  /** Number shown in the fallback label 会话 N; never reused while the tab is open. */
+  seq: number
+  /** Session title reported by the guest page, '' until known. */
+  title: string
+  /** webContents id of the guest, once its page is ready. */
+  guestId?: number
+}
+
 interface AppState {
   initialized: boolean
   info: AppInfo | null
@@ -46,6 +61,9 @@ interface AppState {
   view: ViewId
   focusMode: boolean
   settingsSection: string
+  /** Session tabs in the workspace view; never empty. */
+  tabs: WorkspaceTab[]
+  activeTabId: string
   init: () => Promise<void>
   setView: (view: ViewId) => void
   setFocusMode: (value: boolean) => void
@@ -74,6 +92,12 @@ interface AppState {
   scanInstances: () => Promise<void>
   killInstances: (pids: number[]) => Promise<void>
   killOtherDsh: () => Promise<void>
+  newTab: () => void
+  /** Closes the active tab by default; the last tab never closes. */
+  closeTab: (id?: string) => void
+  activateTab: (id: string) => void
+  cycleTab: (delta: 1 | -1) => void
+  updateTab: (id: string, patch: Partial<Pick<WorkspaceTab, 'title' | 'guestId'>>) => void
   handleAction: (action: StudioAction) => void
 }
 
@@ -81,6 +105,19 @@ let toastSeq = 0
 let bootstrapped = false
 let themeWatcher: (() => void) | null = null
 let lastHostError = ''
+let tabIdSeq = 0
+/** Host URL the current tabs were opened against; '' until a ready host was seen. */
+let tabsHostUrl = ''
+
+function createTab(seq: number): WorkspaceTab {
+  return { id: `tab-${++tabIdSeq}`, seq, title: '' }
+}
+
+const firstTab = createTab(1)
+
+export function tabLimitMessage(limit: number): string {
+  return `最多同时打开 ${limit} 个会话标签页，可在「设置 → 通用 → 会话标签页」调整`
+}
 
 function refreshDocumentTheme(settings: Settings): void {
   applyAppearance(settings)
@@ -111,6 +148,8 @@ export const useApp = create<AppState>((set, get) => ({
   view: 'home',
   focusMode: false,
   settingsSection: 'general',
+  tabs: [firstTab],
+  activeTabId: firstTab.id,
 
   init: async () => {
     if (bootstrapped) return
@@ -124,6 +163,7 @@ export const useApp = create<AppState>((set, get) => ({
       api.host.status(),
       api.host.logs()
     ])
+    tabsHostUrl = host.state === 'ready' && host.url ? host.url : ''
     set({ info, settings, workspaces, prompts, host, logs, initialized: true })
     const params = new URLSearchParams(window.location.search)
     const requestedView = params.get('view')
@@ -133,6 +173,13 @@ export const useApp = create<AppState>((set, get) => ({
     }
     const requestedSection = params.get('section')
     if (requestedSection) set({ settingsSection: requestedSection })
+    // Browser preview aid: ?tabs=N opens N session tabs, so the tab strip can be
+    // screenshotted without Electron.
+    const requestedTabs = Number(params.get('tabs'))
+    if (Number.isInteger(requestedTabs) && requestedTabs >= 1 && requestedTabs <= 8) {
+      const tabs = Array.from({ length: requestedTabs }, (_, index) => createTab(index + 1))
+      set({ tabs, activeTabId: tabs[0].id })
+    }
     refreshDocumentTheme(settings)
 
     api.settings.onChange((next) => {
@@ -142,7 +189,20 @@ export const useApp = create<AppState>((set, get) => ({
     api.workspaces.onChange((next) => set({ workspaces: next }))
     api.prompts.onChange((next) => set({ prompts: next }))
     api.host.onStatus((status) => {
-      set({ host: status })
+      // A ready host on a different URL is a new process: new port, new origin,
+      // so the old tabs have nothing to return to. Collapse them to one fresh tab
+      // in the same update that publishes the URL, so no render pairs the old
+      // webviews with the new host. Only a ready status counts: the URL seen
+      // while starting, stopping or failed never resets or overwrites the memory.
+      const nextUrl = status.state === 'ready' && status.url ? status.url : ''
+      const restarted = Boolean(nextUrl && tabsHostUrl && nextUrl !== tabsHostUrl)
+      if (nextUrl) tabsHostUrl = nextUrl
+      if (restarted) {
+        const tab = createTab(1)
+        set({ host: status, tabs: [tab], activeTabId: tab.id })
+      } else {
+        set({ host: status })
+      }
       if (status.state === 'error' && status.error && status.error !== lastHostError) {
         lastHostError = status.error
         get().toast(status.error, 'error')
@@ -355,6 +415,63 @@ export const useApp = create<AppState>((set, get) => ({
     await get().killInstances(targets.map((item) => item.pid))
   },
 
+  newTab: () => {
+    const { initialized, tabs, settings, workspaces } = get()
+    // Workspaces are unknown until init has loaded them.
+    if (!initialized) return
+    // Without a workspace the view is onboarding and has no tab strip, so a
+    // tab opened now would only appear later, unasked for.
+    if (workspaces.length === 0) {
+      set({ view: 'workspace' })
+      get().toast('请先添加一个工作区', 'info')
+      return
+    }
+    // A tab opened while the host is down has no page and would only appear
+    // later, unasked for; the "+" button is disabled for the same reason.
+    const host = get().host
+    if (host.state !== 'ready' || !host.url) {
+      set({ view: 'workspace' })
+      get().toast('运行时还没就绪，就绪后再新建标签页', 'info')
+      return
+    }
+    const limit = settings?.tabs.limit ?? 4
+    if (tabs.length >= limit) {
+      get().toast(tabLimitMessage(limit), 'info')
+      return
+    }
+    const seq = tabs.reduce((max, tab) => Math.max(max, tab.seq), 0) + 1
+    const tab = createTab(seq)
+    set({ tabs: [...tabs, tab], activeTabId: tab.id, view: 'workspace' })
+  },
+  closeTab: (id) => {
+    const { tabs, activeTabId } = get()
+    const target = id ?? activeTabId
+    const index = tabs.findIndex((tab) => tab.id === target)
+    if (index === -1 || tabs.length <= 1) return
+    const rest = tabs.filter((tab) => tab.id !== target)
+    // Like a browser: the right neighbour takes over, or the left one at the end.
+    const nextActive = target === activeTabId ? rest[Math.min(index, rest.length - 1)].id : activeTabId
+    set({ tabs: rest, activeTabId: nextActive })
+  },
+  activateTab: (id) => {
+    const { tabs, activeTabId } = get()
+    if (id !== activeTabId && tabs.some((tab) => tab.id === id)) set({ activeTabId: id })
+  },
+  cycleTab: (delta) => {
+    const { tabs, activeTabId } = get()
+    if (tabs.length < 2) return
+    const index = tabs.findIndex((tab) => tab.id === activeTabId)
+    set({ activeTabId: tabs[(index + delta + tabs.length) % tabs.length].id })
+  },
+  updateTab: (id, patch) => {
+    const current = get().tabs.find((tab) => tab.id === id)
+    if (!current) return
+    const keys = Object.keys(patch) as Array<keyof typeof patch>
+    // Guests repeat dom-ready and title events; skip updates that change nothing.
+    if (keys.every((key) => current[key] === patch[key])) return
+    set((state) => ({ tabs: state.tabs.map((tab) => (tab.id === id ? { ...tab, ...patch } : tab)) }))
+  },
+
   handleAction: (action) => {
     const state = get()
     switch (action.type) {
@@ -393,6 +510,22 @@ export const useApp = create<AppState>((set, get) => ({
         break
       case 'show-about':
         state.setSettingsSection('about')
+        break
+      case 'new-tab':
+        state.newTab()
+        break
+      // Keys only send these while the workspace is on screen; from another page
+      // only the palette can, so switch over and let the user see what closed.
+      case 'close-tab':
+        if (state.view !== 'workspace') state.setView('workspace')
+        state.closeTab()
+        break
+      // Switching acts on the visible tab strip, so it only applies in the workspace view.
+      case 'next-tab':
+        if (state.view === 'workspace') state.cycleTab(1)
+        break
+      case 'prev-tab':
+        if (state.view === 'workspace') state.cycleTab(-1)
         break
       default:
         break

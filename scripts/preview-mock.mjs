@@ -31,6 +31,7 @@ const SETTINGS = {
   insights: { inputPrice: 4, outputPrice: 16, cacheReadPrice: 0.4, currency: 'CNY' },
   quickAsk: { autoSend: true, revealAfterSend: true, recentLimit: 6 },
   composer: { confirmSend: false, confirmQueued: true },
+  tabs: { limit: 4 },
   lastWorkspaceId: 'ws-1',
   window: { width: 1360, height: 860, maximized: false }
 }
@@ -343,6 +344,9 @@ window.studio = {
       ? { ...clone(MOCK.insights), sessions: [], totals: { ...clone(MOCK.insights).totals, sessions: 0, activeSessions: 0, totalTokens: 0, turns: 0, steps: 0, messages: 0 } }
       : clone(MOCK.insights)),
     revealSession: async () => true
+  },
+  tabs: {
+    setActiveGuest: () => {}
   },
   quickAsk: {
     submit: async () => ({ status: 'sent' }),

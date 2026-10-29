@@ -277,6 +277,37 @@ export function SettingsPage(): React.JSX.Element {
                 </Row>
               </Card>
 
+              <Card title="会话标签页" desc="同一个运行时里并排打开多个会话，切换时不重新加载。">
+                <Row
+                  title="最多同时打开"
+                  desc={`当前 ${settings.tabs.limit} 个。每个标签都是独立的渲染进程，开得越多越占内存。`}
+                  stacked
+                >
+                  <input
+                    className="input mono"
+                    type="number"
+                    min={1}
+                    max={8}
+                    value={settings.tabs.limit}
+                    onChange={(event) =>
+                      void saveSettings({
+                        tabs: { ...settings.tabs, limit: Number(event.target.value) }
+                      })
+                    }
+                  />
+                </Row>
+                <Row title="快捷键" stacked>
+                  <div className="setting-desc">
+                    Ctrl+T 新建、Ctrl+W 关闭（最后一个不会被关掉）、Ctrl+Tab / Ctrl+Shift+Tab 切换。焦点在内嵌终端里时，这些按键照常交给终端。
+                  </div>
+                </Row>
+                <Row title="说明" stacked>
+                  <div className="setting-desc">
+                    所有标签共用同一个运行时和登录状态。新标签会打开在内嵌界面上次所在的位置，在它左侧的会话列表里选择要看的会话；重启运行时后，标签会收拢成一个。
+                  </div>
+                </Row>
+              </Card>
+
               <Card title="全局快捷键" desc="在任何应用中都能唤出 Studio。使用 Electron 加速键格式，例如 CommandOrControl+Alt+H。">
                 <Row title="显示 / 隐藏窗口" stacked>
                   <input

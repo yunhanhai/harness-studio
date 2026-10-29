@@ -70,6 +70,9 @@ const api: StudioApi = {
     scan: (force) => invoke(IPC.insightsScan, force),
     revealSession: (id) => invoke(IPC.insightsReveal, id)
   },
+  tabs: {
+    setActiveGuest: (id) => ipcRenderer.send(IPC.tabsActiveGuest, id)
+  },
   quickAsk: {
     submit: (text, options) => invoke(IPC.quickAskSubmit, text, options),
     recent: () => invoke(IPC.quickAskRecentList),

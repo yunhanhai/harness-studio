@@ -36,7 +36,8 @@ Harness Studio takes a different angle: **make one developer's daily loop feel f
 ## Features
 
 - **Studio dashboard** — host status, port, version, uptime, runtime diagnostics, recent workspaces.
-- **Multi-workspace host management** — each workspace owns a project directory and an isolated `dsh web` process.
+- **Multi-workspace host management** — each workspace binds a project directory; switching reuses the running `dsh web` host instead of restarting it.
+- **Session tabs** — several Harness conversations side by side in one window (`Ctrl+T` new, `Ctrl+W` close, `Ctrl+Tab` / `Ctrl+Shift+Tab` switch). Tabs share one runtime and switch without reloading; each is its own renderer process, so the count is capped (4 by default, 1–8 in Settings → General).
 - **One-click runtime** — detect a local `dsh`, or download Node.js and install `@deepseek-ai/dsh` with live progress.
 - **Official conversation UI** — embedded in a locked-down `<webview>`; no fork of model or tool behavior.
 - **Prompt library** — built-ins plus your own, one-click copy into the chat.
@@ -108,6 +109,8 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full design.
 | `Ctrl+,` | Settings |
 | `Ctrl+1` / `2` / `3` | Home / Workspace / Insights |
 | `Ctrl+4` / `5` | Prompts / Logs |
+| `Ctrl+T` / `Ctrl+W` | New / close session tab |
+| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous session tab |
 | `Ctrl+Alt+H` | Show / hide window globally |
 | `Ctrl+Alt+K` | Open palette globally |
 | `Ctrl+Alt+Space` | Global quick ask (sends to the active session) |
@@ -147,9 +150,11 @@ The repo ships CI and release workflows plus a full guide:
 - [x] Session insights: tokens, cache hit rate, cost, daily trends
 - [x] Auto-update via `electron-updater` (GitHub Releases)
 - [x] Global quick-ask (`Ctrl+Alt+Space`)
-- [ ] Multi-tab workspaces
+- [x] Host crash auto-recovery with backoff
+- [x] Session tabs on one shared runtime
 - [ ] Plugin marketplace entry
 - [ ] macOS builds and signing
+- [ ] English UI
 
 ## License
 

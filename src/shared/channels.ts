@@ -51,6 +51,8 @@ export const IPC = {
   insightsScan: 'insights:scan',
   insightsReveal: 'insights:reveal',
 
+  tabsActiveGuest: 'tabs:active-guest',
+
   quickAskSubmit: 'quickask:submit',
   quickAskClose: 'quickask:close',
   quickAskHide: 'quickask:hide',

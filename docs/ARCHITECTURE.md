@@ -189,6 +189,48 @@ Node.js 同理：自定义路径 → 便携运行时 → `C:\Program Files\nodej
 
 关键文件：`src/main/quickask.ts`（注入逻辑）、`src/main/windows.ts`（窗口）、`src/renderer/src/components/QuickAsk.tsx`（界面）。
 
+## 会话标签页
+
+工作区页面可以同时打开多个内嵌会话（默认最多 4 个，设置里可调 1–8）。
+
+### 为什么是一个 Host、多个 webview
+
+| 方案 | 代价 | 结论 |
+| --- | --- | --- |
+| 每个标签一个 Host（`HostPool`，即 `git stash@{0}` 里那份未完成的改动） | 每个 Host 约 10 秒冷启动和一整份 Node 进程内存；两个 Host 不能写同一个 profile，还得给每个标签克隆一份配置档案 | 放弃 |
+| 一个 Host，每个标签一个 `<webview>` | 每个标签多一个渲染进程 | **采用** |
+
+DSH 本身就是多工作区、多会话服务（见上文「启动耗时与工作区复用」）：会话在 Host 里各自运行，不依赖有没有界面在看，侧栏里其他会话的「运行中」状态就是这么来的。所以「并行」不需要多个 Host，只需要多个视图。所有标签加载同一个 `host.url`、同一个 `persist:harness-studio` 分区，相当于在同一个站点开了几个浏览器标签：cookie 与 localStorage 共用，各自选中的会话、滚动位置、输入框内容留在各自的渲染进程里。
+
+### 约束与取舍
+
+- **内嵌界面没有 URL 路由。** 当前会话由前端自己的状态决定（`ctx.uiWorkspace.openSession`），地址里没有会话或工作区。所以新标签打开在内嵌界面上次所在的位置，由用户在左侧列表里选择。Studio 不去驱动内嵌界面跳到某个会话：那需要私有 RPC 或模拟点击，比 webview 本身更脆弱。
+- **重启运行时会收拢成一个标签。** Host 用随机端口，新进程就是新的 origin：cookie 绑定 host:port，localStorage 按 origin 隔离，旧标签的位置本来就回不来。渲染进程在「就绪且 URL 变了」时把标签重置为一个。
+- **工作区页面常驻。** 以前离开工作区视图会卸载 `<webview>`，切回来要整页重新加载。现在第一次进入工作区后页面一直挂着，离开时只用 `visibility: hidden` + `pointer-events: none` 藏起来。**不能用 `display: none`**：零尺寸的 webview 会丢布局与滚动位置，快速提问「找可见输入框」的检查也会失败。代价是离开工作区页面时，这些标签占用的内存不会释放；冷启动后没进过工作区就不会创建任何 webview。实测多开一个空会话标签，Electron 进程私有内存合计多约 100 MB（368 → 474 MB，单次测量），会话内容越多占用越大，这就是上限默认 4 的原因。
+- **标签名**取自内嵌界面的 `document.title`。它的格式是「会话标题 — 产品名」，没有会话标题时只有产品名；Studio 取最后一个 ` — ` 之前的部分，取不到就显示「会话 N」。
+
+### 主进程：多个 guest
+
+主进程以前只记一个 `guestContents`。现在按 `webContents.id` 记录全部已挂载的 guest，渲染进程通过 `tabs:active-guest` 告诉主进程前台是哪一个（id 来自 `<webview>.getWebContentsId()`，dom-ready 之后才能读）：
+
+- 快速提问注入**前台标签**的 guest；guest 存在但用户停在别的页面时，先切回工作区再注入；
+- 主题与发送确认开关推给**所有** guest；`guest:confirm-send` 与 `guest:notice` 接受任一已登记的 guest；
+- `tabs:active-guest` 只接受主窗口发来的、已登记的 id。
+
+### 快捷键与内嵌终端
+
+`Ctrl+T` / `Ctrl+W` / `Ctrl+Tab` / `Ctrl+Shift+Tab` 按焦点所在分三路：
+
+| 焦点在 | 由谁处理 |
+| --- | --- |
+| Studio 自己的界面 | 渲染进程的 keydown |
+| 内嵌会话界面 | workspace preload 在捕获阶段拦下，经 `guest:shortcut` 交给主进程，再作为 `StudioAction` 发给渲染进程 |
+| 内嵌终端（`.xterm` 内） | **不拦截**，留给终端里的 shell |
+
+不放在主进程 `before-input-event` 里统一处理，是因为主进程看不到焦点是否在终端里。浏览器会先占用这几个键，Electron 不会，所以内嵌终端在 Studio 里确实收得到它们。
+
+关键文件：`src/renderer/src/pages/HarnessPane.tsx`（每个标签的 webview）、`src/renderer/src/components/TabStrip.tsx`（标签条）、`src/renderer/src/store.ts`（标签状态与重启收拢）、`src/main/index.ts`（guest 登记与快速提问目标）、`src/preload/workspace.ts`（内嵌界面里的快捷键转发）。
+
 ## 会话洞察
 
 洞察面板是只读分析层，不参与 Host 生命周期，也不接触对话正文。

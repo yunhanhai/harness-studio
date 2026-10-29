@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron'
-import type { GuestNotice } from '@shared/types'
+import type { GuestNotice, TabCommand } from '@shared/types'
 
 /**
  * Channel names are duplicated here on purpose: this preload runs with
@@ -11,6 +11,7 @@ import type { GuestNotice } from '@shared/types'
 const GUEST_NOTICE_CHANNEL = 'guest:notice'
 const GUEST_THEME_CHANNEL = 'guest:theme'
 const GUEST_CONFIRM_CHANNEL = 'guest:confirm-send'
+const GUEST_SHORTCUT_CHANNEL = 'guest:shortcut'
 
 interface ComposerGuard {
   confirmSend: boolean
@@ -302,10 +303,59 @@ ipcRenderer.on(GUEST_THEME_CHANNEL, (_event, payload: GuardPayload) => {
   applyGuard(payload)
 })
 
+/* ------------------------------------------------------------------ *
+ * Session tab shortcuts
+ *
+ * Studio's tabs live outside this page, so Ctrl+T, Ctrl+W and Ctrl+Tab
+ * pressed in here have to be handed out. Chrome keeps these keys for
+ * itself; Electron delivers every key to the page, and the embedded
+ * terminal (xterm.js) depends on that: Ctrl+W erases a word in bash,
+ * Ctrl+T swaps two characters. The main process cannot tell from
+ * `before-input-event` whether the terminal has focus, so the decision
+ * is made here. Inside `.xterm` these keys pass through untouched;
+ * anywhere else they are taken from the page and sent to Studio over
+ * `guest:shortcut`.
+ * ------------------------------------------------------------------ */
+
+function forwardTabShortcuts(): void {
+  /** Whether a node sits inside the embedded terminal. */
+  const inTerminal = (node: EventTarget | null): boolean =>
+    node instanceof Element && node.closest('.xterm') !== null
+
+  const commandFor = (event: KeyboardEvent): TabCommand | null => {
+    const mod = event.ctrlKey || event.metaKey
+    if (!mod || event.altKey || event.isComposing) return null
+    if (inTerminal(event.target) || inTerminal(document.activeElement)) return null
+    const key = event.key
+    if ((key === 't' || key === 'T') && !event.shiftKey) return 'new-tab'
+    if ((key === 'w' || key === 'W') && !event.shiftKey) return 'close-tab'
+    // Ctrl only: Cmd+Tab is the macOS app switcher.
+    if (key === 'Tab' && event.ctrlKey) return event.shiftKey ? 'prev-tab' : 'next-tab'
+    return null
+  }
+
+  const onKeyDown = (event: KeyboardEvent): void => {
+    try {
+      const action = commandFor(event)
+      if (!action) return
+      // Send first: if forwarding fails, the key stays with the page.
+      ipcRenderer.send(GUEST_SHORTCUT_CHANNEL, { action })
+      event.preventDefault()
+      event.stopImmediatePropagation()
+    } catch {
+      /* leave the key to the page */
+    }
+  }
+
+  // Capture phase, so the page's own handlers never act on a key Studio took.
+  document.addEventListener('keydown', onKeyDown, true)
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   document.documentElement.dataset.hsSurface = 'harness'
   watchToasts()
   guardComposer()
+  forwardTabShortcuts()
   // Ask for the current settings; the theme push only arrives on change.
   try {
     applyGuard(ipcRenderer.sendSync(GUEST_CONFIRM_CHANNEL, { kind: 'settings' }) ?? {})

@@ -56,6 +56,9 @@ export const DEFAULT_SETTINGS: Settings = {
     confirmSend: false,
     confirmQueued: true
   },
+  tabs: {
+    limit: 4
+  },
   lastWorkspaceId: '',
   window: {
     width: 1360,
