@@ -1,3 +1,4 @@
+import { t, setMainLanguage, sendConfirmationCopy } from './i18n'
 import {
   BrowserWindow,
   app,
@@ -43,7 +44,7 @@ import { injectIntoComposer } from './quickask'
 import { WorkspaceNavigator } from './workspace-navigation'
 import { registerGlobalShortcuts } from './shortcuts'
 import { installApplicationMenu } from './menu'
-import { createTray } from './tray'
+import { createTray, updateTrayMenu } from './tray'
 import { checkForUpdates, downloadUpdate, installUpdate } from './updater'
 import { autoUpdater } from 'electron-updater'
 import { invalidateSessionCache, scanSessions } from './sessions'
@@ -65,6 +66,7 @@ let installer: RuntimeInstaller
 let runtimeInfo: RuntimeInfo | null = null
 let quitting = false
 let closeNoticeShown = false
+let refreshIntegrationLanguage: (() => void) | null = null
 /**
  * Every embedded Harness webview, keyed by `webContents.id`. Each session tab is
  * its own guest against the same host; the renderer reports which one is in
@@ -188,7 +190,7 @@ function showQuickAsk(): void {
   if (!quickAskWindow) return
   if (host.getStatus().state !== 'ready') {
     showMain()
-    sendMain(IPC.toast, { message: '运行时尚未就绪，无法快速提问', kind: 'error' })
+    sendMain(IPC.toast, { message: t('main.quickAskUnavailable'), kind: 'error' })
     return
   }
   try {
@@ -210,12 +212,12 @@ async function submitQuickAsk(
   const reveal = options.reveal ?? current.quickAsk.revealAfterSend
 
   if (!workspaceList().length && guests.size === 0) {
-    return { status: 'no-workspace', message: '还没有工作区' }
+    return { status: 'no-workspace', message: t('main.noWorkspace') }
   }
 
   const status = host.getStatus()
   if (status.state !== 'ready') {
-    return { status: 'needs-host', message: '运行时尚未就绪，请先打开工作区' }
+    return { status: 'needs-host', message: t('main.openWorkspaceFirst') }
   }
 
   // The composer only exists once the workspace view mounted its webview.
@@ -231,12 +233,12 @@ async function submitQuickAsk(
     else sendAction({ type: 'open-workspace' })
     hideQuickAsk()
     guest = await waitForGuest()
-    if (!guest) return { status: 'needs-host', message: '会话界面没有加载完成，请稍后重试' }
+    if (!guest) return { status: 'needs-host', message: t('main.guestLoading') }
     await new Promise((resolve) => setTimeout(resolve, 1200))
   }
 
   if (workspaceNavigator.isBusy(guest)) {
-    return { status: 'needs-host', message: '工作区正在切换，请就绪后再发送' }
+    return { status: 'needs-host', message: t('main.workspaceSwitching') }
   }
   const targetId = guest.id
   const authorization = workspaceNavigator.authorizeInput(guest, () => activeGuest()?.id === targetId)
@@ -252,7 +254,7 @@ async function submitQuickAsk(
     if (reveal) showMain()
     hideQuickAsk()
     sendMain(IPC.toast, {
-      message: result.status === 'sent' ? '已发送到 Harness' : (result.message ?? '已填入输入框'),
+      message: result.status === 'sent' ? t('main.sentToHarness') : (result.message ?? t('main.inserted')),
       kind: result.status === 'sent' ? 'success' : 'info'
     })
   } else {
@@ -286,6 +288,7 @@ function pickWorkspace(id?: string): Workspace | undefined {
 
 function buildAppInfo(): AppInfo {
   return {
+    systemLocale: app.getLocale(),
     name: PRODUCT_NAME,
     version: app.getVersion(),
     platform: process.platform,
@@ -312,13 +315,13 @@ async function ensureRuntime(): Promise<RuntimeInfo> {
 async function startHost(workspaceId?: string): Promise<HostStatus> {
   const workspace = pickWorkspace(workspaceId)
   if (!workspace) {
-    const status: HostStatus = { state: 'error', error: '还没有工作区。请先选择一个项目文件夹。' }
+    const status: HostStatus = { state: 'error', error: t('main.chooseProjectFirst') }
     sendMain(IPC.hostStatusChanged, status)
     return status
   }
   const info = await ensureRuntime()
   if (info.state !== 'ready') {
-    const status: HostStatus = { state: 'error', error: info.error ?? '运行时尚未就绪。' }
+    const status: HostStatus = { state: 'error', error: info.error ?? t('main.runtimeNotReady') }
     sendMain(IPC.hostStatusChanged, status)
     return status
   }
@@ -362,6 +365,7 @@ async function stopHost(): Promise<HostStatus> {
 }
 
 function applySettings(next: Settings): void {
+  if (setMainLanguage(next.language, app.getLocale())) refreshIntegrationLanguage?.()
   applyTheme(next.theme)
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.setZoomFactor(next.zoomFactor)
@@ -390,7 +394,7 @@ function applySettings(next: Settings): void {
     if (!contents.isDestroyed()) contents.send(IPC.guestTheme, guestPayload)
   }
   if (failures.length > 0) {
-    sendMain(IPC.toast, { message: `全局快捷键被占用：${failures.join('、')}`, kind: 'error' })
+    sendMain(IPC.toast, { message: t('main.shortcutsOccupied', { shortcuts: failures.join(', ') }), kind: 'error' })
   }
   for (const win of [mainWindow, paletteWindow, quickAskWindow]) {
     if (win && !win.isDestroyed()) win.webContents.send(IPC.settingsChanged, next)
@@ -409,10 +413,10 @@ function handleClose(event: Electron.Event): void {
   if (!closeNoticeShown && !existsSync(marker)) {
     const choice = dialog.showMessageBoxSync(mainWindow!, {
       type: 'question',
-      title: 'Harness Studio 仍在运行',
-      message: '要隐藏到系统托盘，还是退出应用？',
-      detail: '隐藏后，正在运行的会话和任务不会中断。可以从托盘图标或全局快捷键重新打开。',
-      buttons: ['隐藏到托盘', '退出应用'],
+      title: t('main.stillRunning'),
+      message: t('main.hideOrQuit'),
+      detail: t('main.hideDetail'),
+      buttons: [t('main.hideToTray'), t('main.quitApp')],
       defaultId: 0,
       cancelId: 0,
       noLink: true
@@ -603,22 +607,9 @@ function confirmSend(request: { kind?: string; preview?: string; queued?: number
   const preview = (request.preview ?? '').trim()
   const window = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined
 
-  const detailLines: string[] = []
-  if (preview) detailLines.push(preview.length > 160 ? `${preview.slice(0, 160)}…` : preview)
-  if (queued > 0) {
-    detailLines.push('')
-    detailLines.push(
-      `注意：队列里还有 ${queued} 条消息，本次发送会连同它们一起提交。` +
-        '如果不想一起发出，先取消，在队列面板里删除或插话发送。'
-    )
-  }
-
   const options: Electron.MessageBoxSyncOptions = {
     type: queued > 0 ? 'warning' : 'question',
-    title: '确认发送',
-    message: queued > 0 ? `发送这条消息，并连同 ${queued} 条排队消息？` : '发送这条消息？',
-    detail: detailLines.join('\n'),
-    buttons: ['发送', '取消'],
+    ...sendConfirmationCopy(queued, preview),
     defaultId: 0,
     cancelId: 1,
     noLink: true
@@ -684,10 +675,10 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
     let workspace = typeof workspaceId === 'string' ? workspaceList().find((item) => item.id === workspaceId) : undefined
     if (!workspace && workspaceId === '' && typeof path === 'string' && isAbsolute(path)) {
       const directory = resolve(path)
-      try { await readdir(directory) } catch { return { status: 'failed', message: '项目目录不存在或无法访问' } }
+      try { await readdir(directory) } catch { return { status: 'failed', message: t('main.directoryUnavailable') } }
       workspace = { id: '', name: basename(directory), path: directory, pinned: false, color: ACCENTS[0], createdAt: 0, lastOpenedAt: 0 }
     }
-    if (!workspace) return { status: 'failed', message: '找不到这个 Studio 工作区' }
+    if (!workspace) return { status: 'failed', message: t('main.workspaceMissing') }
     if (guest.isDestroyed() || workspaceOpenRequests.get(guest.id) !== request) return { status: 'cancelled' }
     const currentStatus = host.getStatus()
     if (currentStatus.state !== 'ready' || currentStatus.url !== startingStatus.url || currentStatus.pid !== startingStatus.pid || currentStatus.startedAt !== startingStatus.startedAt) {
@@ -791,18 +782,18 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
     }
     const selfHost = targets.find((item) => item.self)
     if (selfHost) {
-      sendMain(IPC.toast, { message: '不能在这里结束 Studio 自己的运行时，请使用「重启运行时」。', kind: 'error' })
+      sendMain(IPC.toast, { message: t('main.cannotKillOwnHost'), kind: 'error' })
       return { cancelled: true, killed: [], failed: [], report }
     }
     const detail = targets
-      .map((item) => `· PID ${item.pid}（profile: ${item.profile}，${item.mode === 'web' ? 'web' : item.mode === 'cli' ? '命令行' : '其他'}）`)
+      .map((item) => t('main.processLine', { pid: item.pid, profile: item.profile, mode: item.mode === 'web' ? 'web' : item.mode === 'cli' ? t('main.cliMode') : t('main.otherMode') }))
       .join('\n')
     const choice = dialog.showMessageBoxSync(mainWindow!, {
       type: 'warning',
-      title: '结束其他 DSH 进程',
-      message: `将强制结束 ${targets.length} 个 DeepSeek Harness 进程。`,
-      detail: `${detail}\n\n这些进程里正在运行的会话会被中断。若只是想避免「会话已被占用」，结束后回到会话界面重试即可。`,
-      buttons: ['结束这些进程', '取消'],
+      title: t('main.stopOtherProcesses'),
+      message: t('main.forceStopProcesses', { count: targets.length }),
+      detail: t('main.forceStopDetail', { processes: detail }),
+      buttons: [t('main.stopTheseProcesses'), t('main.cancel')],
       defaultId: 1,
       cancelId: 1,
       noLink: true
@@ -813,13 +804,13 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
     log('instances', `killed ${killed.join(',') || '-'} failed ${failed.join(',') || '-'}`)
     if (killed.length > 0) {
       sendMain(IPC.toast, {
-        message: `已结束 ${killed.length} 个 DSH 进程，回到会话界面重试即可。`,
+        message: t('main.processesStopped', { count: killed.length }),
         kind: 'success'
       })
     }
     if (failed.length > 0) {
       sendMain(IPC.toast, {
-        message: `${failed.length} 个进程无法结束（可能权限不足或已退出）。`,
+        message: t('main.processesNotStopped', { count: failed.length }),
         kind: 'error'
       })
     }
@@ -831,14 +822,14 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
     let path = pathArg?.trim()
     if (!path) {
       const result = await dialog.showOpenDialog(mainWindow!, {
-        title: '选择工作区文件夹',
+        title: t('main.chooseWorkspaceFolder'),
         properties: ['openDirectory', 'createDirectory']
       })
       if (result.canceled || result.filePaths.length === 0) return null
       path = result.filePaths[0]
     }
     const normalized = resolve(path)
-    if (!existsSync(normalized)) throw new Error('文件夹不存在')
+    if (!existsSync(normalized)) throw new Error(t('main.folderMissing'))
     const existing = workspaceList().find((item) => item.path.toLowerCase() === normalized.toLowerCase())
     if (existing) return existing
     const workspace: Workspace = {
@@ -888,7 +879,7 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
   })
   handle(IPC.workspacesPick, async () => {
     const result = await dialog.showOpenDialog(mainWindow!, {
-      title: '选择工作区文件夹',
+      title: t('main.chooseWorkspaceFolder'),
       properties: ['openDirectory', 'createDirectory']
     })
     return result.canceled ? null : (result.filePaths[0] ?? null)
@@ -929,7 +920,7 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
   handle(IPC.promptsSave, async (input: Pick<PromptItem, 'title' | 'content' | 'tags'> & { id?: string }) => {
     const title = input.title.trim()
     const content = input.content.trim()
-    if (!title || !content) throw new Error('标题和内容不能为空')
+    if (!title || !content) throw new Error(t('main.promptRequired'))
     const now = Date.now()
     if (input.id) {
       await stores.prompts.update((list) =>
@@ -1069,7 +1060,7 @@ function createShellWindows(): void {
 }
 
 function createIntegrations(): void {
-  const tray = createTray({
+  const trayHandlers = {
     show: showMain,
     toggle: toggleMain,
     openWorkspace: () => sendAction({ type: 'open-workspace' }),
@@ -1078,10 +1069,11 @@ function createIntegrations(): void {
     restartHost: () => sendAction({ type: 'restart-host' }),
     checkUpdates: () => sendAction({ type: 'check-updates' }),
     quit: () => void quitApp()
-  })
+  }
+  const tray = createTray(trayHandlers)
   tray.setToolTip(PRODUCT_NAME)
 
-  installApplicationMenu({
+  const menuHandlers = {
     openWorkspace: () => sendAction({ type: 'open-workspace' }),
     openSettings: () => sendAction({ type: 'open-settings' }),
     openLogs: () => sendAction({ type: 'open-logs' }),
@@ -1090,7 +1082,12 @@ function createIntegrations(): void {
     showAbout: () => sendAction({ type: 'show-about' }),
     toggleWindow: toggleMain,
     quit: () => void quitApp()
-  })
+  }
+  refreshIntegrationLanguage = () => {
+    updateTrayMenu(tray, trayHandlers)
+    installApplicationMenu(menuHandlers)
+  }
+  installApplicationMenu(menuHandlers)
 }
 
 async function bootstrap(): Promise<void> {
@@ -1098,6 +1095,7 @@ async function bootstrap(): Promise<void> {
   app.setAppUserModelId('com.harness.studio')
   stores = createStores(app.getPath('userData'))
   await loadStores(stores)
+  setMainLanguage(settings().language, app.getLocale())
   host = new HostManager()
   workspaceNavigator = new WorkspaceNavigator(workspaceList, (contents) => {
     const status = host.getStatus()
@@ -1183,7 +1181,7 @@ async function bootstrap(): Promise<void> {
   if (settings().checkUpdatesOnStart) {
     void checkForUpdates().then((result) => {
       if (result.status === 'available') {
-        sendMain(IPC.toast, { message: `发现新版本 ${result.version}`, kind: 'info' })
+        sendMain(IPC.toast, { message: t('main.newVersion', { version: result.version ?? t('main.unknownVersion') }), kind: 'info' })
       }
     })
   }
@@ -1220,7 +1218,7 @@ if (!gotLock) {
 } else {
   void bootstrap().catch((error) => {
     logError('bootstrap', error)
-    dialog.showErrorBox('Harness Studio 启动失败', error instanceof Error ? error.message : String(error))
+    dialog.showErrorBox(t('main.startupFailed'), error instanceof Error ? error.message : String(error))
     app.quit()
   })
 }

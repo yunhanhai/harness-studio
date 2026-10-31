@@ -1,3 +1,4 @@
+import { useI18n } from '../lib/i18n'
 import { useEffect, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 
@@ -12,6 +13,7 @@ interface ModalProps {
 }
 
 export function Modal({ open, title, subtitle, onClose, children, footer, width = 620 }: ModalProps): React.JSX.Element | null {
+  const { t } = useI18n()
   useEffect(() => {
     if (!open) return
     const listener = (event: KeyboardEvent): void => {
@@ -31,7 +33,7 @@ export function Modal({ open, title, subtitle, onClose, children, footer, width 
             <h2>{title}</h2>
             {subtitle ? <p>{subtitle}</p> : null}
           </div>
-          <button className="icon-button" onClick={onClose} aria-label="关闭">
+          <button className="icon-button" onClick={onClose} aria-label={t('shell.close')}>
             <X size={16} />
           </button>
         </header>

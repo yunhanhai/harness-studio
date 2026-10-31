@@ -23,24 +23,16 @@ import {
   Wrench,
   Zap
 } from 'lucide-react'
-import type { InsightsSettings, RuntimeSettings, UpdateResult } from '@shared/types'
+import type { InsightsSettings, LanguageSetting, RuntimeSettings, UpdateResult } from '@shared/types'
 import { ACCENTS, DOCS_URL, GITEE_URL, GITHUB_URL, RELEASES_URL } from '@shared/defaults'
 import { useApp } from '../store'
+import { t as translateNow, useI18n } from '../lib/i18n'
 import { sourceLabel } from '../lib/format'
 import { Modal } from '../components/Modal'
 import { BrandMark } from '../components/BrandMark'
 import { GithubMark } from '../components/GithubMark'
 
 type SectionId = 'general' | 'appearance' | 'insights' | 'runtime' | 'advanced' | 'about'
-
-const SECTIONS: Array<{ id: SectionId; label: string; icon: React.ComponentType<{ size?: number }> }> = [
-  { id: 'general', label: '通用', icon: SlidersHorizontal },
-  { id: 'appearance', label: '外观', icon: Palette },
-  { id: 'insights', label: '洞察', icon: BarChart3 },
-  { id: 'runtime', label: '运行时', icon: Cpu },
-  { id: 'advanced', label: '高级', icon: Terminal },
-  { id: 'about', label: '关于', icon: Info }
-]
 
 function Toggle({
   checked,
@@ -100,6 +92,15 @@ function Card({ title, desc, children }: { title: string; desc?: string; childre
 }
 
 export function SettingsPage(): React.JSX.Element {
+  const { locale, t } = useI18n()
+  const SECTIONS: Array<{ id: SectionId; label: string; icon: React.ComponentType<{ size?: number }> }> = [
+    { id: 'general', label: t('pages.settings.general'), icon: SlidersHorizontal },
+    { id: 'appearance', label: t('pages.settings.appearance'), icon: Palette },
+    { id: 'insights', label: t('pages.settings.insights'), icon: BarChart3 },
+    { id: 'runtime', label: t('pages.settings.runtime'), icon: Cpu },
+    { id: 'advanced', label: t('pages.settings.advanced'), icon: Terminal },
+    { id: 'about', label: t('pages.settings.about'), icon: Info }
+  ]
   const settings = useApp((state) => state.settings)
   const info = useApp((state) => state.info)
   const runtime = useApp((state) => state.runtime)
@@ -157,9 +158,10 @@ export function SettingsPage(): React.JSX.Element {
 
   const active = (section as SectionId) || 'general'
 
-  const saveRuntimeDraft = async (): Promise<void> => {    if (!runtimeDraft) return
+  const saveRuntimeDraft = async (): Promise<void> => {
+    if (!runtimeDraft) return
     await saveSettings({ runtime: runtimeDraft })
-    toast('运行时设置已保存', 'success')
+    toast(translateNow('pages.settings.runtimeSaved'), 'success')
   }
 
   const saveAdvanced = async (): Promise<void> => {
@@ -175,7 +177,7 @@ export function SettingsPage(): React.JSX.Element {
       env[trimmed.slice(0, index).trim()] = trimmed.slice(index + 1).trim()
     }
     await saveSettings({ runtime: { ...settings.runtime, extraArgs: args, env } })
-    toast('高级设置已保存', 'success')
+    toast(translateNow('pages.settings.advancedSaved'), 'success')
   }
 
   const checkUpdate = async (): Promise<void> => {
@@ -191,8 +193,8 @@ export function SettingsPage(): React.JSX.Element {
     const result = await window.studio.studio.downloadUpdate()
     setDownloading(false)
     setUpdate(result)
-    if (result.status === 'available') toast('更新已下载，重启应用即可安装', 'success')
-    else if (result.status === 'error') toast(result.message ?? '下载更新失败', 'error')
+    if (result.status === 'available') toast(translateNow('pages.settings.updateReady'), 'success')
+    else if (result.status === 'error') toast(result.message ?? translateNow('pages.settings.updateFailed'), 'error')
   }
 
   return (
@@ -201,10 +203,10 @@ export function SettingsPage(): React.JSX.Element {
         <div>
           <div className="eyebrow">
             <SlidersHorizontal size={13} />
-            设置
+            {t('pages.settings.title')}
           </div>
-          <h1>把工作台调成你的样子</h1>
-          <p>所有设置只保存在本机，不会同步到云端。</p>
+          <h1>{t('pages.settings.headline')}</h1>
+          <p>{t('pages.settings.localSettings')}</p>
         </div>
       </header>
 
@@ -233,14 +235,29 @@ export function SettingsPage(): React.JSX.Element {
         <div className="settings-content">
           {active === 'general' ? (
             <>
-              <Card title="启动" desc="控制应用如何开始新的一天。">
-                <Row title="开机自动启动" desc="登录 Windows 后在后台启动 Harness Studio。">
+              <Card title={t('pages.settings.language')} desc={t('pages.settings.languageDesc')}>
+                <Row title={t('pages.settings.language')} stacked>
+                  <select
+                    className="input"
+                    aria-label={t('pages.settings.language')}
+                    value={settings.language}
+                    onChange={(event) => void saveSettings({ language: event.target.value as LanguageSetting })}
+                  >
+                    <option value="system">{t('pages.settings.system')}</option>
+                    <option value="zh-CN">中文</option>
+                    <option value="en-US">English</option>
+                  </select>
+                </Row>
+              </Card>
+
+              <Card title={t('pages.settings.startup')} desc={t('pages.settings.startupDesc')}>
+                <Row title={t('pages.settings.launchAtLogin')} desc={t('pages.settings.launchAtLoginDesc')}>
                   <Toggle checked={settings.launchAtLogin} onChange={(value) => void saveSettings({ launchAtLogin: value })} />
                 </Row>
-                <Row title="启动时最小化" desc="启动后只保留托盘图标，不打断当前工作。">
+                <Row title={t('pages.settings.startMinimized')} desc={t('pages.settings.startMinimizedDesc')}>
                   <Toggle checked={settings.startMinimized} onChange={(value) => void saveSettings({ startMinimized: value })} />
                 </Row>
-                <Row title="自动检查更新" desc="启动后静默检查 GitHub 发布版本。">
+                <Row title={t('pages.settings.autoUpdate')} desc={t('pages.settings.autoUpdateDesc')}>
                   <Toggle
                     checked={settings.checkUpdatesOnStart}
                     onChange={(value) => void saveSettings({ checkUpdatesOnStart: value })}
@@ -248,11 +265,11 @@ export function SettingsPage(): React.JSX.Element {
                 </Row>
               </Card>
 
-              <Card title="窗口行为" desc="决定点击关闭按钮时发生什么。">
-                <Row title="关闭时隐藏到托盘" desc="会话和任务继续运行，可从托盘或快捷键找回窗口。">
+              <Card title={t('pages.settings.windowBehavior')} desc={t('pages.settings.windowBehaviorDesc')}>
+                <Row title={t('pages.settings.closeToTray')} desc={t('pages.settings.closeToTrayDesc')}>
                   <Toggle checked={settings.closeToTray} onChange={(value) => void saveSettings({ closeToTray: value })} />
                 </Row>
-                <Row title="最小化时隐藏到托盘" desc="保持任务栏干净，适合长期挂机。">
+                <Row title={t('pages.settings.minimizeToTray')} desc={t('pages.settings.minimizeToTrayDesc')}>
                   <Toggle
                     checked={settings.minimizeToTray}
                     onChange={(value) => void saveSettings({ minimizeToTray: value })}
@@ -260,14 +277,14 @@ export function SettingsPage(): React.JSX.Element {
                 </Row>
               </Card>
 
-              <Card title="默认工作区" desc="启动运行时和托盘「打开工作区」会优先使用它。">
-                <Row title="当前工作区" stacked>
+              <Card title={t('pages.settings.defaultWorkspace')} desc={t('pages.settings.defaultWorkspaceDesc')}>
+                <Row title={t('pages.settings.currentWorkspace')} stacked>
                   <select
                     className="input"
                     value={settings.lastWorkspaceId}
                     onChange={(event) => void saveSettings({ lastWorkspaceId: event.target.value })}
                   >
-                    <option value="">未选择</option>
+                    <option value="">{t('pages.settings.notSelected')}</option>
                     {workspaces.map((workspace) => (
                       <option key={workspace.id} value={workspace.id}>
                         {workspace.name}
@@ -277,10 +294,10 @@ export function SettingsPage(): React.JSX.Element {
                 </Row>
               </Card>
 
-              <Card title="会话标签页" desc="同一个运行时里并排打开多个会话，切换时不重新加载。">
+              <Card title={t('pages.settings.sessionTabs')} desc={t('pages.settings.sessionTabsDesc')}>
                 <Row
-                  title="最多同时打开"
-                  desc={`当前 ${settings.tabs.limit} 个。每个标签都是独立的渲染进程，开得越多越占内存。`}
+                  title={t('pages.settings.tabLimit')}
+                  desc={t('pages.settings.tabLimitDesc', { count: settings.tabs.limit })}
                   stacked
                 >
                   <input
@@ -296,34 +313,34 @@ export function SettingsPage(): React.JSX.Element {
                     }
                   />
                 </Row>
-                <Row title="快捷键" stacked>
+                <Row title={t('pages.settings.shortcuts')} stacked>
                   <div className="setting-desc">
-                    Ctrl+T 新建、Ctrl+W 关闭（最后一个不会被关掉）、Ctrl+Tab / Ctrl+Shift+Tab 切换。焦点在内嵌终端里时，这些按键照常交给终端。
+                    {t('pages.settings.tabShortcuts')}
                   </div>
                 </Row>
-                <Row title="说明" stacked>
+                <Row title={t('pages.settings.note')} stacked>
                   <div className="setting-desc">
-                    所有标签共用同一个运行时和登录状态。新标签会打开在内嵌界面上次所在的位置，在它左侧的会话列表里选择要看的会话；重启运行时后，标签会收拢成一个。
+                    {t('pages.settings.tabNote')}
                   </div>
                 </Row>
               </Card>
 
-              <Card title="全局快捷键" desc="在任何应用中都能唤出 Studio。使用 Electron 加速键格式，例如 CommandOrControl+Alt+H。">
-                <Row title="显示 / 隐藏窗口" stacked>
+              <Card title={t('pages.settings.globalShortcuts')} desc={t('pages.settings.globalShortcutsDesc')}>
+                <Row title={t('pages.settings.toggleWindow')} stacked>
                   <input
                     className="input mono"
                     defaultValue={settings.shortcuts.toggleWindow}
                     onBlur={(event) => void saveSettings({ shortcuts: { ...settings.shortcuts, toggleWindow: event.target.value } })}
                   />
                 </Row>
-                <Row title="打开命令面板" stacked>
+                <Row title={t('pages.settings.openPalette')} stacked>
                   <input
                     className="input mono"
                     defaultValue={settings.shortcuts.palette}
                     onBlur={(event) => void saveSettings({ shortcuts: { ...settings.shortcuts, palette: event.target.value } })}
                   />
                 </Row>
-                <Row title="全局快速提问" desc="在任何应用中呼出输入框，直接发送到当前 Harness 会话。" stacked>
+                <Row title={t('pages.settings.globalQuickAsk')} desc={t('pages.settings.globalQuickAskDesc')} stacked>
                   <input
                     className="input mono"
                     defaultValue={settings.shortcuts.quickAsk}
@@ -332,20 +349,20 @@ export function SettingsPage(): React.JSX.Element {
                 </Row>
               </Card>
 
-              <Card title="快速提问" desc="控制全局快速提问窗口的行为。">
-                <Row title="自动发送" desc="关闭后只把内容填入输入框，由你确认后按 Enter。">
+              <Card title={t('pages.settings.quickAsk')} desc={t('pages.settings.quickAskDesc')}>
+                <Row title={t('pages.settings.autoSend')} desc={t('pages.settings.autoSendDesc')}>
                   <Toggle
                     checked={settings.quickAsk.autoSend}
                     onChange={(value) => void saveSettings({ quickAsk: { ...settings.quickAsk, autoSend: value } })}
                   />
                 </Row>
-                <Row title="发送后显示主窗口" desc="关闭后保持在原应用，Studio 只在后台完成发送。">
+                <Row title={t('pages.settings.revealAfterSend')} desc={t('pages.settings.revealAfterSendDesc')}>
                   <Toggle
                     checked={settings.quickAsk.revealAfterSend}
                     onChange={(value) => void saveSettings({ quickAsk: { ...settings.quickAsk, revealAfterSend: value } })}
                   />
                 </Row>
-                <Row title="最近记录条数" desc={`当前 ${settings.quickAsk.recentLimit} 条`} stacked>
+                <Row title={t('pages.settings.recentLimit')} desc={t('pages.settings.recentLimitDesc', { count: settings.quickAsk.recentLimit })} stacked>
                   <input
                     className="input mono"
                     type="number"
@@ -362,27 +379,27 @@ export function SettingsPage(): React.JSX.Element {
               </Card>
 
               <Card
-                title="发送确认"
-                desc="内嵌界面按下回车就会立即发送，误触无法撤回。这里可以让 Studio 在发送前先问你一次。"
+                title={t('pages.settings.sendConfirmation')}
+                desc={t('pages.settings.sendConfirmationDesc')}
               >
-                <Row title="每次发送前确认" desc="拦截回车与发送按钮，弹窗确认后才真正发出。">
+                <Row title={t('pages.settings.confirmEachSend')} desc={t('pages.settings.confirmEachSendDesc')}>
                   <Toggle
                     checked={settings.composer.confirmSend}
                     onChange={(value) => void saveSettings({ composer: { ...settings.composer, confirmSend: value } })}
                   />
                 </Row>
                 <Row
-                  title="发送会带上排队消息时额外提醒"
-                  desc="队列里有待发消息时，本次发送会把它们一起提交；开启后会在确认框里明确指出条数。"
+                  title={t('pages.settings.confirmQueued')}
+                  desc={t('pages.settings.confirmQueuedDesc')}
                 >
                   <Toggle
                     checked={settings.composer.confirmQueued}
                     onChange={(value) => void saveSettings({ composer: { ...settings.composer, confirmQueued: value } })}
                   />
                 </Row>
-                <Row title="说明" stacked>
+                <Row title={t('pages.settings.note')} stacked>
                   <div className="setting-desc">
-                    拦截发生在内嵌界面内部（webview preload），依赖官方输入框结构；如果上游改版导致拦截失效，发送会退回原先的「直接发送」行为。
+                    {t('pages.settings.confirmationNote')}
                   </div>
                 </Row>
               </Card>
@@ -391,12 +408,12 @@ export function SettingsPage(): React.JSX.Element {
 
           {active === 'appearance' ? (
             <>
-              <Card title="主题" desc="跟随系统，或者固定为深色 / 浅色。">
+              <Card title={t('pages.settings.theme')} desc={t('pages.settings.themeDesc')}>
                 <div className="theme-grid">
                   {[
-                    { id: 'system', label: '跟随系统', icon: Monitor },
-                    { id: 'light', label: '浅色', icon: Sun },
-                    { id: 'dark', label: '深色', icon: Moon }
+                    { id: 'system', label: t('pages.settings.system'), icon: Monitor },
+                    { id: 'light', label: t('pages.settings.light'), icon: Sun },
+                    { id: 'dark', label: t('pages.settings.dark'), icon: Moon }
                   ].map((item) => {
                     const Icon = item.icon
                     return (
@@ -422,7 +439,7 @@ export function SettingsPage(): React.JSX.Element {
                 </div>
               </Card>
 
-              <Card title="强调色" desc="影响选中态、按钮与命令面板的高亮。">
+              <Card title={t('pages.settings.accent')} desc={t('pages.settings.accentDesc')}>
                 <div className="accent-row">
                   {ACCENTS.map((color) => (
                     <button
@@ -441,16 +458,16 @@ export function SettingsPage(): React.JSX.Element {
                       value={settings.accent}
                       onChange={(event) => void saveSettings({ accent: event.target.value })}
                     />
-                    <span>自定义</span>
+                    <span>{t('pages.settings.custom')}</span>
                   </label>
                 </div>
               </Card>
 
-              <Card title="动效与缩放" desc="减少动效会让所有过渡立即完成。">
-                <Row title="减少动态效果">
+              <Card title={t('pages.settings.motionZoom')} desc={t('pages.settings.motionZoomDesc')}>
+                <Row title={t('pages.settings.reduceMotion')}>
                   <Toggle checked={settings.reduceMotion} onChange={(value) => void saveSettings({ reduceMotion: value })} />
                 </Row>
-                <Row title="界面缩放" desc={`当前 ${Math.round(settings.zoomFactor * 100)}%`} stacked>
+                <Row title={t('pages.settings.zoom')} desc={t('pages.settings.zoomDesc', { percent: Math.round(settings.zoomFactor * 100) })} stacked>
                   <div className="slider-row">
                     <input
                       type="range"
@@ -461,7 +478,7 @@ export function SettingsPage(): React.JSX.Element {
                       onChange={(event) => void saveSettings({ zoomFactor: Number(event.target.value) })}
                     />
                     <button className="button button-ghost button-small" onClick={() => void saveSettings({ zoomFactor: 1 })}>
-                      重置
+                      {t('pages.settings.reset')}
                     </button>
                   </div>
                 </Row>
@@ -472,10 +489,10 @@ export function SettingsPage(): React.JSX.Element {
           {active === 'insights' ? (
             <>
               <Card
-                title="价格"
-                desc="用于估算会话洞察中的花费。单价按每 100 万 token 计算，全部填 0 则隐藏花费卡片。"
+                title={t('pages.settings.pricing')}
+                desc={t('pages.settings.pricingDesc')}
               >
-                <Row title="未缓存输入（input）" stacked>
+                <Row title={t('pages.settings.inputPrice')} stacked>
                   <input
                     className="input mono"
                     type="number"
@@ -487,7 +504,7 @@ export function SettingsPage(): React.JSX.Element {
                     }
                   />
                 </Row>
-                <Row title="输出（output）" stacked>
+                <Row title={t('pages.settings.outputPrice')} stacked>
                   <input
                     className="input mono"
                     type="number"
@@ -499,7 +516,7 @@ export function SettingsPage(): React.JSX.Element {
                     }
                   />
                 </Row>
-                <Row title="缓存读取（cache read）" desc="命中缓存的输入通常远低于未缓存输入价格。" stacked>
+                <Row title={t('pages.settings.cachePrice')} desc={t('pages.settings.cachePriceDesc')} stacked>
                   <input
                     className="input mono"
                     type="number"
@@ -511,7 +528,7 @@ export function SettingsPage(): React.JSX.Element {
                     }
                   />
                 </Row>
-                <Row title="货币">
+                <Row title={t('pages.settings.currency')}>
                   <div className="segmented">
                     {(['CNY', 'USD'] as const).map((currency) => (
                       <button
@@ -519,41 +536,41 @@ export function SettingsPage(): React.JSX.Element {
                         className={insightsDraft?.currency === currency ? 'active' : ''}
                         onClick={() => insightsDraft && setInsightsDraft({ ...insightsDraft, currency })}
                       >
-                        {currency === 'CNY' ? '¥ 人民币' : '$ 美元'}
+                        {currency === 'CNY' ? t('pages.settings.cny') : t('pages.settings.usd')}
                       </button>
                     ))}
                   </div>
                 </Row>
                 <div className="settings-save-row">
                   <button className="button button-ghost button-small" onClick={() => setInsightsDraft(settings.insights)}>
-                    撤销
+                    {t('pages.settings.revert')}
                   </button>
                   <button
                     className="button button-primary button-small"
                     onClick={async () => {
                       if (!insightsDraft) return
                       await saveSettings({ insights: insightsDraft })
-                      toast('洞察设置已保存，重新扫描后生效', 'success')
+                      toast(translateNow('pages.settings.insightsSaved'), 'success')
                     }}
                   >
-                    保存
+                    {t('pages.settings.save')}
                   </button>
                 </div>
               </Card>
 
-              <Card title="数据来源" desc="会话洞察只读取本机文件，不上传任何对话内容。">
-                <Row title="会话目录" desc={info.dshHome}>
+              <Card title={t('pages.settings.dataSource')} desc={t('pages.settings.dataSourceDesc')}>
+                <Row title={t('pages.settings.sessionDirectory')} desc={info.dshHome}>
                   <button
                     className="button button-secondary button-small"
                     onClick={() => void window.studio.app.openPath(info.dshHome)}
                   >
                     <FolderOpen size={14} />
-                    打开
+                    {t('pages.settings.open')}
                   </button>
                 </Row>
-                <Row title="统计口径" desc="token 来自 DSH 的会话投影缓存；无缓存的会话退回解析日志头部。" stacked>
+                <Row title={t('pages.settings.counting')} desc={t('pages.settings.countingDesc')} stacked>
                   <div className="setting-desc">
-                    会话数包含空会话；「有内容」只统计产生过回合的会话。每日趋势按会话最后活跃时间归入本地日历日。
+                    {t('pages.settings.countingNote')}
                   </div>
                 </Row>
               </Card>
@@ -565,7 +582,7 @@ export function SettingsPage(): React.JSX.Element {
               <section className="runtime-hero">
                 <div className={`runtime-hero-status ${runtime?.state === 'ready' ? 'ok' : ''}`}>
                   <span className="status-dot" />
-                  {runtime?.state === 'ready' ? '运行时可用' : runtime?.state === 'missing' ? '未安装运行时' : '检测中'}
+                  {runtime?.state === 'ready' ? t('pages.settings.runtimeReady') : runtime?.state === 'missing' ? t('pages.settings.runtimeMissing') : t('pages.settings.checking')}
                 </div>
                 <div className="runtime-hero-title">
                   dsh {runtime?.version ?? '—'}
@@ -577,13 +594,13 @@ export function SettingsPage(): React.JSX.Element {
                   <span className="mono">profile: {settings.runtime.profile || 'studio'}</span>
                   <span className="meta-dot" />
                   <span className="mono ellipsis" title={runtime?.cliPath ?? ''}>
-                    {runtime?.cliPath ?? '未找到 CLI'}
+                    {runtime?.cliPath ?? t('pages.settings.cliMissing')}
                   </span>
                 </div>
                 <div className="runtime-hero-actions">
                   <button className="button button-secondary button-small" onClick={() => void refreshRuntime()}>
                     <RefreshCw size={14} />
-                    重新检测
+                    {t('pages.settings.detectAgain')}
                   </button>
                   <button
                     className="button button-primary button-small"
@@ -591,7 +608,7 @@ export function SettingsPage(): React.JSX.Element {
                     onClick={() => void installRuntime()}
                   >
                     <Download size={14} />
-                    {installing ? '安装中…' : '安装便携运行时'}
+                    {installing ? t('pages.settings.installing') : t('pages.settings.installPortable')}
                   </button>
                 </div>
                 {installing && install ? (
@@ -605,14 +622,14 @@ export function SettingsPage(): React.JSX.Element {
                     </div>
                     {install.detail ? <div className="runtime-install-detail">{install.detail}</div> : null}
                     <button className="button button-ghost button-small" onClick={() => void cancelInstall()}>
-                      取消安装
+                      {t('pages.settings.cancelInstall')}
                     </button>
                   </div>
                 ) : null}
               </section>
 
-              <Card title="运行时来源" desc="自动模式会依次查找内置便携运行时、npm 全局安装与 PATH。">
-                <Row title="检测模式">
+              <Card title={t('pages.settings.runtimeSource')} desc={t('pages.settings.runtimeSourceDesc')}>
+                <Row title={t('pages.settings.detectMode')}>
                   <div className="segmented">
                     {(['auto', 'custom'] as const).map((mode) => (
                       <button
@@ -620,13 +637,13 @@ export function SettingsPage(): React.JSX.Element {
                         className={runtimeDraft?.mode === mode ? 'active' : ''}
                         onClick={() => runtimeDraft && setRuntimeDraft({ ...runtimeDraft, mode })}
                       >
-                        {mode === 'auto' ? '自动' : '自定义'}
+                        {mode === 'auto' ? t('pages.settings.auto') : t('pages.settings.custom')}
                       </button>
                     ))}
                   </div>
                 </Row>
                 {runtimeDraft?.mode === 'custom' ? (
-                  <Row title="CLI 路径" desc="指向 dsh 的 lib/bin.js、包目录或 dsh.cmd。" stacked>
+                  <Row title={t('pages.settings.cliPath')} desc={t('pages.settings.cliPathDesc')} stacked>
                     <input
                       className="input mono"
                       value={runtimeDraft.customPath}
@@ -637,7 +654,7 @@ export function SettingsPage(): React.JSX.Element {
                     />
                   </Row>
                 ) : null}
-                <Row title="Node.js 路径" desc="留空则自动查找。" stacked>
+                <Row title={t('pages.settings.nodePath')} desc={t('pages.settings.nodePathDesc')} stacked>
                   <input
                     className="input mono"
                     value={runtimeDraft?.nodePath ?? ''}
@@ -645,7 +662,7 @@ export function SettingsPage(): React.JSX.Element {
                     placeholder="C:\Program Files\nodejs\node.exe"
                   />
                 </Row>
-                <Row title="DSH_HOME" desc="会话、凭据与插件的存储位置。留空使用 ~/.dsh。" stacked>
+                <Row title="DSH_HOME" desc={t('pages.settings.dshHomeDesc')} stacked>
                   <input
                     className="input mono"
                     value={runtimeDraft?.dshHome ?? ''}
@@ -654,8 +671,8 @@ export function SettingsPage(): React.JSX.Element {
                   />
                 </Row>
                 <Row
-                  title="配置档案"
-                  desc="默认使用独立档案 studio（首次启动从 web 复制），避免与正在运行的 dsh web 争用同一 profile。填 web 表示直接共用。"
+                  title={t('pages.settings.profile')}
+                  desc={t('pages.settings.profileDesc')}
                   stacked
                 >
                   <input
@@ -665,7 +682,7 @@ export function SettingsPage(): React.JSX.Element {
                     placeholder="studio"
                   />
                 </Row>
-                <Row title="端口" desc="0 表示让系统分配空闲端口，避免与已运行的 Web 实例冲突。" stacked>
+                <Row title={t('pages.settings.port')} desc={t('pages.settings.portDesc')} stacked>
                   <input
                     className="input mono"
                     type="number"
@@ -677,7 +694,7 @@ export function SettingsPage(): React.JSX.Element {
                     }
                   />
                 </Row>
-                <Row title="启动 Studio 时自动启动运行时" desc="只对最近一次使用的工作区生效。">
+                <Row title={t('pages.settings.autoStartRuntime')} desc={t('pages.settings.autoStartRuntimeDesc')}>
                   <Toggle
                     checked={runtimeDraft?.autoStart ?? true}
                     onChange={(value) => runtimeDraft && setRuntimeDraft({ ...runtimeDraft, autoStart: value })}
@@ -685,26 +702,26 @@ export function SettingsPage(): React.JSX.Element {
                 </Row>
                 <div className="settings-save-row">
                   <button className="button button-ghost button-small" onClick={() => setRuntimeDraft(settings.runtime)}>
-                    撤销
+                    {t('pages.settings.revert')}
                   </button>
                   <button className="button button-primary button-small" onClick={() => void saveRuntimeDraft()}>
-                    保存运行时设置
+                    {t('pages.settings.saveRuntime')}
                   </button>
                 </div>
               </Card>
 
               <Card
-                title="其他 DSH 进程"
-                desc="Harness 同一时间只允许一个进程写入某个 profile 或某个会话。出现「会话已被占用」或 profile 写入失败（EPERM）时，在这里看清是谁占着，并一键结束。"
+                title={t('pages.settings.otherProcesses')}
+                desc={t('pages.settings.otherProcessesDesc')}
               >
                 <Row
-                  title="扫描本机"
+                  title={t('pages.settings.scanDevice')}
                   desc={
                     instances?.error
-                      ? `扫描失败：${instances.error}`
+                      ? t('pages.settings.scanFailed', { error: instances.error })
                       : instances
-                        ? `上次扫描：${new Date(instances.scannedAt).toLocaleTimeString('zh-CN', { hour12: false })} · 可见 ${instances.totalProcesses} 个进程`
-                        : '尚未扫描'
+                        ? t('pages.settings.scanSummary', { time: new Date(instances.scannedAt).toLocaleTimeString(locale, { hour12: false }), count: instances.totalProcesses })
+                        : t('pages.settings.notScanned')
                   }
                 >
                   <button
@@ -713,15 +730,14 @@ export function SettingsPage(): React.JSX.Element {
                     onClick={() => void scanInstances()}
                   >
                     <RefreshCw size={14} className={instancesLoading ? 'spin' : undefined} />
-                    {instancesLoading ? '扫描中…' : '扫描'}
+                    {instancesLoading ? t('pages.settings.scanning') : t('pages.settings.scan')}
                   </button>
                 </Row>
                 {instances?.restricted ? (
                   <div className="instance-warning">
                     <AlertTriangle size={14} />
                     <span>
-                      当前权限下只能看到本机的一部分进程，因此「没找到」并不代表真的没有。请用任务管理器确认，或手动退出其他 dsh web /
-                      桌面端后重试。
+                      {t('pages.settings.restrictedProcesses')}
                     </span>
                   </div>
                 ) : null}
@@ -735,9 +751,9 @@ export function SettingsPage(): React.JSX.Element {
                             PID {item.pid}
                             <span className="instance-badge">profile: {item.profile}</span>
                             <span className="instance-badge">
-                              {item.mode === 'web' ? 'Web 服务' : item.mode === 'cli' ? '命令行' : '其他'}
+                              {item.mode === 'web' ? t('pages.settings.webService') : item.mode === 'cli' ? t('pages.settings.commandLine') : t('pages.settings.other')}
                             </span>
-                            {item.self ? <span className="instance-badge is-self">Studio 自己的运行时</span> : null}
+                            {item.self ? <span className="instance-badge is-self">{t('pages.settings.ownRuntime')}</span> : null}
                           </span>
                           <span className="instance-command" title={item.commandLine}>
                             {item.commandLine}
@@ -746,22 +762,22 @@ export function SettingsPage(): React.JSX.Element {
                         <button
                           className="button button-ghost button-small"
                           disabled={item.self}
-                          title={item.self ? '请用「重启运行时」' : '结束这个进程及其子进程'}
+                          title={item.self ? t('pages.settings.restartInstead') : t('pages.settings.stopProcessHint')}
                           onClick={() => void killInstances([item.pid])}
                         >
-                          结束
+                          {t('pages.settings.stop')}
                         </button>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <Row title="结果">
+                  <Row title={t('pages.settings.result')}>
                     <span className="setting-desc">
                       {instances
                         ? instances.restricted
-                          ? '没有可用的结果。'
-                          : '没有发现其他 DSH 进程。'
-                        : '点击「扫描」查看正在运行的 DSH 进程。'}
+                          ? t('pages.settings.noResults')
+                          : t('pages.settings.noOtherProcesses')
+                        : t('pages.settings.scanHint')}
                     </span>
                   </Row>
                 )}
@@ -771,13 +787,13 @@ export function SettingsPage(): React.JSX.Element {
                       className="button button-primary button-small"
                       onClick={() => void killOtherDsh()}
                     >
-                      结束所有其他 DSH 进程
+                      {t('pages.settings.stopOtherProcesses')}
                     </button>
                   </div>
                 ) : null}
               </Card>
 
-              <Card title="下载镜像" desc="网络受限时，可以替换为其他 npm / Node.js 镜像。">
+              <Card title={t('pages.settings.mirrors')} desc={t('pages.settings.mirrorsDesc')}>
                 <Row title="npm registry" stacked>
                   <input
                     className="input mono"
@@ -785,7 +801,7 @@ export function SettingsPage(): React.JSX.Element {
                     onChange={(event) => runtimeDraft && setRuntimeDraft({ ...runtimeDraft, registry: event.target.value })}
                   />
                 </Row>
-                <Row title="Node.js 镜像" stacked>
+                <Row title={t('pages.settings.nodeMirror')} stacked>
                   <input
                     className="input mono"
                     value={runtimeDraft?.nodeMirror ?? ''}
@@ -794,7 +810,7 @@ export function SettingsPage(): React.JSX.Element {
                 </Row>
                 <div className="settings-save-row">
                   <button className="button button-primary button-small" onClick={() => void saveRuntimeDraft()}>
-                    保存镜像设置
+                    {t('pages.settings.saveMirrors')}
                   </button>
                 </div>
               </Card>
@@ -803,8 +819,8 @@ export function SettingsPage(): React.JSX.Element {
 
           {active === 'advanced' ? (
             <>
-              <Card title="启动参数" desc="每行一个参数，追加到 dsh web 命令之后。">
-                <Row title="额外参数" stacked>
+              <Card title={t('pages.settings.startupArgs')} desc={t('pages.settings.startupArgsDesc')}>
+                <Row title={t('pages.settings.extraArgs')} stacked>
                   <textarea
                     className="input mono"
                     rows={4}
@@ -815,8 +831,8 @@ export function SettingsPage(): React.JSX.Element {
                 </Row>
               </Card>
 
-              <Card title="环境变量" desc="每行一个 KEY=VALUE，只在启动运行时时注入。">
-                <Row title="变量" stacked>
+              <Card title={t('pages.settings.environment')} desc={t('pages.settings.environmentDesc')}>
+                <Row title={t('pages.settings.variables')} stacked>
                   <textarea
                     className="input mono"
                     rows={4}
@@ -827,42 +843,42 @@ export function SettingsPage(): React.JSX.Element {
                 </Row>
                 <div className="settings-save-row">
                   <button className="button button-primary button-small" onClick={() => void saveAdvanced()}>
-                    保存高级设置
+                    {t('pages.settings.saveAdvanced')}
                   </button>
                 </div>
               </Card>
 
-              <Card title="数据与诊断" desc="所有数据都存放在本机。">
-                <Row title="应用数据目录" desc={info.userData}>
+              <Card title={t('pages.settings.dataDiagnostics')} desc={t('pages.settings.dataDiagnosticsDesc')}>
+                <Row title={t('pages.settings.appData')} desc={info.userData}>
                   <button className="button button-secondary button-small" onClick={() => void window.studio.app.openPath(info.userData)}>
                     <FolderOpen size={14} />
-                    打开
+                    {t('pages.settings.open')}
                   </button>
                 </Row>
-                <Row title="日志目录" desc={info.logsDir}>
+                <Row title={t('pages.settings.logsDirectory')} desc={info.logsDir}>
                   <button className="button button-secondary button-small" onClick={() => void window.studio.host.openLogsFolder()}>
                     <FolderOpen size={14} />
-                    打开
+                    {t('pages.settings.open')}
                   </button>
                 </Row>
                 <Row title="DSH_HOME" desc={info.dshHome}>
                   <button className="button button-secondary button-small" onClick={() => void window.studio.app.openPath(info.dshHome)}>
                     <FolderOpen size={14} />
-                    打开
+                    {t('pages.settings.open')}
                   </button>
                 </Row>
               </Card>
 
-              <Card title="危险操作" desc="这些操作会改变应用状态。">
-                <Row title="重启应用" desc="关闭并重新打开 Harness Studio，运行时会一起重启。">
+              <Card title={t('pages.settings.dangerous')} desc={t('pages.settings.dangerousDesc')}>
+                <Row title={t('pages.settings.restartApp')} desc={t('pages.settings.restartAppDesc')}>
                   <button className="button button-secondary button-small" onClick={() => window.studio.studio.relaunch()}>
                     <RotateCcw size={14} />
-                    重启
+                    {t('pages.settings.restart')}
                   </button>
                 </Row>
-                <Row title="恢复默认设置" desc="保留工作区、提示词与会话数据。">
+                <Row title={t('pages.settings.restoreSettings')} desc={t('pages.settings.restoreSettingsDesc')}>
                   <button className="button button-danger button-small" onClick={() => setResetOpen(true)}>
-                    恢复默认
+                    {t('pages.settings.restoreDefaults')}
                   </button>
                 </Row>
               </Card>
@@ -877,11 +893,11 @@ export function SettingsPage(): React.JSX.Element {
                 </div>
                 <div>
                   <h2>Harness Studio</h2>
-                  <p className="about-tagline">DeepSeek Harness 的专属桌面工作台</p>
+                  <p className="about-tagline">{t('pages.settings.tagline')}</p>
                   <div className="about-version">
                     v{info.version}
                     <span className="meta-dot" />
-                    {info.isPackaged ? '正式版' : '开发版'}
+                    {info.isPackaged ? t('pages.settings.releaseBuild') : t('pages.settings.developmentBuild')}
                   </div>
                 </div>
               </div>
@@ -889,15 +905,15 @@ export function SettingsPage(): React.JSX.Element {
               <div className="about-actions">
                 <button className="button button-primary" onClick={() => void checkUpdate()} disabled={checking}>
                   {checking ? <RefreshCw size={15} className="spin" /> : <Zap size={15} />}
-                  {checking ? '检查中…' : '检查更新'}
+                  {checking ? t('pages.settings.checkingUpdates') : t('pages.settings.checkUpdates')}
                 </button>
                 <button className="button button-secondary" onClick={() => void window.studio.app.openExternal(RELEASES_URL)}>
                   <Download size={15} />
-                  发布版本
+                  {t('pages.settings.releases')}
                 </button>
                 <button className="button button-ghost" onClick={() => void window.studio.app.openExternal(DOCS_URL)}>
                   <ArrowUpRight size={15} />
-                  使用文档
+                  {t('pages.settings.docs')}
                 </button>
               </div>
               {update ? (
@@ -906,7 +922,7 @@ export function SettingsPage(): React.JSX.Element {
                   <span>{update.message}</span>
                   {update.status === 'available' && update.downloaded ? (
                     <button className="button button-primary button-small" onClick={() => window.studio.studio.installUpdate()}>
-                      重启并安装
+                      {t('pages.settings.restartInstall')}
                     </button>
                   ) : update.status === 'available' && update.canDownload ? (
                     <button
@@ -914,11 +930,11 @@ export function SettingsPage(): React.JSX.Element {
                       disabled={downloading}
                       onClick={() => void downloadUpdate()}
                     >
-                      {downloading ? `下载中 ${Math.round(progress)}%` : '下载更新'}
+                      {downloading ? t('pages.settings.downloadProgress', { percent: Math.round(progress) }) : t('pages.settings.downloadUpdate')}
                     </button>
                   ) : update.status === 'available' && update.url ? (
                     <button className="button button-primary button-small" onClick={() => void window.studio.app.openExternal(update.url!)}>
-                      前往下载
+                      {t('pages.settings.goDownload')}
                     </button>
                   ) : null}
                 </div>
@@ -929,7 +945,7 @@ export function SettingsPage(): React.JSX.Element {
                 </div>
               ) : null}
 
-              <Card title="技术信息" desc="用于反馈问题时附上。">
+              <Card title={t('pages.settings.technicalInfo')} desc={t('pages.settings.technicalInfoDesc')}>
                 <dl className="kv-list about-kv">
                   <div>
                     <dt>Electron</dt>
@@ -944,7 +960,7 @@ export function SettingsPage(): React.JSX.Element {
                     <dd className="mono">{info.node}</dd>
                   </div>
                   <div>
-                    <dt>平台</dt>
+                    <dt>{t('pages.settings.platform')}</dt>
                     <dd className="mono">
                       {info.platform} / {info.arch}
                     </dd>
@@ -952,7 +968,7 @@ export function SettingsPage(): React.JSX.Element {
                 </dl>
               </Card>
 
-              <Card title="关于项目" desc="Harness Studio 是独立的开源桌面客户端，不是 DeepSeek 官方产品。">
+              <Card title={t('pages.settings.aboutProject')} desc={t('pages.settings.aboutProjectDesc')}>
                 <div className="about-links">
                   <button onClick={() => void window.studio.app.openExternal(GITHUB_URL)}>
                     <GithubMark size={15} />
@@ -973,11 +989,11 @@ export function SettingsPage(): React.JSX.Element {
                 <div className="about-notes">
                   <div>
                     <ShieldCheck size={15} />
-                    MIT License · 数据仅保存在本地
+                    {t('pages.settings.licenseLocal')}
                   </div>
                   <div>
                     <Wrench size={15} />
-                    基于 DeepSeek Harness 的 Web 运行时构建
+                    {t('pages.settings.builtOn')}
                   </div>
                   <div>
                     <Cpu size={15} />
@@ -992,14 +1008,14 @@ export function SettingsPage(): React.JSX.Element {
 
       <Modal
         open={resetOpen}
-        title="恢复默认设置？"
-        subtitle="工作区、提示词和会话数据不会被删除。"
+        title={t('pages.settings.resetTitle')}
+        subtitle={t('pages.settings.resetSubtitle')}
         onClose={() => setResetOpen(false)}
         width={460}
         footer={
           <>
             <button className="button button-ghost" onClick={() => setResetOpen(false)}>
-              取消
+              {t('pages.settings.cancel')}
             </button>
             <button
               className="button button-danger"
@@ -1008,12 +1024,12 @@ export function SettingsPage(): React.JSX.Element {
                 setResetOpen(false)
               }}
             >
-              恢复默认
+              {t('pages.settings.restoreDefaults')}
             </button>
           </>
         }
       >
-        <p className="modal-text">主题、快捷键、运行时路径等设置会回到初始状态，应用会立即刷新外观。</p>
+        <p className="modal-text">{t('pages.settings.resetDetail')}</p>
       </Modal>
     </div>
   )

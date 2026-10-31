@@ -164,6 +164,7 @@ export function buildMockScript() {
     const entry = byWorkspaceMap.get(session.cwd) ?? {
       path: session.cwd,
       name: session.workspaceName ?? baseName,
+      unknownDirectory: !session.workspaceName && baseName === '未知',
       sessions: 0,
       turns: 0,
       tokens: 0
@@ -176,7 +177,7 @@ export function buildMockScript() {
   const byModelMap = new Map()
   for (const session of sessions) {
     const label = session.model ? `${session.provider} / ${session.model}` : '未记录'
-    const entry = byModelMap.get(label) ?? { label, sessions: 0, turns: 0, tokens: 0 }
+    const entry = byModelMap.get(label) ?? { label, unrecorded: !session.model, sessions: 0, turns: 0, tokens: 0 }
     entry.sessions += 1
     entry.turns += session.turns
     entry.tokens += session.tokens.uncachedInputTokens + session.tokens.outputTokens + session.tokens.cacheReadTokens
@@ -208,6 +209,7 @@ export function buildMockScript() {
   }
   const info = {    name: 'Harness Studio',
     version: '0.1.5',
+    systemLocale: 'zh-CN',
     platform: 'win32',
     arch: 'x64',
     electron: '44.9.3',
@@ -262,6 +264,7 @@ const MOCK_INSTANCES = ${JSON.stringify(instances)};
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const listeners = () => () => {};
 const workspaceListeners = new Set();
+const settingsListeners = new Set();
 const mockGuestWorkspaces = new Map();
 const reportMockWorkspace = (observation) => {
   mockGuestWorkspaces.set(observation.guestId, observation);
@@ -275,6 +278,9 @@ const merge = (base, patch) => {
   return out;
 };
 const params = new URLSearchParams(location.search);
+if (['zh-CN', 'en-US', 'system'].includes(params.get('language'))) {
+  MOCK.settings.language = params.get('language');
+}
 if (params.get('theme') === 'light' || params.get('theme') === 'dark') {
   MOCK.settings.theme = params.get('theme');
 }
@@ -303,9 +309,14 @@ window.studio = {
   },
   settings: {
     get: async () => clone(MOCK.settings),
-    save: async (patch) => { MOCK.settings = merge(MOCK.settings, patch); return clone(MOCK.settings); },
+    save: async (patch) => {
+      MOCK.settings = merge(MOCK.settings, patch);
+      for (const listener of settingsListeners) listener(clone(MOCK.settings));
+      return clone(MOCK.settings);
+    },
     reset: async () => clone(MOCK.settings),
-    onChange: listeners, onWindowState: listeners
+    onChange: (callback) => { settingsListeners.add(callback); return () => settingsListeners.delete(callback); },
+    onWindowState: listeners
   },
   runtime: {
     detect: async () => clone(MOCK.runtime),

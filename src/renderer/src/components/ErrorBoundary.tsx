@@ -1,3 +1,4 @@
+import { useI18n } from '../lib/i18n'
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { AlertTriangle, Copy, RotateCcw } from 'lucide-react'
 
@@ -9,7 +10,7 @@ interface State {
   error: Error | null
 }
 
-export class ErrorBoundary extends Component<Props, State> {
+class ErrorBoundaryInner extends Component<Props & { t: ReturnType<typeof useI18n>['t'] }, State> {
   state: State = { error: null }
 
   static getDerivedStateFromError(error: Error): State {
@@ -26,6 +27,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   render(): ReactNode {
+    const { t } = this.props
     if (!this.state.error) return this.props.children
     return (
       <div className="crash">
@@ -33,21 +35,26 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="crash-icon">
             <AlertTriangle size={26} />
           </div>
-          <h1>界面遇到了一个错误</h1>
-          <p>会话与运行时数据没有丢失。可以复制错误信息后重新加载界面。</p>
+          <h1>{t('shell.theInterfaceEncounteredAnError')}</h1>
+          <p>{t('shell.yourSessionsAndRuntimeDataAreSafeCopy')}</p>
           <pre className="crash-detail">{this.state.error.message}</pre>
           <div className="crash-actions">
             <button className="button button-primary" onClick={() => window.location.reload()}>
               <RotateCcw size={15} />
-              重新加载
+              {t('shell.reload')}
             </button>
             <button className="button button-secondary" onClick={this.copy}>
               <Copy size={15} />
-              复制错误
+              {t('shell.copyError')}
             </button>
           </div>
         </div>
       </div>
     )
   }
+}
+
+export function ErrorBoundary(props: Props): React.JSX.Element {
+  const { t } = useI18n()
+  return <ErrorBoundaryInner {...props} t={t} />
 }

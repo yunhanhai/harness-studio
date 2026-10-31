@@ -1,3 +1,4 @@
+import { useI18n } from '../lib/i18n'
 import { memo, useEffect, useRef } from 'react'
 import { RefreshCw, RotateCcw } from 'lucide-react'
 import { useApp } from '../store'
@@ -66,6 +67,7 @@ export const HarnessPane = memo(function HarnessPane({
   onFrame,
   onZoom
 }: HarnessPaneProps): React.JSX.Element {
+  const { t } = useI18n()
   const updateTab = useApp((state) => state.updateTab)
   const restartHost = useApp((state) => state.restartHost)
   const frameRef = useRef<WebviewElement | null>(null)
@@ -161,7 +163,7 @@ export const HarnessPane = memo(function HarnessPane({
           <div className="loading-mark">
             <BrandMark size={40} />
           </div>
-          <div className="loading-text">正在载入 Harness 会话界面…</div>
+          <div className="loading-text">{t('shell.loadingTheHarnessConversationInterface')}</div>
           <div className="loading-bar">
             <span />
           </div>
@@ -169,16 +171,16 @@ export const HarnessPane = memo(function HarnessPane({
       ) : null}
       {pane.failed ? (
         <div className="webview-failed">
-          <h3>界面加载失败</h3>
-          <p>本地服务已就绪，但渲染进程没有完成加载。可以尝试刷新或重启运行时。</p>
+          <h3>{t('shell.interfaceFailedToLoad')}</h3>
+          <p>{t('shell.theLocalServiceIsReadyButTheInterface')}</p>
           <div className="stage-actions">
             <button className="button button-primary" onClick={() => frameRef.current?.reload()}>
               <RefreshCw size={14} />
-              重新加载
+              {t('shell.reload')}
             </button>
             <button className="button button-secondary" onClick={() => void restartHost()}>
               <RotateCcw size={14} />
-              重启运行时
+              {t('shell.restartRuntime')}
             </button>
           </div>
         </div>

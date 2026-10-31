@@ -2,6 +2,7 @@ import { app } from 'electron'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { DEFAULT_PROMPTS, DEFAULT_SETTINGS } from '@shared/defaults'
+import { normalizeLanguage } from '@shared/i18n'
 import type { PromptItem, Settings, Workspace } from '@shared/types'
 
 type Listener<T> = (value: T) => void
@@ -27,6 +28,7 @@ export function mergeSettings(defaults: Settings, input: unknown): Settings {
     return extra === undefined ? base : extra
   }
   const merged = merge(defaults, input) as Settings
+  merged.language = normalizeLanguage(merged.language)
   merged.zoomFactor = Math.min(2, Math.max(0.5, Number(merged.zoomFactor) || 1))
   merged.runtime.port = Math.min(65535, Math.max(0, Math.floor(Number(merged.runtime.port) || 0)))
   if (!/^#[0-9a-fA-F]{6}$/.test(merged.accent)) merged.accent = defaults.accent

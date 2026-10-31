@@ -29,6 +29,18 @@ Harness Studio 是一个 Electron 外壳，不重写模型能力，也不复制 
 - 渲染进程没有 Node 权限；`nodeIntegration`、`contextIsolation`、`sandbox` 均按 Electron 安全推荐配置。
 - Webview 使用 `persist:harness-studio` 分区，只允许加载当前 Host 的 origin；新窗口和跨 origin 导航一律交给系统浏览器。
 
+## 界面语言
+
+`Settings.language` 保存 `system / zh-CN / en-US`，旧文件缺字段或含无效值时回到 `system`。主进程通过 `app.getLocale()` 解析系统语言：中文区域使用简体中文，其余区域使用英文；`AppInfo.systemLocale` 将同一个系统值交给渲染窗口，避免 Electron 的默认浏览器语言与 OS 不一致。
+
+`src/shared/i18n.ts` 合并 `src/shared/locales/` 下的中英文词典，键名有类型检查，两种翻译使用相同的具名占位符。渲染侧 `lib/i18n.ts` 通过 `useSyncExternalStore` 订阅当前语言；普通 store 操作和异步完成回调读取当时的语言，日期格式也共用该值。主窗口在初始读取前订阅设置事件，初始化期间收到的新设置优先于旧快照。命令面板与快速提问各自初始化，复用已有的 `settings:changed` 广播，不额外启动主窗口的 store。
+
+主进程在加载设置后初始化语言，修改设置时原地更新托盘菜单，并重建 macOS 菜单模板；不重新创建 Tray 或重复绑定点击事件。原生发送确认每次调用都读取当前语言，队列提示区分单条与多条。语言切换只更新 Studio 文案，不重启 Host、重新挂载 webview 或修改 guest 的语言及会话内容。
+
+用户目录名、会话标题、已保存提示词和原始日志不进入翻译词典。洞察图表的「未记录 / 未知目录」通过语义标记翻译，不猜测或替换用户名称。已有诊断和进度快照保持生成时的语言；后续操作产生的新说明使用当前选择。preload 的上游 DOM 文案匹配属于协议，保留中英文匹配规则且仍只能 `import type`。
+
+`npm run test:i18n` 检查系统语言、旧设置兼容、词条占位符、原生菜单与确认、订阅通知、日期格式和初始化竞态；CI 与导航回归、类型检查和构建一同运行。
+
 ## Host 生命周期
 
 1. 渲染进程请求 `host:start(workspaceId)`；

@@ -1,3 +1,4 @@
+import { t } from './i18n'
 import { execFile } from 'node:child_process'
 import type { DshProcess, DshProcessReport } from '@shared/types'
 
@@ -131,7 +132,7 @@ export async function listDshProcesses(selfPids: number[] = []): Promise<DshProc
   try {
     parsed = JSON.parse(stdout.trim() || '[]')
   } catch {
-    return { processes: [], scannedAt, totalProcesses: 0, restricted: false, error: '无法解析进程列表输出' }
+    return { processes: [], scannedAt, totalProcesses: 0, restricted: false, error: t('main.processListInvalid') }
   }
 
   const envelope = parsed as { processes?: CimRow[]; lowIntegrity?: boolean }

@@ -1,3 +1,4 @@
+import { useI18n } from '../lib/i18n'
 import { useEffect, useRef } from 'react'
 import { Plus, X } from 'lucide-react'
 import { tabLimitMessage, useApp } from '../store'
@@ -12,6 +13,7 @@ interface TabStripProps {
  * the "+" button is always there so the feature can be discovered.
  */
 export function TabStrip({ ready }: TabStripProps): React.JSX.Element {
+  const { t } = useI18n()
   const tabs = useApp((state) => state.tabs)
   const activeTabId = useApp((state) => state.activeTabId)
   const limit = useApp((state) => state.settings?.tabs.limit ?? 4)
@@ -39,9 +41,9 @@ export function TabStrip({ ready }: TabStripProps): React.JSX.Element {
       style={{ '--tab-slots': showChips ? Math.min(tabs.length, 4) : 0 } as React.CSSProperties}
     >
       {showChips ? (
-        <div className="tab-list" role="tablist" aria-label="会话标签页" ref={listRef}>
+        <div className="tab-list" role="tablist" aria-label={t('shell.sessionTabs')} ref={listRef}>
           {tabs.map((tab) => {
-            const label = tab.title || `会话 ${tab.seq}`
+            const label = tab.title || t('shell.session', { p0: tab.seq })
             const selected = tab.id === activeTabId
             return (
               <div
@@ -66,8 +68,8 @@ export function TabStrip({ ready }: TabStripProps): React.JSX.Element {
                     event.stopPropagation()
                     closeTab(tab.id)
                   }}
-                  title="关闭标签页"
-                  aria-label={`关闭「${label}」`}
+                  title={t('shell.closeTab')}
+                  aria-label={t('shell.closeNamedTab', { p0: label })}
                 >
                   <X size={12} />
                 </button>
@@ -80,8 +82,8 @@ export function TabStrip({ ready }: TabStripProps): React.JSX.Element {
         className="icon-button tab-new"
         disabled={!ready || atLimit}
         onClick={() => newTab()}
-        title={atLimit ? tabLimitMessage(limit) : '新建会话标签页（Ctrl+T）'}
-        aria-label="新建会话标签页"
+        title={atLimit ? tabLimitMessage(limit) : t('shell.newSessionTabCtrlT')}
+        aria-label={t('shell.newSessionTab')}
       >
         <Plus size={15} />
       </button>

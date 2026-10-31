@@ -1,3 +1,4 @@
+import { useI18n } from '../lib/i18n'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ArrowLeft,
@@ -28,6 +29,7 @@ import type { PaneState, WebviewElement } from './HarnessPane'
 const INITIAL_PANE: PaneState = { loading: true, failed: false, canBack: false, canForward: false }
 
 export function WorkspacePage(): React.JSX.Element {
+  const { t } = useI18n()
   const host = useApp((state) => state.host)
   const runtime = useApp((state) => state.runtime)
   const workspaces = useApp((state) => state.workspaces)
@@ -60,7 +62,7 @@ export function WorkspacePage(): React.JSX.Element {
   const switching = Boolean(pending || activeTab?.pendingWorkspacePath)
   const startup = pending ?? current ?? workspaces.find((item) => item.id === lastWorkspaceId) ?? workspaces[0]
   const currentPath = activeTab?.path ?? ''
-  const currentName = current?.name ?? (currentPath ? '未关联工作区' : '选择工作区')
+  const currentName = current?.name ?? (currentPath ? t('shell.unlinkedWorkspace') : t('shell.chooseWorkspace'))
   const ready = host.state === 'ready' && Boolean(host.url)
   const starting = host.state === 'starting'
   const recovery = host.recovery
@@ -146,27 +148,26 @@ export function WorkspacePage(): React.JSX.Element {
             <div className="onboarding-ring" />
             <BrandMark size={64} />
           </div>
-          <h1>选择一个项目，开始 Harness 会话</h1>
+          <h1>{t('shell.chooseAProjectAndStartAHarnessSession')}</h1>
           <p>
-            每个工作区都绑定自己的目录与上下文。Studio 复用同一个本地 Host，切换项目时不必重新启动服务，并为每个项目保留独立的会话历史。
-          </p>
+            {t('shell.eachWorkspaceHasItsOwnDirectoryAndContext')}</p>
           <div className="onboarding-points">
             <div>
-              <strong>独立上下文</strong>
-              <span>不同项目的会话互不干扰</span>
+              <strong>{t('shell.separateContexts')}</strong>
+              <span>{t('shell.sessionsInDifferentProjectsStayIndependent')}</span>
             </div>
             <div>
-              <strong>本地优先</strong>
-              <span>运行时只监听 127.0.0.1</span>
+              <strong>{t('shell.localFirst')}</strong>
+              <span>{t('shell.theRuntimeListensOnlyOn12700')}</span>
             </div>
             <div>
-              <strong>随时切换</strong>
-              <span>一个快捷键回到任何项目</span>
+              <strong>{t('shell.switchAnytime')}</strong>
+              <span>{t('shell.returnToAnyProjectWithAShortcut')}</span>
             </div>
           </div>
           <button className="button button-primary button-large" onClick={() => void addWorkspace()}>
             <FolderPlus size={17} />
-            选择项目文件夹
+            {t('shell.chooseProjectFolder')}
           </button>
         </div>
       </div>
@@ -182,8 +183,8 @@ export function WorkspacePage(): React.JSX.Element {
             <span className="switcher-name" title={currentPath || currentName}>
               {currentName}
             </span>
-            {switching ? <Loader2 size={13} className="spin" aria-label={pending ? `正在打开 ${pending.name}` : '正在打开工作区'} /> : <ChevronDown size={13} />}
-            <select value={pending?.id ?? current?.id ?? ''} onChange={(event) => switchWorkspace(event.target.value)} aria-label="切换工作区">
+            {switching ? <Loader2 size={13} className="spin" aria-label={pending ? t('shell.opening', { p0: pending.name }) : t('shell.openingWorkspace')} /> : <ChevronDown size={13} />}
+            <select value={pending?.id ?? current?.id ?? ''} onChange={(event) => switchWorkspace(event.target.value)} aria-label={t('shell.switchWorkspace')}>
               {!current ? <option value="" disabled>{currentName}</option> : null}
               {sorted.map((workspace) => (
                 <option key={workspace.id} value={workspace.id}>
@@ -192,7 +193,7 @@ export function WorkspacePage(): React.JSX.Element {
               ))}
             </select>
           </div>
-          <button className="icon-button" disabled={!currentPath} onClick={() => void window.studio.app.showItemInFolder(currentPath)} title="在资源管理器中打开">
+          <button className="icon-button" disabled={!currentPath} onClick={() => void window.studio.app.showItemInFolder(currentPath)} title={t('shell.showInFileManager')}>
             <FolderOpen size={14} />
           </button>
           <span className={`toolbar-status host-${host.state}`}>
@@ -208,7 +209,7 @@ export function WorkspacePage(): React.JSX.Element {
             className="icon-button"
             disabled={!ready || !activePane.canBack}
             onClick={() => activeFrame()?.goBack()}
-            title="后退"
+            title={t('shell.back')}
           >
             <ArrowLeft size={15} />
           </button>
@@ -216,7 +217,7 @@ export function WorkspacePage(): React.JSX.Element {
             className="icon-button"
             disabled={!ready || !activePane.canForward}
             onClick={() => activeFrame()?.goForward()}
-            title="前进"
+            title={t('shell.forward')}
           >
             <ArrowRight size={15} />
           </button>
@@ -227,16 +228,16 @@ export function WorkspacePage(): React.JSX.Element {
               updatePane(activeTabId, { loading: true })
               activeFrame()?.reload()
             }}
-            title="刷新会话界面"
+            title={t('shell.refreshConversationInterface')}
           >
             <RefreshCw size={14} />
           </button>
           <span className="toolbar-divider" />
-          <button className="icon-button" disabled={!ready} onClick={() => changeZoom(-0.1)} title="缩小">
+          <button className="icon-button" disabled={!ready} onClick={() => changeZoom(-0.1)} title={t('shell.zoomOut')}>
             <ZoomOut size={15} />
           </button>
           <span className="zoom-label">{Math.round(zoom * 100)}%</span>
-          <button className="icon-button" disabled={!ready} onClick={() => changeZoom(0.1)} title="放大">
+          <button className="icon-button" disabled={!ready} onClick={() => changeZoom(0.1)} title={t('shell.zoomIn')}>
             <ZoomIn size={15} />
           </button>
           <span className="toolbar-divider" />
@@ -244,14 +245,14 @@ export function WorkspacePage(): React.JSX.Element {
             className="icon-button"
             disabled={!ready}
             onClick={() => activeFrame()?.openDevTools()}
-            title="开发者工具"
+            title={t('shell.developerTools')}
           >
             <Bug size={15} />
           </button>
           <button
             className="icon-button"
             onClick={() => setFocusMode(!focusMode)}
-            title={focusMode ? '退出专注模式' : '专注模式：隐藏导航栏'}
+            title={focusMode ? t('shell.exitFocusMode') : t('shell.focusModeHideNavigation')}
           >
             {focusMode ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
           </button>
@@ -271,23 +272,23 @@ export function WorkspacePage(): React.JSX.Element {
                     <BrandMark size={46} />
                   </div>
                 </div>
-                <h2>正在启动 Harness 运行时</h2>
+                <h2>{t('shell.startingHarnessRuntime')}</h2>
                 <p className="stage-sub">
-                  为 <strong>{startup?.name ?? '当前工作区'}</strong> 启动本地服务
+                  {t('shell.serviceStartup', { name: startup?.name ?? t('shell.currentWorkspace') })}
                   {elapsed > 0 ? ` · ${elapsed}s` : ''}
                 </p>
                 <div className="stage-steps">
-                  <span className="stage-step done">加载运行时</span>
-                  <span className="stage-step active">启动 Web 服务</span>
-                  <span className="stage-step">等待就绪</span>
+                  <span className="stage-step done">{t('shell.loadRuntime')}</span>
+                  <span className="stage-step active">{t('shell.startWebService')}</span>
+                  <span className="stage-step">{t('shell.waitUntilReady')}</span>
                 </div>
                 <div className="stage-actions">
                   <button className="button button-subtle" onClick={() => setView('logs')}>
                     <ScrollText size={14} />
-                    查看日志
+                    {t('shell.viewLogs')}
                   </button>
                   <button className="button button-subtle" onClick={() => void stopHost()}>
-                    取消
+                    {t('shell.cancel')}
                   </button>
                 </div>
               </>
@@ -298,22 +299,23 @@ export function WorkspacePage(): React.JSX.Element {
                 </div>
                 <h2>
                   {host.recovery
-                    ? '运行时已退出，正在自动恢复'
+                    ? t('shell.runtimeExitedRecoveringAutomatically')
                     : host.state === 'stopping'
-                      ? '正在停止运行时…'
-                      : '运行时没有就绪'}
+                      ? t('shell.stoppingRuntime')
+                      : t('shell.runtimeIsNotReady')}
                 </h2>
                 {host.recovery ? (
                   <p className="stage-error">
                     {host.recovery.reason}
                     <br />
                     <span className="stage-recovery">
-                      第 {host.recovery.attempt}/{host.recovery.maxAttempts} 次重试，
-                      {recoverySeconds > 0 ? `${recoverySeconds} 秒后开始` : '即将开始'}…
+                      {recoverySeconds > 0
+                        ? t('shell.recoveryCountdown', { attempt: host.recovery.attempt, max: host.recovery.maxAttempts, seconds: recoverySeconds })
+                        : t('shell.recoveryStarting', { attempt: host.recovery.attempt, max: host.recovery.maxAttempts })}
                     </span>
                   </p>
                 ) : (
-                  <p className="stage-error">{host.error ?? runtime?.error ?? '点击下方按钮启动本地 Harness 服务。'}</p>
+                  <p className="stage-error">{host.error ?? runtime?.error ?? t('shell.startTheLocalHarnessServiceWithTheButton')}</p>
                 )}
                 <div className="stage-log">
                   {logs.slice(-6).map((line) => (
@@ -325,7 +327,7 @@ export function WorkspacePage(): React.JSX.Element {
                 <div className="stage-actions">
                   <button className="button button-primary" disabled={!startup} onClick={() => { if (startup) void openWorkspace(startup.id) }}>
                     <Play size={15} />
-                    启动运行时
+                    {t('shell.startRuntime')}
                   </button>
                   <button
                     className="button button-secondary"
@@ -334,24 +336,24 @@ export function WorkspacePage(): React.JSX.Element {
                       setView('settings')
                       setSettingsSection('runtime')
                     }}
-                    title="查看本机正在运行的 DSH 进程，必要时结束占用的那个"
+                    title={t('shell.viewLocalDshProcessesAndStopOneIf')}
                   >
                     <ListTree size={14} />
-                    查看其他 DSH 进程
+                    {t('shell.otherDshProcesses')}
                   </button>
                   {runtime?.state !== 'ready' ? (
                     <button className="button button-secondary" onClick={() => void installRuntime()}>
                       <Wrench size={14} />
-                      安装便携运行时
+                      {t('shell.installPortableRuntime')}
                     </button>
                   ) : null}
                   <button className="button button-subtle" onClick={() => void restartHost()}>
                     <RotateCcw size={14} />
-                    重启
+                    {t('shell.restart')}
                   </button>
                   <button className="button button-subtle" onClick={() => setView('logs')}>
                     <ScrollText size={14} />
-                    完整日志
+                    {t('shell.fullLogs')}
                   </button>
                 </div>
               </>
@@ -378,7 +380,7 @@ export function WorkspacePage(): React.JSX.Element {
       {ready ? (
         <div className="workspace-footnote" title={currentPath}>
           <Loader2 size={11} className={activePane.loading || switching ? 'spin' : 'hidden'} />
-          <span>{switching ? pending ? `正在打开「${pending.name}」…` : '正在打开工作区…' : currentPath ? shortPath(currentPath, 88) : '等待会话界面确认工作区'}</span>
+          <span>{switching ? pending ? t('shell.opening132', { p0: pending.name }) : t('shell.openingWorkspace133') : currentPath ? shortPath(currentPath, 88) : t('shell.waitingForTheConversationToConfirmItsWorkspace')}</span>
         </div>
       ) : null}
     </div>

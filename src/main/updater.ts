@@ -1,3 +1,4 @@
+import { t } from './i18n'
 import { app } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import { GITHUB_REPO, RELEASES_URL } from '@shared/defaults'
@@ -46,10 +47,10 @@ async function checkViaApi(): Promise<UpdateResult> {
       },
       signal: AbortSignal.timeout(15_000)
     })
-    if (!response.ok) return { status: 'error', message: `检查更新失败：HTTP ${response.status}` }
+    if (!response.ok) return { status: 'error', message: t('main.updateCheckHttpFailed', { status: response.status }) }
     const data = (await response.json()) as { tag_name?: string; html_url?: string }
     const latest = normalize(data.tag_name ?? '')
-    if (!latest) return { status: 'error', message: '发布源未返回版本号。' }
+    if (!latest) return { status: 'error', message: t('main.releaseVersionMissing') }
     if (compareVersions(latest, app.getVersion()) > 0) {
       pendingVersion = latest
       return {
@@ -57,27 +58,27 @@ async function checkViaApi(): Promise<UpdateResult> {
         version: latest,
         url: data.html_url || RELEASES_URL,
         canDownload: false,
-        message: `发现新版本 ${latest}`
+        message: t('main.newVersion', { version: latest })
       }
     }
-    return { status: 'latest', version: latest, message: '已经是最新版本。' }
+    return { status: 'latest', version: latest, message: t('main.latestVersion') }
   } catch (error) {
     logError('updater', error)
-    return { status: 'error', message: `检查更新失败：${error instanceof Error ? error.message : String(error)}` }
+    return { status: 'error', message: t('main.updateCheckFailed', { message: error instanceof Error ? error.message : String(error) }) }
   }
 }
 
 export async function checkForUpdates(): Promise<UpdateResult> {
   if (!app.isPackaged) {
-    return { status: 'dev', message: '开发模式下不检查更新；打包后会自动连接发布源。' }
+    return { status: 'dev', message: t('main.updatesDevelopment') }
   }
   if (GITHUB_REPO.startsWith('REPLACE_ME')) {
-    return { status: 'dev', message: '尚未配置发布仓库（src/shared/defaults.ts 中的 GITHUB_REPO）。' }
+    return { status: 'dev', message: t('main.releaseNotConfigured') }
   }
   try {
     const result = await autoUpdater.checkForUpdates()
     const latest = result?.updateInfo?.version ? normalize(result.updateInfo.version) : ''
-    if (!latest) return { status: 'latest', version: app.getVersion(), message: '已经是最新版本。' }
+    if (!latest) return { status: 'latest', version: app.getVersion(), message: t('main.latestVersion') }
     if (compareVersions(latest, app.getVersion()) > 0) {
       pendingVersion = latest
       log('updater', `update available: ${latest}`)
@@ -85,10 +86,10 @@ export async function checkForUpdates(): Promise<UpdateResult> {
         status: 'available',
         version: latest,
         canDownload: true,
-        message: `发现新版本 ${latest}`
+        message: t('main.newVersion', { version: latest })
       }
     }
-    return { status: 'latest', version: latest, message: '已经是最新版本。' }
+    return { status: 'latest', version: latest, message: t('main.latestVersion') }
   } catch (error) {
     logError('updater', error)
     return checkViaApi()
@@ -97,7 +98,7 @@ export async function checkForUpdates(): Promise<UpdateResult> {
 
 export async function downloadUpdate(): Promise<UpdateResult> {
   if (!app.isPackaged) {
-    return { status: 'dev', message: '开发模式下不能下载更新。' }
+    return { status: 'dev', message: t('main.downloadUpdateDevelopment') }
   }
   try {
     log('updater', `downloading update ${pendingVersion ?? ''}`)
@@ -106,14 +107,14 @@ export async function downloadUpdate(): Promise<UpdateResult> {
       status: 'available',
       version: pendingVersion,
       downloaded: true,
-      message: '更新已下载，重启应用即可完成安装。'
+      message: t('main.updateDownloaded')
     }
   } catch (error) {
     logError('updater', error)
     return {
       status: 'error',
       version: pendingVersion,
-      message: `下载更新失败：${error instanceof Error ? error.message : String(error)}`
+      message: t('main.updateDownloadFailed', { message: error instanceof Error ? error.message : String(error) })
     }
   }
 }

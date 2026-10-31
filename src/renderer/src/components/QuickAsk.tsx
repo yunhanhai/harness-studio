@@ -1,3 +1,4 @@
+import { applyLanguage, t as translateNow, useI18n } from '../lib/i18n'
 import { useEffect, useRef, useState } from 'react'
 import { CornerDownLeft, History, Loader2, Send, Sparkles, X } from 'lucide-react'
 import type { QuickAskResult, Settings } from '@shared/types'
@@ -5,6 +6,7 @@ import type { QuickAskResult, Settings } from '@shared/types'
 type Phase = 'idle' | 'sending' | 'error'
 
 export default function QuickAsk(): React.JSX.Element {
+  const { t } = useI18n()
   const [text, setText] = useState('')
   const [phase, setPhase] = useState<Phase>('idle')
   const [error, setError] = useState('')
@@ -17,16 +19,26 @@ export default function QuickAsk(): React.JSX.Element {
   useEffect(() => {
     document.body.classList.add('quickask-body')
     const api = window.studio
-
-    void api.settings.get().then((value) => {
+    let systemLocale = navigator.language
+    let currentSettings: Settings | null = null
+    let configuredAutoSend: boolean | null = null
+    let disposed = false
+    const updateSettings = (value: Settings): void => {
+      currentSettings = value
+      applyLanguage(value.language, systemLocale)
       setSettings(value)
-      setAutoSend(value.quickAsk.autoSend)
+      // A language or theme change keeps the choice made for this question.
+      if (configuredAutoSend !== value.quickAsk.autoSend) setAutoSend(value.quickAsk.autoSend)
+      configuredAutoSend = value.quickAsk.autoSend
+    }
+
+    void Promise.all([api.app.info(), api.settings.get()]).then(([info, value]) => {
+      if (disposed) return
+      systemLocale = info.systemLocale ?? navigator.language
+      updateSettings(currentSettings ?? value)
     })
 
-    const offSettings = api.settings.onChange((value) => {
-      setSettings(value)
-      setAutoSend(value.quickAsk.autoSend)
-    })
+    const offSettings = api.settings.onChange(updateSettings)
 
     const loadRecent = (): void => {
       void api.quickAsk.recent().then(setRecent).catch(() => setRecent([]))
@@ -44,7 +56,7 @@ export default function QuickAsk(): React.JSX.Element {
     const offResult = api.quickAsk.onResult((result: QuickAskResult) => {
       if (result.status === 'failed' || result.status === 'needs-host' || result.status === 'no-workspace') {
         setPhase('error')
-        setError(result.message ?? '发送失败')
+        setError(result.message ?? translateNow('shell.sendFailed'))
       }
     })
 
@@ -52,6 +64,7 @@ export default function QuickAsk(): React.JSX.Element {
     reset()
 
     return () => {
+      disposed = true
       offSettings()
       offOpen()
       offResult()
@@ -68,7 +81,7 @@ export default function QuickAsk(): React.JSX.Element {
       const result = await window.studio.quickAsk.submit(value, { autoSend })
       if (result.status === 'failed' || result.status === 'needs-host' || result.status === 'no-workspace') {
         setPhase('error')
-        setError(result.message ?? '发送失败')
+        setError(result.message ?? translateNow('shell.sendFailed'))
         return
       }
       setText('')
@@ -98,9 +111,9 @@ export default function QuickAsk(): React.JSX.Element {
           <span className="quickask-mark">
             <Sparkles size={14} />
           </span>
-          <span className="quickask-title">快速提问</span>
+          <span className="quickask-title">{t('shell.quickAsk')}</span>
           <span className="quickask-hint">{shortcutLabel}</span>
-          <button className="quickask-close" onClick={() => window.studio.quickAsk.hide()} aria-label="关闭">
+          <button className="quickask-close" onClick={() => window.studio.quickAsk.hide()} aria-label={t('shell.close')}>
             <X size={13} />
           </button>
         </div>
@@ -130,7 +143,7 @@ export default function QuickAsk(): React.JSX.Element {
           value={text}
           onChange={(event) => setText(event.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="直接输入，Enter 发送到 Harness…"
+          placeholder={t('shell.typeHereEnterSendsToHarness')}
           rows={3}
           spellCheck={false}
           autoFocus
@@ -145,22 +158,22 @@ export default function QuickAsk(): React.JSX.Element {
               checked={autoSend}
               onChange={(event) => setAutoSend(event.target.checked)}
             />
-            <span>自动发送</span>
+            <span>{t('shell.autoSend')}</span>
           </label>
           {recent.length > 0 ? (
             <button
               className={`quickask-history ${showRecent ? 'is-open' : ''}`}
               onClick={() => setShowRecent((value) => !value)}
-              title="最近提问"
+              title={t('shell.recentQuestions')}
             >
               <History size={11} />
-              最近 {recent.length}
+              {t('shell.recentCount', { count: recent.length })}
             </button>
           ) : null}
           <span className="quickask-keys">
-            <kbd>Enter</kbd> 发送
-            <kbd>Shift+Enter</kbd> 换行
-            <kbd>Esc</kbd> 关闭
+            <kbd>Enter</kbd> {t('shell.send')}
+            <kbd>Shift+Enter</kbd> {t('shell.newLine')}
+            <kbd>Esc</kbd> {t('shell.close')}
           </span>
           <button
             className="quickask-submit"
@@ -168,7 +181,7 @@ export default function QuickAsk(): React.JSX.Element {
             onClick={() => void submit()}
           >
             {phase === 'sending' ? <Loader2 size={13} className="spin" /> : autoSend ? <Send size={13} /> : <CornerDownLeft size={13} />}
-            {phase === 'sending' ? '发送中' : autoSend ? '发送' : '填入'}
+            {phase === 'sending' ? t('shell.sending') : autoSend ? t('shell.send') : t('shell.insert')}
           </button>
         </div>
       </div>

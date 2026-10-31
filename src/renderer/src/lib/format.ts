@@ -1,11 +1,14 @@
+import { getLocale, t } from './i18n'
+
 export function relativeTime(timestamp?: number): string {
-  if (!timestamp) return '从未打开'
+  if (!timestamp) return t('core.neverOpened')
   const diff = Date.now() - timestamp
-  if (diff < 60_000) return '刚刚'
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} 分钟前`
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} 小时前`
-  if (diff < 7 * 86_400_000) return `${Math.floor(diff / 86_400_000)} 天前`
-  return new Date(timestamp).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+  if (diff < 60_000) return t('core.justNow')
+  const formatter = new Intl.RelativeTimeFormat(getLocale(), { numeric: 'always' })
+  if (diff < 3_600_000) return formatter.format(-Math.floor(diff / 60_000), 'minute')
+  if (diff < 86_400_000) return formatter.format(-Math.floor(diff / 3_600_000), 'hour')
+  if (diff < 7 * 86_400_000) return formatter.format(-Math.floor(diff / 86_400_000), 'day')
+  return new Date(timestamp).toLocaleDateString(getLocale(), { month: 'short', day: 'numeric' })
 }
 
 /** Compact token/byte style numbers: 1234 → 1.2K, 1_500_000 → 1.50M. */
@@ -18,16 +21,16 @@ export function compactTokens(value: number): string {
 }
 
 export function clockTime(timestamp: number): string {
-  return new Date(timestamp).toLocaleTimeString('zh-CN', { hour12: false })
+  return new Date(timestamp).toLocaleTimeString(getLocale(), { hour12: false })
 }
 
 export function greeting(): string {
   const hour = new Date().getHours()
-  if (hour < 5) return '夜深了'
-  if (hour < 11) return '早上好'
-  if (hour < 14) return '中午好'
-  if (hour < 18) return '下午好'
-  return '晚上好'
+  if (hour < 5) return t('core.lateNight')
+  if (hour < 11) return t('core.morning')
+  if (hour < 14) return t('core.noon')
+  if (hour < 18) return t('core.afternoon')
+  return t('core.evening')
 }
 
 export function shortPath(path: string, max = 46): string {
@@ -46,31 +49,31 @@ export function initials(name: string): string {
 export function hostStateLabel(state: string): string {
   switch (state) {
     case 'ready':
-      return '运行中'
+      return t('core.hostReady')
     case 'starting':
-      return '启动中'
+      return t('core.hostStarting')
     case 'stopping':
-      return '正在停止'
+      return t('core.hostStopping')
     case 'error':
-      return '需要处理'
+      return t('core.hostError')
     default:
-      return '未启动'
+      return t('core.hostStopped')
   }
 }
 
 export function sourceLabel(source?: string | null): string {
   switch (source) {
     case 'portable':
-      return '内置便携运行时'
+      return t('core.sourcePortable')
     case 'custom':
-      return '自定义路径'
+      return t('core.sourceCustom')
     case 'npm-global':
-      return 'npm 全局安装'
+      return t('core.sourceNpm')
     case 'path':
-      return 'PATH 中的 dsh'
+      return t('core.sourcePath')
     case 'bundled':
-      return '应用内置'
+      return t('core.sourceBundled')
     default:
-      return '未检测到'
+      return t('core.sourceMissing')
   }
 }

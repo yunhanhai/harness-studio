@@ -6,6 +6,8 @@ export type HostState = 'stopped' | 'starting' | 'ready' | 'stopping' | 'error'
 export type RuntimeState = 'unknown' | 'checking' | 'missing' | 'ready' | 'error'
 
 export interface AppInfo {
+  /** Electron's OS locale; renderers use the same value for Follow system. */
+  systemLocale?: string
   name: string
   version: string
   platform: string
@@ -309,6 +311,8 @@ export interface DailyBucket {
 export interface WorkspaceBucket {
   path: string
   name: string
+  /** Distinguishes a generated fallback from a user-provided directory name. */
+  unknownDirectory?: boolean
   sessions: number
   turns: number
   tokens: number
@@ -316,6 +320,8 @@ export interface WorkspaceBucket {
 
 export interface ModelBucket {
   label: string
+  /** The label is a generated placeholder rather than a recorded model name. */
+  unrecorded?: boolean
   sessions: number
   turns: number
   tokens: number

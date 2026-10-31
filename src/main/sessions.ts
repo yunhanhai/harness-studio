@@ -1,3 +1,4 @@
+import { t } from './i18n'
 import { existsSync } from 'node:fs'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { basename, join } from 'node:path'
@@ -198,11 +199,12 @@ function buildDaily(sessions: SessionSummary[]): DailyBucket[] {
 function buildWorkspaces(sessions: SessionSummary[], workspaces: Workspace[]): WorkspaceBucket[] {
   const map = new Map<string, WorkspaceBucket>()
   for (const session of sessions) {
-    const key = session.cwd || '（未知目录）'
+    const key = session.cwd || t('main.unknownDirectory')
     const matched = workspaceFor(session.cwd, workspaces)
     const entry = map.get(key) ?? {
       path: key,
       name: matched?.name || basename(session.cwd || '') || key,
+      unknownDirectory: !session.cwd,
       sessions: 0,
       turns: 0,
       tokens: 0
@@ -222,8 +224,8 @@ function buildModels(sessions: SessionSummary[]): ModelBucket[] {
       ? session.provider
         ? `${session.provider} / ${session.model}`
         : session.model
-      : '未记录'
-    const entry = map.get(label) ?? { label, sessions: 0, turns: 0, tokens: 0 }
+      : t('main.modelUnrecorded')
+    const entry = map.get(label) ?? { label, unrecorded: !session.model, sessions: 0, turns: 0, tokens: 0 }
     entry.sessions += 1
     entry.turns += session.turns
     entry.tokens += session.tokens.uncachedInputTokens + session.tokens.outputTokens + session.tokens.cacheReadTokens

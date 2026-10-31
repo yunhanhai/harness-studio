@@ -1,3 +1,4 @@
+import { useI18n } from '../lib/i18n'
 import { AlertCircle, CheckCircle2, Info, X } from 'lucide-react'
 import { useApp } from '../store'
 
@@ -8,6 +9,7 @@ const ICONS = {
 }
 
 export function ToastHost(): React.JSX.Element {
+  const { t } = useI18n()
   const toasts = useApp((state) => state.toasts)
   const dismiss = useApp((state) => state.dismissToast)
 
@@ -32,11 +34,11 @@ export function ToastHost(): React.JSX.Element {
                     dismiss(toast.id)
                   }}
                 >
-                  {toast.action.label}
+                  {toast.action.labelKey ? t(toast.action.labelKey) : toast.action.label}
                 </button>
               ) : null}
             </div>
-            <button className="toast-close" onClick={() => dismiss(toast.id)} aria-label="关闭提示">
+            <button className="toast-close" onClick={() => dismiss(toast.id)} aria-label={t('shell.dismissNotification')}>
               <X size={13} />
             </button>
           </div>

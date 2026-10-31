@@ -1,18 +1,12 @@
 import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'
-import { readFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
-import { createRequire } from 'node:module'
 import vm from 'node:vm'
-import ts from 'typescript'
+import { createTypeScriptLoader } from './lib/load-typescript.mjs'
 
 // Run the real navigation coordinator with independently controlled Host and
 // guest lifetimes. No Electron, user profile or model credentials are needed.
-const source = await readFile(new URL('../src/main/workspace-navigation.ts', import.meta.url), 'utf8')
-const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
-const exported = {}
-new Function('exports', 'require', compiled)(exported, createRequire(import.meta.url))
-const { WorkspaceNavigator } = exported
+const { WorkspaceNavigator } = createTypeScriptLoader()(new URL('../src/main/workspace-navigation.ts', import.meta.url))
 const project = (id) => ({ id, path: `D:/projects/${id}`, name: id })
 const projects = ['A', 'B', 'C'].map(project)
 const gate = () => {

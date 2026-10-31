@@ -1,3 +1,4 @@
+import { t as translateNow, useI18n } from '../lib/i18n'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDownToLine, Copy, FolderOpen, Pause, Play, Search, Trash2 } from 'lucide-react'
 import { useApp } from '../store'
@@ -5,14 +6,14 @@ import { clockTime } from '../lib/format'
 
 type Filter = 'all' | 'out' | 'err' | 'sys'
 
-const FILTERS: Array<{ id: Filter; label: string }> = [
-  { id: 'all', label: '全部' },
-  { id: 'out', label: '标准输出' },
-  { id: 'err', label: '错误' },
-  { id: 'sys', label: '系统' }
-]
-
 export function Logs(): React.JSX.Element {
+  const { t } = useI18n()
+  const FILTERS: Array<{ id: Filter; label: string }> = [
+    { id: 'all', label: t('shell.all') },
+    { id: 'out', label: t('shell.standardOutput') },
+    { id: 'err', label: t('shell.errors') },
+    { id: 'sys', label: t('shell.system') }
+  ]
   const logs = useApp((state) => state.logs)
   const host = useApp((state) => state.host)
   const clearLogs = useApp((state) => state.clearLogs)
@@ -51,7 +52,7 @@ export function Logs(): React.JSX.Element {
   const copyAll = async (): Promise<void> => {
     const text = filtered.map((line) => `[${clockTime(line.ts)}] [${line.stream}] ${line.text}`).join('\n')
     await window.studio.clipboard.write(text)
-    toast(`已复制 ${filtered.length} 行日志`, 'success')
+    toast(translateNow('shell.copiedLogLines', { p0: filtered.length }), 'success')
   }
 
   return (
@@ -60,23 +61,23 @@ export function Logs(): React.JSX.Element {
         <div>
           <div className="eyebrow">
             <span className={`status-dot host-${host.state}`} />
-            运行日志
+            {t('shell.runtimeLogs')}
           </div>
-          <h1>看见运行时发生了什么</h1>
-          <p>实时输出会同时写入本地文件；访问令牌在日志中自动脱敏。</p>
+          <h1>{t('shell.seeWhatHappensInTheRuntime')}</h1>
+          <p>{t('shell.liveOutputIsAlsoWrittenToLocalFiles')}</p>
         </div>
         <div className="page-head-actions">
           <button className="button button-secondary button-small" onClick={() => void window.studio.host.openLogsFolder()}>
             <FolderOpen size={14} />
-            日志文件夹
+            {t('shell.logsFolder')}
           </button>
           <button className="button button-secondary button-small" onClick={() => void copyAll()}>
             <Copy size={14} />
-            复制
+            {t('shell.copy')}
           </button>
           <button className="button button-ghost button-small" onClick={() => void clearLogs()}>
             <Trash2 size={14} />
-            清空
+            {t('shell.clearLogs')}
           </button>
         </div>
       </header>
@@ -96,29 +97,29 @@ export function Logs(): React.JSX.Element {
         </div>
         <div className="search-field search-compact">
           <Search size={14} />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="过滤日志内容" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t('shell.filterLogContent')} />
         </div>
         <button
           className={`button button-ghost button-small ${autoScroll ? 'is-on' : ''}`}
           onClick={() => setAutoScroll(!autoScroll)}
-          title="自动滚动"
+          title={t('shell.autoScroll')}
         >
           {autoScroll ? <Pause size={13} /> : <Play size={13} />}
-          {autoScroll ? '跟随' : '已暂停'}
+          {autoScroll ? t('shell.following') : t('shell.paused')}
         </button>
       </div>
 
       <div className="log-panel">
         <div className="log-head">
-          <span>时间</span>
-          <span>来源</span>
-          <span>内容</span>
+          <span>{t('shell.time')}</span>
+          <span>{t('shell.source')}</span>
+          <span>{t('shell.content')}</span>
         </div>
         <div className="log-scroll" ref={scroller}>
           {filtered.length === 0 ? (
             <div className="log-empty">
               <ArrowDownToLine size={20} />
-              <span>{logs.length === 0 ? '还没有日志。启动一次运行时后，这里会实时显示输出。' : '当前筛选条件下没有日志。'}</span>
+              <span>{logs.length === 0 ? t('shell.noLogsYetStartTheRuntimeToSee') : t('shell.noLogsMatchTheCurrentFilters')}</span>
             </div>
           ) : (
             filtered.map((line) => (
@@ -131,8 +132,8 @@ export function Logs(): React.JSX.Element {
           )}
         </div>
         <div className="log-footer">
-          <span>{filtered.length} / {logs.length} 行</span>
-          <span>最多保留 4000 行 · 完整记录见 host-*.log</span>
+          <span>{t('shell.logLineCount', { shown: filtered.length, total: logs.length })}</span>
+          <span>{t('shell.upTo4000LinesFullLogsHost')}</span>
         </div>
       </div>
     </div>

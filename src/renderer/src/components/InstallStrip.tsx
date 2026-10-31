@@ -1,18 +1,19 @@
+import { useI18n } from '../lib/i18n'
 import { Download, X } from 'lucide-react'
 import type { InstallProgress } from '@shared/types'
 import { useApp } from '../store'
 
-const PHASE_LABEL: Record<InstallProgress['phase'], string> = {
-  idle: '准备安装',
-  'download-node': '下载 Node.js',
-  extract: '解压运行时',
-  'install-dsh': '安装 DeepSeek Harness',
-  verify: '校验运行时',
-  done: '安装完成',
-  error: '安装失败'
-}
-
 export function InstallStrip({ progress }: { progress: InstallProgress }): React.JSX.Element {
+  const { t } = useI18n()
+  const PHASE_LABEL: Record<InstallProgress['phase'], string> = {
+    idle: t('shell.preparingInstallation'),
+    'download-node': t('shell.downloadingNodeJs'),
+    extract: t('shell.extractingRuntime'),
+    'install-dsh': t('shell.installingDeepseekHarness'),
+    verify: t('shell.verifyingRuntime'),
+    done: t('shell.installationComplete'),
+    error: t('shell.installationFailed')
+  }
   const cancelInstall = useApp((state) => state.cancelInstall)
   return (
     <div className={`install-strip install-${progress.phase}`}>
@@ -30,7 +31,7 @@ export function InstallStrip({ progress }: { progress: InstallProgress }): React
         </div>
         {progress.detail ? <div className="install-detail">{progress.detail}</div> : null}
       </div>
-      <button className="icon-button" onClick={() => void cancelInstall()} title="取消安装">
+      <button className="icon-button" onClick={() => void cancelInstall()} title={t('shell.cancelInstallation')}>
         <X size={14} />
       </button>
     </div>

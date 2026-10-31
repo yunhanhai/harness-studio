@@ -29,5 +29,8 @@ jobs:
       - name: Workspace navigation regressions
         run: npm run test:workspace-navigation
 
+      - name: Localization regressions
+        run: npm run test:i18n
+
       - name: Build
         run: npm run build

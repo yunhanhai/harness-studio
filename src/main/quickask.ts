@@ -1,3 +1,4 @@
+import { t } from './i18n'
 import type { WebContents } from 'electron'
 import type { QuickAskResult } from '@shared/types'
 import { log, logError } from './logger'
@@ -106,9 +107,9 @@ async function evaluate<T>(contents: WebContents, code: string): Promise<T | nul
     return await Promise.race([
       contents.executeJavaScript(code, true) as Promise<T>,
       new Promise<never>((_resolve, reject) => {
-        destroyed = (): void => reject(new Error('会话界面已关闭'))
+        destroyed = (): void => reject(new Error(t('main.guestClosed')))
         contents.once('destroyed', destroyed)
-        timer = setTimeout(() => reject(new Error('会话界面响应超时')), 8_000)
+        timer = setTimeout(() => reject(new Error(t('main.guestTimeout'))), 8_000)
       })
     ])
   } catch (error) {
@@ -135,8 +136,8 @@ export interface InjectOptions {
  */
 export async function injectIntoComposer(contents: WebContents, text: string, options: InjectOptions): Promise<QuickAskResult> {
   const trimmed = text.trim()
-  if (!trimmed) return { status: 'failed', message: '内容为空' }
-  if (contents.isDestroyed()) return { status: 'needs-host', message: '会话界面尚未就绪' }
+  if (!trimmed) return { status: 'failed', message: t('main.emptyContent') }
+  if (contents.isDestroyed()) return { status: 'needs-host', message: t('main.guestNotReady') }
 
   // First-run onboarding can hold focus; dismiss it before touching the composer.
   // Several onboarding dialogs can stack, so retry a few times.
@@ -157,12 +158,12 @@ export async function injectIntoComposer(contents: WebContents, text: string, op
   if (!focus?.ok) {
     return {
       status: 'needs-host',
-      message: focus?.reason === 'no-composer' ? '找不到输入框，请先打开一个会话' : '无法聚焦输入框'
+      message: focus?.reason === 'no-composer' ? t('main.composerMissing') : t('main.composerFocusFailed')
     }
   }
 
   if (options.isCurrent && !options.isCurrent()) {
-    return { status: 'needs-host', message: '目标会话已切换，请就绪后再发送' }
+    return { status: 'needs-host', message: t('main.targetChanged') }
   }
   // Real input events; this is what Electron's own insertText uses underneath.
   contents.insertText(trimmed)
@@ -170,7 +171,7 @@ export async function injectIntoComposer(contents: WebContents, text: string, op
 
   const state = await evaluate<{ ok: boolean; text: string; focused: boolean }>(contents, READ_COMPOSER)
   if (!state?.ok || !state.text.includes(trimmed.slice(0, Math.min(12, trimmed.length)))) {
-    return { status: 'failed', message: '内容没有进入输入框' }
+    return { status: 'failed', message: t('main.insertFailed') }
   }
 
   if (!options.autoSend) {
@@ -178,14 +179,14 @@ export async function injectIntoComposer(contents: WebContents, text: string, op
   }
 
   if (options.isCurrent && !options.isCurrent()) {
-    return { status: 'inserted', message: '已填入原会话，切换后请检查并手动发送' }
+    return { status: 'inserted', message: t('main.insertedBeforeSwitch') }
   }
   const sent = await evaluate<{ ok: boolean; reason: string }>(contents,
     `${PRESS_SEND}(${JSON.stringify(options.authorizationKey ?? '')}, ${JSON.stringify(focus.sessionId ?? '')})`)
   if (!sent?.ok) {
     // Text is in the composer; the user can press Enter themselves.
     log('quick-ask', `send failed: ${sent?.reason ?? 'unknown'}`)
-    return { status: 'inserted', message: '已填入输入框，请手动发送' }
+    return { status: 'inserted', message: t('main.sendManually') }
   }
   return { status: 'sent' }
 }

@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { createWriteStream } from 'node:fs'
 import { mkdir, readdir, rename, rm } from 'node:fs/promises'
@@ -41,7 +42,7 @@ async function download(
   signal: AbortSignal
 ): Promise<void> {
   const response = await fetch(url, { signal, redirect: 'follow' })
-  if (!response.ok || !response.body) throw new Error(`下载失败：HTTP ${response.status}`)
+  if (!response.ok || !response.body) throw new Error(t('main.downloadHttpFailed', { status: response.status }))
   const total = Number(response.headers.get('content-length')) || 0
   const file = createWriteStream(destination)
   const reader = response.body.getReader()
@@ -99,7 +100,7 @@ function runNpm(
       } catch {
         /* ignore */
       }
-      finish(new Error('安装已取消'))
+      finish(new Error(t('main.installCancelled')))
     }
     signal.addEventListener('abort', abort, { once: true })
 
@@ -117,7 +118,7 @@ function runNpm(
     child.on('error', (error) => finish(error))
     child.on('exit', (code) => {
       if (code === 0) finish()
-      else finish(new Error(`npm 安装失败（退出码 ${code}）`))
+      else finish(new Error(t('main.npmInstallFailed', { code: code ?? t('main.unknown') })))
     })
   })
 }
@@ -135,7 +136,7 @@ export class RuntimeInstaller {
   }
 
   async install(userData: string, settings: Settings, onProgress: ProgressFn, signal?: AbortSignal): Promise<InstallProgress> {
-    if (this.running) throw new Error('已有安装任务正在进行')
+    if (this.running) throw new Error(t('main.installInProgress'))
     this.running = true
     const controller = new AbortController()
     this.controller = controller
@@ -153,13 +154,13 @@ export class RuntimeInstaller {
     const zipPath = join(tempRoot, 'node.zip')
 
     try {
-      emit('download-node', 0, '准备下载 Node.js 运行时…')
+      emit('download-node', 0, t('main.downloadNodePreparing'))
       await mkdir(tempRoot, { recursive: true })
       const mirror = settings.runtime.nodeMirror || 'https://npmmirror.com/mirrors/node'
       const version = await pickNodeVersion(mirror)
       const triple = platformTriple()
       const url = `${mirror.replace(/\/$/, '')}/v${version}/node-v${version}-${triple}.zip`
-      emit('download-node', 1, `正在下载 Node.js ${version}（${triple}）…`, url)
+      emit('download-node', 1, t('main.downloadingNodeTarget', { version, target: triple }), url)
 
       const timeout = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS)
       try {
@@ -168,7 +169,7 @@ export class RuntimeInstaller {
           zipPath,
           (received, total) => {
             const ratio = total > 0 ? received / total : 0
-            emit('download-node', 2 + ratio * 42, `正在下载 Node.js ${version}…`, `${(received / 1024 / 1024).toFixed(1)} MB`)
+            emit('download-node', 2 + ratio * 42, t('main.downloadingNode', { version }), `${(received / 1024 / 1024).toFixed(1)} MB`)
           },
           controller.signal
         )
@@ -176,21 +177,21 @@ export class RuntimeInstaller {
         clearTimeout(timeout)
       }
 
-      emit('extract', 46, '正在解压运行时…')
+      emit('extract', 46, t('main.extractingRuntime'))
       const extract = (await import('extract-zip')).default
       await extract(zipPath, { dir: tempRoot })
       const entries = await readdir(tempRoot, { withFileTypes: true })
       const extracted = entries.find((entry) => entry.isDirectory() && entry.name.startsWith('node-v'))
-      if (!extracted) throw new Error('解压后的运行时目录不完整')
+      if (!extracted) throw new Error(t('main.runtimeIncomplete'))
       const sourceDir = join(tempRoot, extracted.name)
       await rm(nodeDir, { recursive: true, force: true }).catch(() => undefined)
       await mkdir(join(runtimeDir), { recursive: true })
       await rename(sourceDir, nodeDir)
-      emit('extract', 55, 'Node.js 已就绪')
+      emit('extract', 55, t('main.nodeReady'))
 
       const npmCli = join(nodeDir, 'node_modules', 'npm', 'bin', 'npm-cli.js')
       const nodeExe = join(nodeDir, 'node.exe')
-      emit('install-dsh', 56, '正在安装 @deepseek-ai/dsh…', '这一步会下载全部依赖，通常需要 1–3 分钟。')
+      emit('install-dsh', 56, t('main.installingDshPackage'), t('main.installDependenciesDetail'))
 
       let lineCount = 0
       const env: NodeJS.ProcessEnv = {
@@ -224,7 +225,7 @@ export class RuntimeInstaller {
           env,
           (line) => {
             lineCount += 1
-            emit('install-dsh', Math.min(93, 58 + lineCount * 0.8), '正在安装 DeepSeek Harness…', line.slice(0, 300))
+            emit('install-dsh', Math.min(93, 58 + lineCount * 0.8), t('main.installingDsh'), line.slice(0, 300))
           },
           controller.signal
         )
@@ -232,18 +233,18 @@ export class RuntimeInstaller {
         clearTimeout(npmTimeout)
       }
 
-      emit('verify', 95, '正在校验运行时…')
+      emit('verify', 95, t('main.verifyingRuntime'))
       const info = await detectRuntime(settings, userData)
-      if (info.state !== 'ready') throw new Error(info.error || '运行时校验失败')
+      if (info.state !== 'ready') throw new Error(info.error || t('main.runtimeVerificationFailed'))
 
-      emit('done', 100, `运行时安装完成（dsh ${info.version ?? '未知版本'}）`)
+      emit('done', 100, t('main.runtimeInstalled', { version: info.version ?? t('main.unknownVersion') }))
       void writeLogLine('runtime', 'info', `portable runtime installed: ${info.cliPath}`)
-      return { phase: 'done', percent: 100, message: `运行时安装完成（dsh ${info.version ?? '未知版本'}）` }
+      return { phase: 'done', percent: 100, message: t('main.runtimeInstalled', { version: info.version ?? t('main.unknownVersion') }) }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       logError('runtime-install', error)
-      emit('error', 0, controller.signal.aborted ? '安装已取消' : `安装失败：${message}`, message)
-      return { phase: 'error', percent: 0, message: controller.signal.aborted ? '安装已取消' : `安装失败：${message}` }
+      emit('error', 0, controller.signal.aborted ? t('main.installCancelled') : t('main.installFailed', { message }), message)
+      return { phase: 'error', percent: 0, message: controller.signal.aborted ? t('main.installCancelled') : t('main.installFailed', { message }) }
     } finally {
       this.running = false
       this.controller = null

@@ -1,6 +1,8 @@
+import { useI18n } from '../lib/i18n'
 import { BrandMark } from './BrandMark'
 
 export function Splash(): React.JSX.Element {
+  const { t } = useI18n()
   return (
     <div className="splash">
       <div className="splash-glow" />
@@ -8,7 +10,7 @@ export function Splash(): React.JSX.Element {
         <BrandMark size={58} />
       </div>
       <div className="splash-title">Harness Studio</div>
-      <div className="splash-subtitle">正在准备你的工作台…</div>
+      <div className="splash-subtitle">{t('shell.preparingYourWorkspace')}</div>
       <div className="splash-bar">
         <span />
       </div>

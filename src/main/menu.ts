@@ -1,3 +1,4 @@
+import { t } from './i18n'
 import { Menu, app, shell, type MenuItemConstructorOptions } from 'electron'
 import { GITHUB_URL, GITEE_URL, PRODUCT_NAME } from '@shared/defaults'
 
@@ -22,71 +23,71 @@ export function installApplicationMenu(handlers: MenuHandlers): void {
     {
       label: PRODUCT_NAME,
       submenu: [
-        { label: `关于 ${PRODUCT_NAME}`, click: handlers.showAbout },
+        { label: t('main.aboutProductMenu', { product: PRODUCT_NAME }), click: handlers.showAbout },
         { type: 'separator' },
-        { label: '设置…', accelerator: 'Command+,', click: handlers.openSettings },
-        { label: '检查更新…', click: handlers.checkUpdates },
+        { label: t('main.settingsMenu'), accelerator: 'Command+,', click: handlers.openSettings },
+        { label: t('main.checkUpdatesMenu'), click: handlers.checkUpdates },
         { type: 'separator' },
-        { role: 'hide', label: `隐藏 ${PRODUCT_NAME}` },
-        { role: 'hideOthers', label: '隐藏其他' },
-        { role: 'unhide', label: '全部显示' },
+        { role: 'hide', label: t('main.hideProductMenu', { product: PRODUCT_NAME }) },
+        { role: 'hideOthers', label: t('main.hideOthersMenu') },
+        { role: 'unhide', label: t('main.showAllMenu') },
         { type: 'separator' },
-        { label: `退出 ${PRODUCT_NAME}`, accelerator: 'Command+Q', click: handlers.quit }
+        { label: t('main.quitProductMenu', { product: PRODUCT_NAME }), accelerator: 'Command+Q', click: handlers.quit }
       ]
     },
     {
-      label: '文件',
+      label: t('main.fileMenu'),
       submenu: [
-        { label: '打开工作区…', accelerator: 'Command+O', click: handlers.openWorkspace },
-        { label: '运行日志', accelerator: 'Command+Shift+L', click: handlers.openLogs },
+        { label: t('main.openWorkspaceMenu'), accelerator: 'Command+O', click: handlers.openWorkspace },
+        { label: t('main.logsMenu'), accelerator: 'Command+Shift+L', click: handlers.openLogs },
         { type: 'separator' },
-        { label: '隐藏窗口', accelerator: 'Command+W', click: handlers.toggleWindow }
+        { label: t('main.hideWindowMenu'), accelerator: 'Command+W', click: handlers.toggleWindow }
       ]
     },
     {
-      label: '编辑',
+      label: t('main.editMenu'),
       submenu: [
-        { role: 'undo', label: '撤销' },
-        { role: 'redo', label: '重做' },
+        { role: 'undo', label: t('main.undoMenu') },
+        { role: 'redo', label: t('main.redoMenu') },
         { type: 'separator' },
-        { role: 'cut', label: '剪切' },
-        { role: 'copy', label: '复制' },
-        { role: 'paste', label: '粘贴' },
-        { role: 'selectAll', label: '全选' }
+        { role: 'cut', label: t('main.cutMenu') },
+        { role: 'copy', label: t('main.copyMenu') },
+        { role: 'paste', label: t('main.pasteMenu') },
+        { role: 'selectAll', label: t('main.selectAllMenu') }
       ]
     },
     {
-      label: '视图',
+      label: t('main.viewMenu'),
       submenu: [
-        { role: 'reload', label: '重新加载界面' },
-        { role: 'toggleDevTools', label: '开发者工具' },
+        { role: 'reload', label: t('main.reloadMenu') },
+        { role: 'toggleDevTools', label: t('main.devToolsMenu') },
         { type: 'separator' },
-        { role: 'resetZoom', label: '实际大小' },
-        { role: 'zoomIn', label: '放大' },
-        { role: 'zoomOut', label: '缩小' },
+        { role: 'resetZoom', label: t('main.actualSizeMenu') },
+        { role: 'zoomIn', label: t('main.zoomInMenu') },
+        { role: 'zoomOut', label: t('main.zoomOutMenu') },
         { type: 'separator' },
-        { role: 'togglefullscreen', label: '全屏' }
+        { role: 'togglefullscreen', label: t('main.fullscreenMenu') }
       ]
     },
     {
-      label: '运行时',
-      submenu: [{ label: '重启 Harness 运行时', click: handlers.restartHost }]
+      label: t('main.runtimeMenu'),
+      submenu: [{ label: t('main.restartHarnessMenu'), click: handlers.restartHost }]
     },
     {
-      label: '窗口',
+      label: t('main.windowMenu'),
       submenu: [
-        { role: 'minimize', label: '最小化' },
-        { role: 'zoom', label: '缩放' },
-        { role: 'front', label: '前置全部窗口' }
+        { role: 'minimize', label: t('main.minimizeMenu') },
+        { role: 'zoom', label: t('main.zoomMenu') },
+        { role: 'front', label: t('main.frontMenu') }
       ]
     },
     {
-      label: '帮助',
+      label: t('main.helpMenu'),
       submenu: [
-        { label: 'GitHub 仓库', click: () => void shell.openExternal(GITHUB_URL) },
-        { label: 'Gitee 仓库', click: () => void shell.openExternal(GITEE_URL) },
+        { label: t('main.githubMenu'), click: () => void shell.openExternal(GITHUB_URL) },
+        { label: t('main.giteeMenu'), click: () => void shell.openExternal(GITEE_URL) },
         { type: 'separator' },
-        { label: `版本 ${app.getVersion()}`, enabled: false }
+        { label: t('main.versionMenu', { version: app.getVersion() }), enabled: false }
       ]
     }
   ]

@@ -1,8 +1,10 @@
 import { Cpu, FolderOpen, Radio } from 'lucide-react'
+import { useI18n } from '../lib/i18n'
 import { useApp } from '../store'
 import { hostStateLabel, shortPath } from '../lib/format'
 
 export function StatusBar(): React.JSX.Element {
+  useI18n()
   const host = useApp((state) => state.host)
   const runtime = useApp((state) => state.runtime)
   const workspaces = useApp((state) => state.workspaces)

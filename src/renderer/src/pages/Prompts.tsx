@@ -1,3 +1,4 @@
+import { useI18n } from '../lib/i18n'
 import { useMemo, useState } from 'react'
 import { Copy, Pencil, Plus, Search, Sparkles, Tag, Trash2 } from 'lucide-react'
 import type { PromptItem } from '@shared/types'
@@ -14,6 +15,7 @@ interface Draft {
 const EMPTY_DRAFT: Draft = { title: '', content: '', tags: '' }
 
 export function Prompts(): React.JSX.Element {
+  const { t } = useI18n()
   const prompts = useApp((state) => state.prompts)
   const savePrompt = useApp((state) => state.savePrompt)
   const deletePrompt = useApp((state) => state.deletePrompt)
@@ -63,32 +65,32 @@ export function Prompts(): React.JSX.Element {
         <div>
           <div className="eyebrow">
             <Sparkles size={13} />
-            提示词库
+            {t('shell.promptLibrary')}
           </div>
-          <h1>把好问题沉淀下来</h1>
-          <p>常用提示词一键复制到会话。它们保存在本地，不会上传。</p>
+          <h1>{t('shell.keepYourBestQuestionsHandy')}</h1>
+          <p>{t('shell.copyFrequentlyUsedPromptsIntoASessionWith')}</p>
         </div>
         <div className="page-head-actions">
           <div className="search-field">
             <Search size={15} />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索标题、内容或标签" />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t('shell.searchTitlesContentOrTags')} />
             {query ? (
               <button className="search-clear" onClick={() => setQuery('')}>
-                清除
+                {t('shell.clear')}
               </button>
             ) : null}
           </div>
           <button className="button button-primary" onClick={() => openEditor()}>
             <Plus size={15} />
-            新建提示词
+            {t('shell.newPrompt')}
           </button>
         </div>
       </header>
 
       <div className="prompt-meta-row">
-        <span>{prompts.length} 条提示词</span>
+        <span>{t('shell.promptsCount', { count: prompts.length })}</span>
         <span className="meta-dot" />
-        <span>累计使用 {prompts.reduce((sum, item) => sum + item.usageCount, 0)} 次</span>
+        <span>{t('shell.promptsUsageTotal', { count: prompts.reduce((sum, item) => sum + item.usageCount, 0) })}</span>
       </div>
 
       {filtered.length === 0 ? (
@@ -97,12 +99,12 @@ export function Prompts(): React.JSX.Element {
             <Sparkles size={24} />
           </div>
           <div className="empty-copy">
-            <h3>{query ? '没有匹配的提示词' : '还没有提示词'}</h3>
-            <p>{query ? '换一个关键词试试，或者创建一条新的提示词。' : '把常用的代码审查、重构、测试要求存下来，下一次只需一次点击。'}</p>
+            <h3>{query ? t('shell.noMatchingPrompts') : t('shell.noPromptsYet')}</h3>
+            <p>{query ? t('shell.tryAnotherKeywordOrCreateANewPrompt') : t('shell.saveYourReviewRefactoringAndTestingInstructionsFor')}</p>
           </div>
           <button className="button button-secondary" onClick={() => openEditor()}>
             <Plus size={15} />
-            新建
+            {t('shell.new')}
           </button>
         </div>
       ) : (
@@ -114,7 +116,7 @@ export function Prompts(): React.JSX.Element {
                   <Sparkles size={15} />
                 </div>
                 <h3 title={item.title}>{item.title}</h3>
-                <span className="prompt-usage" title={`使用 ${item.usageCount} 次`}>
+                <span className="prompt-usage" title={t('shell.usedTimes', { p0: item.usageCount })}>
                   {item.usageCount}
                 </span>
               </div>
@@ -130,12 +132,12 @@ export function Prompts(): React.JSX.Element {
               <div className="prompt-actions">
                 <button className="button button-prompt button-small" onClick={() => void usePrompt(item)}>
                   <Copy size={13} />
-                  复制使用
+                  {t('shell.copyToUse')}
                 </button>
-                <button className="icon-button" onClick={() => openEditor(item)} title="编辑">
+                <button className="icon-button" onClick={() => openEditor(item)} title={t('shell.edit')}>
                   <Pencil size={14} />
                 </button>
-                <button className="icon-button danger" onClick={() => setPendingDelete(item)} title="删除">
+                <button className="icon-button danger" onClick={() => setPendingDelete(item)} title={t('shell.delete')}>
                   <Trash2 size={14} />
                 </button>
               </div>
@@ -146,20 +148,20 @@ export function Prompts(): React.JSX.Element {
 
       <Modal
         open={Boolean(draft)}
-        title={draft?.id ? '编辑提示词' : '新建提示词'}
-        subtitle="提示词只保存在本机，可随时修改。"
+        title={draft?.id ? t('shell.editPrompt') : t('shell.newPrompt')}
+        subtitle={t('shell.promptsStayOnThisComputerAndCanBe')}
         onClose={() => setDraft(null)}
         footer={
           <>
             <button className="button button-ghost" onClick={() => setDraft(null)}>
-              取消
+              {t('shell.cancel')}
             </button>
             <button
               className="button button-primary"
               disabled={saving || !draft?.title.trim() || !draft?.content.trim()}
               onClick={() => void submit()}
             >
-              {saving ? '保存中…' : draft?.id ? '保存修改' : '创建提示词'}
+              {saving ? t('shell.saving') : draft?.id ? t('shell.saveChanges') : t('shell.createPrompt')}
             </button>
           </>
         }
@@ -167,29 +169,29 @@ export function Prompts(): React.JSX.Element {
         {draft ? (
           <div className="form-stack">
             <label className="field">
-              <span>标题</span>
+              <span>{t('shell.title')}</span>
               <input
                 value={draft.title}
                 onChange={(event) => setDraft({ ...draft, title: event.target.value })}
-                placeholder="例如：代码审查、需求拆解"
+                placeholder={t('shell.forExampleCodeReviewTaskBreakdown')}
                 autoFocus
               />
             </label>
             <label className="field">
-              <span>内容</span>
+              <span>{t('shell.content')}</span>
               <textarea
                 value={draft.content}
                 onChange={(event) => setDraft({ ...draft, content: event.target.value })}
                 rows={8}
-                placeholder="写下你希望 Harness 遵循的完整指令…"
+                placeholder={t('shell.writeTheCompleteInstructionsForHarness')}
               />
             </label>
             <label className="field">
-              <span>标签</span>
+              <span>{t('shell.tags')}</span>
               <input
                 value={draft.tags}
                 onChange={(event) => setDraft({ ...draft, tags: event.target.value })}
-                placeholder="用逗号分隔，例如：代码质量, 重构"
+                placeholder={t('shell.separateWithCommasForExampleCodeQualityRefactoring')}
               />
             </label>
           </div>
@@ -198,14 +200,14 @@ export function Prompts(): React.JSX.Element {
 
       <Modal
         open={Boolean(pendingDelete)}
-        title="删除这条提示词？"
+        title={t('shell.deleteThisPrompt')}
         subtitle={pendingDelete?.title}
         onClose={() => setPendingDelete(null)}
         width={460}
         footer={
           <>
             <button className="button button-ghost" onClick={() => setPendingDelete(null)}>
-              取消
+              {t('shell.cancel')}
             </button>
             <button
               className="button button-danger"
@@ -214,12 +216,12 @@ export function Prompts(): React.JSX.Element {
                 setPendingDelete(null)
               }}
             >
-              删除
+              {t('shell.delete')}
             </button>
           </>
         }
       >
-        <p className="modal-text">删除后无法恢复。已复制到会话中的内容不受影响。</p>
+        <p className="modal-text">{t('shell.thisCannotBeUndoneContentAlreadyCopiedInto')}</p>
       </Modal>
     </div>
   )

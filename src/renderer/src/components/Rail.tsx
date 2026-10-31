@@ -1,3 +1,4 @@
+import { useI18n } from '../lib/i18n'
 import {
   BarChart3,
   LayoutDashboard,
@@ -21,16 +22,16 @@ interface RailItem {
   shortcut?: string
 }
 
-const ITEMS: RailItem[] = [
-  { id: 'home', label: '启动台', icon: LayoutDashboard, shortcut: 'Ctrl 1' },
-  { id: 'workspace', label: '工作区', icon: MessagesSquare, shortcut: 'Ctrl 2' },
-  { id: 'insights', label: '会话洞察', icon: BarChart3, shortcut: 'Ctrl 3' },
-  { id: 'prompts', label: '提示词库', icon: Sparkles, shortcut: 'Ctrl 4' },
-  { id: 'logs', label: '运行日志', icon: ScrollText, shortcut: 'Ctrl 5' },
-  { id: 'settings', label: '设置', icon: Settings2, shortcut: 'Ctrl ,' }
-]
-
 export function Rail(): React.JSX.Element {
+  const { t } = useI18n()
+  const ITEMS: RailItem[] = [
+    { id: 'home', label: t('shell.home'), icon: LayoutDashboard, shortcut: 'Ctrl 1' },
+    { id: 'workspace', label: t('shell.workspace'), icon: MessagesSquare, shortcut: 'Ctrl 2' },
+    { id: 'insights', label: t('shell.sessionInsights'), icon: BarChart3, shortcut: 'Ctrl 3' },
+    { id: 'prompts', label: t('shell.promptLibrary'), icon: Sparkles, shortcut: 'Ctrl 4' },
+    { id: 'logs', label: t('shell.runtimeLogs'), icon: ScrollText, shortcut: 'Ctrl 5' },
+    { id: 'settings', label: t('shell.settings'), icon: Settings2, shortcut: 'Ctrl ,' }
+  ]
   const view = useApp((state) => state.view)
   const settings = useApp((state) => state.settings)
   const setView = useApp((state) => state.setView)
@@ -61,7 +62,7 @@ export function Rail(): React.JSX.Element {
   }
 
   return (
-    <nav className="rail" aria-label="主导航">
+    <nav className="rail" aria-label={t('shell.mainNavigation')}>
       <div className="rail-items">
         {ITEMS.map((item) => {
           const Icon = item.icon
@@ -81,17 +82,17 @@ export function Rail(): React.JSX.Element {
         })}
       </div>
       <div className="rail-bottom">
-        <button className="rail-item" onClick={toggleTheme} data-tip={theme === 'dark' ? '切换到浅色' : '切换到深色'}>
+        <button className="rail-item" onClick={toggleTheme} data-tip={theme === 'dark' ? t('shell.switchToLightTheme') : t('shell.switchToDarkTheme')}>
           {theme === 'dark' ? <Sun size={19} strokeWidth={1.9} /> : <Moon size={19} strokeWidth={1.9} />}
         </button>
         <button
           className="rail-item"
           onClick={() => void window.studio.app.openExternal(GITHUB_URL)}
-          data-tip="GitHub 仓库"
+          data-tip={t('shell.githubRepository')}
         >
           <GithubMark size={19} />
         </button>
-        <div className="rail-avatar" title="本地工作台">
+        <div className="rail-avatar" title={t('shell.localWorkspace')}>
           <span>HS</span>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { applyLanguage, t as translateNow, useI18n } from '../lib/i18n'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowRight,
@@ -45,6 +46,7 @@ const ICONS = {
 }
 
 export default function Palette(): React.JSX.Element {
+  const { t } = useI18n()
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
   const [settings, setSettings] = useState<Settings | null>(null)
@@ -56,18 +58,29 @@ export default function Palette(): React.JSX.Element {
   useEffect(() => {
     document.body.classList.add('palette-body')
     const api = window.studio
-    void Promise.all([api.settings.get(), api.workspaces.list(), api.prompts.list()]).then(
-      ([settingsValue, workspaceValue, promptValue]) => {
-        setSettings(settingsValue)
+    let systemLocale = navigator.language
+    let currentSettings: Settings | null = null
+    let disposed = false
+    const updateSettings = (value: Settings): void => {
+      currentSettings = value
+      applyLanguage(value.language, systemLocale)
+      setSettings(value)
+    }
+    void Promise.all([api.app.info(), api.settings.get(), api.workspaces.list(), api.prompts.list()]).then(
+      ([info, settingsValue, workspaceValue, promptValue]) => {
+        if (disposed) return
+        systemLocale = info.systemLocale ?? navigator.language
+        updateSettings(currentSettings ?? settingsValue)
         setWorkspaces(workspaceValue)
         setPrompts(promptValue)
       }
     )
-    const offSettings = api.settings.onChange(setSettings)
+    const offSettings = api.settings.onChange(updateSettings)
     const offPrompts = api.prompts.onChange(setPrompts)
     const offWorkspaces = api.workspaces.onChange(setWorkspaces)
     inputRef.current?.focus()
     return () => {
+      disposed = true
       offSettings()
       offPrompts()
       offWorkspaces()
@@ -95,137 +108,137 @@ export default function Palette(): React.JSX.Element {
     const list: PaletteItem[] = [
       {
         id: 'nav-home',
-        group: '导航',
-        title: '启动台',
-        subtitle: '回到总览与最近工作区',
+        group: t('shell.navigation'),
+        title: t('shell.home'),
+        subtitle: t('shell.overviewAndRecentWorkspaces'),
         icon: ICONS.home,
-        keywords: 'home dashboard start',
+        keywords: 'home dashboard start 启动台 总览 最近工作区',
         run: () => navigate('home')
       },
       {
         id: 'nav-workspace',
-        group: '导航',
-        title: workspaces[0] ? `打开工作区 · ${workspaces[0].name}` : '工作区',
-        subtitle: '进入 Harness 会话界面',
+        group: t('shell.navigation'),
+        title: workspaces[0] ? t('shell.openWorkspace', { p0: workspaces[0].name }) : t('shell.workspace'),
+        subtitle: t('shell.openTheHarnessConversationInterface'),
         icon: ICONS.workspace,
-        keywords: 'workspace chat session',
+        keywords: 'workspace chat session 工作区 会话',
         run: () => window.studio.studio.runAction({ type: 'open-workspace' })
       },
       {
         id: 'action-new-tab',
-        group: '导航',
-        title: '新建会话标签页',
-        subtitle: '在工作区里并排再开一个会话 · Ctrl+T',
+        group: t('shell.navigation'),
+        title: t('shell.newSessionTab'),
+        subtitle: t('shell.openAnotherSessionAlongsideThisOneCtrlT'),
         icon: SquarePlus,
         keywords: 'tab new session 标签 新建',
         run: () => window.studio.studio.runAction({ type: 'new-tab' })
       },
       {
         id: 'action-close-tab',
-        group: '导航',
-        title: '关闭当前会话标签页',
-        subtitle: '只关闭这个视图，会话不会被删除 · Ctrl+W',
+        group: t('shell.navigation'),
+        title: t('shell.closeCurrentSessionTab'),
+        subtitle: t('shell.closeThisViewWhileKeepingItsSessionCtrl'),
         icon: SquareX,
         keywords: 'tab close session 标签 关闭',
         run: () => window.studio.studio.runAction({ type: 'close-tab' })
       },
       {
         id: 'nav-insights',
-        group: '导航',
-        title: '会话洞察',
-        subtitle: 'token 用量、缓存命中与每日趋势',
+        group: t('shell.navigation'),
+        title: t('shell.sessionInsights'),
+        subtitle: t('shell.tokenUsageCacheHitsAndDailyTrends'),
         icon: ICONS.insights,
         keywords: 'insights tokens usage stats analytics 统计 用量',
         run: () => window.studio.studio.runAction({ type: 'open-insights' })
       },
       {
         id: 'nav-prompts',
-        group: '导航',
-        title: '提示词库',
-        subtitle: '复制并复用常用指令',
+        group: t('shell.navigation'),
+        title: t('shell.promptLibrary'),
+        subtitle: t('shell.copyAndReuseYourInstructions'),
         icon: ICONS.prompts,
-        keywords: 'prompt library',
+        keywords: 'prompt library 提示词库 提示词 指令',
         run: () => navigate('prompts')
       },
       {
         id: 'nav-logs',
-        group: '导航',
-        title: '运行日志',
-        subtitle: '查看本地服务输出',
+        group: t('shell.navigation'),
+        title: t('shell.runtimeLogs'),
+        subtitle: t('shell.viewLocalServiceOutput'),
         icon: ICONS.logs,
-        keywords: 'logs console output',
+        keywords: 'logs console output 运行日志 本地服务输出',
         run: () => navigate('logs')
       },
       {
         id: 'nav-settings',
-        group: '导航',
-        title: '设置',
-        subtitle: '外观、运行时与快捷键',
+        group: t('shell.navigation'),
+        title: t('shell.settings'),
+        subtitle: t('shell.appearanceRuntimeAndShortcuts'),
         icon: ICONS.settings,
-        keywords: 'settings preferences',
+        keywords: 'settings preferences 设置 快捷键',
         run: () => window.studio.studio.runAction({ type: 'open-settings' })
       },
       {
         id: 'action-restart',
-        group: '运行时',
-        title: '重启 Harness 运行时',
-        subtitle: '应用运行中会话会受影响',
+        group: t('shell.runtime'),
+        title: t('shell.restartHarnessRuntime'),
+        subtitle: t('shell.thisAffectsSessionsCurrentlyRunningInStudio'),
         icon: RefreshCw,
-        keywords: 'restart host runtime',
+        keywords: 'restart host runtime 重启 运行时',
         run: () => window.studio.studio.runAction({ type: 'restart-host' })
       },
       {
         id: 'action-stop',
-        group: '运行时',
-        title: '停止运行时',
-        subtitle: '释放端口与本地进程',
+        group: t('shell.runtime'),
+        title: t('shell.stopRuntime'),
+        subtitle: t('shell.freeThePortAndLocalProcess'),
         icon: CircleStop,
-        keywords: 'stop host runtime',
+        keywords: 'stop host runtime 停止 运行时',
         run: () => window.studio.studio.runAction({ type: 'stop-host' })
       },
       {
         id: 'action-start',
-        group: '运行时',
-        title: '启动运行时',
-        subtitle: '使用最近的工作区',
+        group: t('shell.runtime'),
+        title: t('shell.startRuntime'),
+        subtitle: t('shell.useTheMostRecentWorkspace'),
         icon: Play,
-        keywords: 'start host runtime',
+        keywords: 'start host runtime 启动 运行时',
         run: () => window.studio.studio.runAction({ type: 'start-host' })
       },
       {
         id: 'action-install',
-        group: '运行时',
-        title: '安装便携运行时',
-        subtitle: '下载 Node.js 并部署 dsh',
+        group: t('shell.runtime'),
+        title: t('shell.installPortableRuntime'),
+        subtitle: t('shell.downloadNodeJsAndInstallDsh'),
         icon: Download,
-        keywords: 'install runtime node',
+        keywords: 'install runtime node 安装 便携运行时',
         run: () => window.studio.studio.runAction({ type: 'open-settings', section: 'runtime' })
       },
       {
         id: 'action-theme',
-        group: '外观',
-        title: '切换深色 / 浅色主题',
-        subtitle: settings?.theme === 'dark' ? '当前：深色' : '当前：浅色',
+        group: t('shell.appearance'),
+        title: t('shell.toggleDarkLightTheme'),
+        subtitle: settings?.theme === 'dark' ? t('shell.currentDark') : t('shell.currentLight'),
         icon: settings?.theme === 'dark' ? Sun : Moon,
-        keywords: 'theme dark light appearance',
+        keywords: 'theme dark light appearance 主题 深色 浅色 外观',
         run: () => window.studio.studio.runAction({ type: 'toggle-theme' })
       },
       {
         id: 'action-update',
-        group: '关于',
-        title: '检查更新',
-        subtitle: '从 GitHub 发布页获取最新版本',
+        group: t('shell.about'),
+        title: t('shell.checkForUpdates'),
+        subtitle: t('shell.getTheLatestVersionFromGithubReleases'),
         icon: Zap,
-        keywords: 'update upgrade version',
+        keywords: 'update upgrade version 更新 版本',
         run: () => window.studio.studio.runAction({ type: 'check-updates' })
       },
       {
         id: 'action-github',
-        group: '关于',
-        title: '打开 GitHub 仓库',
+        group: t('shell.about'),
+        title: t('shell.openGithubRepository'),
         subtitle: GITHUB_URL,
         icon: GithubMark,
-        keywords: 'github source repo',
+        keywords: 'github source repo 仓库 源码',
         run: () => void window.studio.app.openExternal(GITHUB_URL)
       }
     ]
@@ -233,11 +246,11 @@ export default function Palette(): React.JSX.Element {
     if (workspaces.length === 0) {
       list.push({
         id: 'workspace-add',
-        group: '工作区',
-        title: '添加项目文件夹',
-        subtitle: '选择第一个工作区',
+        group: t('shell.workspace'),
+        title: t('shell.addProjectFolder'),
+        subtitle: t('shell.chooseYourFirstWorkspace'),
         icon: FolderPlus,
-        keywords: 'add workspace folder',
+        keywords: 'add workspace folder 添加 项目 文件夹 工作区',
         run: () => window.studio.studio.runAction({ type: 'open-workspace' })
       })
     }
@@ -245,7 +258,7 @@ export default function Palette(): React.JSX.Element {
     for (const workspace of workspaces) {
       list.push({
         id: `ws-${workspace.id}`,
-        group: '工作区',
+        group: t('shell.workspace'),
         title: workspace.name,
         subtitle: workspace.path,
         icon: FolderPlus,
@@ -257,7 +270,7 @@ export default function Palette(): React.JSX.Element {
     for (const prompt of prompts) {
       list.push({
         id: `prompt-${prompt.id}`,
-        group: '提示词',
+        group: t('shell.prompts'),
         title: prompt.title,
         subtitle: prompt.content.slice(0, 80),
         icon: Sparkles,
@@ -265,13 +278,13 @@ export default function Palette(): React.JSX.Element {
         run: async () => {
           await window.studio.clipboard.write(prompt.content)
           await window.studio.prompts.use(prompt.id)
-          window.studio.studio.toast(`已复制「${prompt.title}」`, 'success')
+          window.studio.studio.toast(translateNow('shell.copied', { p0: prompt.title }), 'success')
         }
       })
     }
 
     return list
-  }, [workspaces, prompts, settings])
+  }, [workspaces, prompts, settings, t])
 
   const filtered = useMemo(() => {
     const keyword = query.trim().toLowerCase()
@@ -322,7 +335,7 @@ export default function Palette(): React.JSX.Element {
             ref={inputRef}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="输入命令、工作区或提示词…"
+            placeholder={t('shell.searchCommandsWorkspacesOrPrompts')}
             spellCheck={false}
           />
           <span className="palette-esc">ESC</span>
@@ -332,7 +345,7 @@ export default function Palette(): React.JSX.Element {
           {filtered.length === 0 ? (
             <div className="palette-empty">
               <Command size={20} />
-              <span>没有匹配的项目</span>
+              <span>{t('shell.noMatchingItems')}</span>
             </div>
           ) : (
             filtered.map((item, index) => {
@@ -359,7 +372,7 @@ export default function Palette(): React.JSX.Element {
                     </span>
                     {index === active ? (
                       <span className="palette-enter">
-                        打开 <ArrowRight size={12} />
+                        {t('shell.open')} <ArrowRight size={12} />
                       </span>
                     ) : (
                       <ChevronRight size={13} className="palette-chevron" />
@@ -374,15 +387,15 @@ export default function Palette(): React.JSX.Element {
         <div className="palette-footer">
           <span className="palette-keys">
             <kbd>↑</kbd>
-            <kbd>↓</kbd> 选择
+            <kbd>↓</kbd> {t('shell.select')}
           </span>
           <span className="palette-keys">
-            <kbd>↵</kbd> 执行
+            <kbd>↵</kbd> {t('shell.run')}
           </span>
           <span className="palette-keys">
-            <kbd>esc</kbd> 关闭
+            <kbd>esc</kbd> {t('shell.close')}
           </span>
-          <span className="palette-count">{filtered.length} 项</span>
+          <span className="palette-count">{t('shell.paletteItemCount', { count: filtered.length })}</span>
         </div>
       </div>
     </div>

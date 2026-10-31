@@ -14,6 +14,8 @@ import type {
   Workspace
 } from '@shared/types'
 import { applyAppearance, resolveTheme, watchSystemTheme } from './lib/theme'
+import { applyLanguage, t } from './lib/i18n'
+import type { MessageKey } from '@shared/i18n'
 
 export interface ToastItem {
   id: number
@@ -22,7 +24,7 @@ export interface ToastItem {
   /** Sticky toasts stay until dismissed, so long error text can be read or copied. */
   sticky?: boolean
   /** Optional one-click recovery action. */
-  action?: { label: string; run: () => void }
+  action?: { label: string; labelKey?: MessageKey; run: () => void }
 }
 
 /**
@@ -156,12 +158,12 @@ function waitForTabGuest(tabId: string, signal: AbortSignal): Promise<number | n
       if (signal.aborted || !tab) return finish(null)
       if (host.state === 'ready' && host.url && tab.guestId !== undefined) return finish(tab.guestId)
       if (host.state === 'error' || host.state === 'stopped' || host.state === 'stopping') {
-        finish(null, host.error ?? '运行时没有就绪，请重新打开工作区')
+        finish(null, host.error ?? t('core.hostNotReady'))
       }
     }
     unsubscribe = useApp.subscribe(check)
     signal.addEventListener('abort', onAbort, { once: true })
-    timer = setTimeout(() => finish(null, '会话界面没有加载完成，请稍后重试'), 90_000)
+    timer = setTimeout(() => finish(null, t('core.guestTimeout')), 90_000)
     check()
   })
 }
@@ -198,7 +200,7 @@ async function openWorkspaceInTab(workspaceId: string, tabId: string, reveal = t
         pendingWorkspacePath: undefined
       })
     } else if (result.status === 'failed') {
-      useApp.getState().toast(result.message ?? '工作区没有打开，请重试', 'error')
+      useApp.getState().toast(result.message ?? t('core.workspaceFailed'), 'error')
     }
   } catch (error) {
     if (current()) useApp.getState().toast(error instanceof Error ? error.message : String(error), 'error')
@@ -217,10 +219,11 @@ function createTab(seq: number): WorkspaceTab {
 const firstTab = createTab(1)
 
 export function tabLimitMessage(limit: number): string {
-  return `最多同时打开 ${limit} 个会话标签页，可在「设置 → 通用 → 会话标签页」调整`
+  return t('core.tabLimit', { limit })
 }
 
 function refreshDocumentTheme(settings: Settings): void {
+  applyLanguage(settings.language, useApp.getState().info?.systemLocale ?? navigator.language)
   applyAppearance(settings)
   themeWatcher?.()
   themeWatcher = null
@@ -256,7 +259,15 @@ export const useApp = create<AppState>((set, get) => ({
     if (bootstrapped) return
     bootstrapped = true
     const api = window.studio
-    const [info, settings, workspaces, prompts, host, logs] = await Promise.all([
+    // Another window can change settings while the initial reads are pending.
+    // Subscribe first so that their snapshot cannot overwrite a newer choice.
+    let latestSettings: Settings | null = null
+    api.settings.onChange((next) => {
+      latestSettings = next
+      set({ settings: next })
+      refreshDocumentTheme(next)
+    })
+    const [info, initialSettings, workspaces, prompts, host, logs] = await Promise.all([
       api.app.info(),
       api.settings.get(),
       api.workspaces.list(),
@@ -264,6 +275,7 @@ export const useApp = create<AppState>((set, get) => ({
       api.host.status(),
       api.host.logs()
     ])
+    const settings = latestSettings ?? initialSettings
     tabsHostUrl = host.state === 'ready' && host.url ? host.url : ''
     set({ info, settings, workspaces, prompts, host, logs, initialized: true })
     const params = new URLSearchParams(window.location.search)
@@ -283,10 +295,6 @@ export const useApp = create<AppState>((set, get) => ({
     }
     refreshDocumentTheme(settings)
 
-    api.settings.onChange((next) => {
-      set({ settings: next })
-      refreshDocumentTheme(next)
-    })
     api.workspaces.onChange((next) => {
       const ids = new Set(next.map((workspace) => workspace.id))
       for (const tab of get().tabs) {
@@ -376,7 +384,7 @@ export const useApp = create<AppState>((set, get) => ({
       if (payload.sticky) {
         const action =
           payload.action === 'kill-other-dsh'
-            ? { label: '结束其他 DSH 进程', run: () => void get().killOtherDsh() }
+            ? { label: t('core.killOtherDsh'), labelKey: 'core.killOtherDsh' as const, run: () => void get().killOtherDsh() }
             : undefined
         get().stickyToast(payload.message, payload.kind ?? 'error', action)
       } else {
@@ -423,7 +431,7 @@ export const useApp = create<AppState>((set, get) => ({
     const next = await window.studio.settings.reset()
     set({ settings: next })
     refreshDocumentTheme(next)
-    get().toast('设置已恢复默认值', 'success')
+    get().toast(t('core.settingsReset'), 'success')
   },
 
   loadInsights: async (force = false) => {
@@ -441,7 +449,7 @@ export const useApp = create<AppState>((set, get) => ({
   },
   revealSession: async (id) => {
     const ok = await window.studio.insights.revealSession(id)
-    if (!ok) get().toast('找不到该会话目录', 'error')
+    if (!ok) get().toast(t('core.sessionMissing'), 'error')
   },
 
   refreshRuntime: async () => {
@@ -450,12 +458,12 @@ export const useApp = create<AppState>((set, get) => ({
   },
   installRuntime: async () => {
     if (get().installing) return
-    set({ installing: true, install: { phase: 'download-node', percent: 0, message: '准备安装…' } })
+    set({ installing: true, install: { phase: 'download-node', percent: 0, message: t('core.preparingInstall') } })
     try {
       const result = await window.studio.runtime.install()
       const runtime = await window.studio.runtime.detect(true)
       set({ runtime, installing: false, install: result })
-      if (result.phase === 'done') get().toast('便携运行时安装完成', 'success')
+      if (result.phase === 'done') get().toast(t('core.installComplete'), 'success')
       else get().toast(result.message, 'error')
     } catch (error) {
       set({ installing: false })
@@ -475,7 +483,7 @@ export const useApp = create<AppState>((set, get) => ({
     try {
       const workspace = await window.studio.workspaces.add()
       if (workspace) {
-        get().toast(`已添加工作区「${workspace.name}」`, 'success')
+        get().toast(t('core.workspaceAdded', { name: workspace.name }), 'success')
         if (!request.signal.aborted && workspaceRequests.get(tabId) === request) {
           await openWorkspaceInTab(workspace.id, tabId)
         }
@@ -510,7 +518,7 @@ export const useApp = create<AppState>((set, get) => ({
     if (current.state === 'ready' || current.state === 'starting') return
     const target = workspaceId ?? get().settings?.lastWorkspaceId ?? get().workspaces[0]?.id
     if (!target) {
-      get().toast('请先添加一个工作区', 'info')
+      get().toast(t('core.addWorkspaceFirst'), 'info')
       return
     }
     // Starting the shared process never opens or changes a guest page. Multiple
@@ -531,7 +539,7 @@ export const useApp = create<AppState>((set, get) => ({
   savePrompt: async (input) => {
     try {
       await window.studio.prompts.save(input)
-      get().toast(input.id ? '提示词已更新' : '提示词已创建', 'success')
+      get().toast(t(input.id ? 'core.promptUpdated' : 'core.promptCreated'), 'success')
       return true
     } catch (error) {
       get().toast(error instanceof Error ? error.message : String(error), 'error')
@@ -540,12 +548,12 @@ export const useApp = create<AppState>((set, get) => ({
   },
   deletePrompt: async (id) => {
     await window.studio.prompts.remove(id)
-    get().toast('提示词已删除', 'success')
+    get().toast(t('core.promptDeleted'), 'success')
   },
   usePrompt: async (item) => {
     await window.studio.clipboard.write(item.content)
     await window.studio.prompts.use(item.id)
-    get().toast('已复制到剪贴板，粘贴到会话即可发送', 'success')
+    get().toast(t('core.promptCopied'), 'success')
   },
   clearLogs: async () => {
     await window.studio.host.clearLogs()
@@ -572,14 +580,14 @@ export const useApp = create<AppState>((set, get) => ({
     set({ instances: report })
     if (report.restricted) {
       get().stickyToast(
-        '无法枚举本机进程（Studio 当前权限受限），不能确认是哪个进程占用了会话。请手动退出其他 dsh web 或桌面端，或在「设置 → 运行时」更换配置档案。',
+        t('core.processRestricted'),
         'error'
       )
       return
     }
     const targets = report.processes.filter((item) => !item.self)
     if (targets.length === 0) {
-      get().toast('没有发现其他正在运行的 DSH 进程', 'info')
+      get().toast(t('core.noOtherDsh'), 'info')
       return
     }
     await get().killInstances(targets.map((item) => item.pid))
@@ -594,7 +602,7 @@ export const useApp = create<AppState>((set, get) => ({
     // tab opened now would only appear later, unasked for.
     if (workspaces.length === 0 && !source?.path) {
       set({ view: 'workspace' })
-      get().toast('请先添加一个工作区', 'info')
+      get().toast(t('core.addWorkspaceFirst'), 'info')
       return
     }
     // A tab opened while the host is down has no page and would only appear
@@ -602,7 +610,7 @@ export const useApp = create<AppState>((set, get) => ({
     const host = get().host
     if (host.state !== 'ready' || !host.url) {
       set({ view: 'workspace' })
-      get().toast('运行时还没就绪，就绪后再新建标签页', 'info')
+      get().toast(t('core.newTabNotReady'), 'info')
       return
     }
     const limit = settings?.tabs.limit ?? 4
@@ -714,7 +722,7 @@ export const useApp = create<AppState>((set, get) => ({
         break
       case 'check-updates':
         void window.studio.studio.checkUpdates().then((result) => {
-          state.toast(result.message ?? '检查完成', result.status === 'error' ? 'error' : 'info')
+          state.toast(result.message ?? t('core.updateCheckDone'), result.status === 'error' ? 'error' : 'info')
         })
         break
       case 'show-about':

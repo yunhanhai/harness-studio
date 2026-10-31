@@ -17,10 +17,12 @@ import {
   Zap
 } from 'lucide-react'
 import { useApp } from '../store'
+import { useI18n } from '../lib/i18n'
 import { compactTokens, greeting, hostStateLabel, relativeTime, shortPath, sourceLabel } from '../lib/format'
 import { BrandMark } from '../components/BrandMark'
 
 export function Home(): React.JSX.Element {
+  const { locale, t } = useI18n()
   const info = useApp((state) => state.info)
   const settings = useApp((state) => state.settings)
   const runtime = useApp((state) => state.runtime)
@@ -54,9 +56,9 @@ export function Home(): React.JSX.Element {
   const sorted = [...workspaces].sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.lastOpenedAt - a.lastOpenedAt)
   const ready = host.state === 'ready'
   const starting = host.state === 'starting'
-  const dateLabel = new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })
+  const dateLabel = new Date().toLocaleDateString(locale, { month: 'long', day: 'numeric', weekday: 'long' })
   const uptime = (startedAt?: number): string => {
-    if (!startedAt) return '待命'
+    if (!startedAt) return t('pages.home.standby')
     const seconds = Math.max(0, Math.floor((Date.now() - startedAt) / 1000))
     if (seconds < 60) return `${seconds}s`
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m`
@@ -77,41 +79,41 @@ export function Home(): React.JSX.Element {
         <div className="hero-copy">
           <div className="eyebrow">
             <span className="eyebrow-dot" />
-            {greeting()}，{dateLabel}
+            {greeting()}{locale === 'zh-CN' ? '，' : ', '}{dateLabel}
           </div>
           <h1>
-            让 DeepSeek Harness
+            {t('pages.home.heroFirst')}
             <br />
-            <span className="gradient-text">成为你的工作台。</span>
+            <span className="gradient-text">{t('pages.home.heroSecond')}</span>
           </h1>
           <p className="hero-lead">
-            一个更专注的桌面外壳。多项目工作区、一键运行时、原生快捷键、完整日志与提示词库，全部围绕你的开发流。
+            {t('pages.home.heroLead')}
           </p>
           <div className="hero-actions">
             <button className="button button-primary" onClick={openPrimary} title={currentPath}>
               {currentName ? (
                 <>
-                  打开 {currentName}
+                  {t('pages.home.openNamed', { name: currentName })}
                   <ArrowRight size={16} />
                 </>
               ) : (
                 <>
-                  选择第一个工作区
+                  {t('pages.home.firstWorkspace')}
                   <FolderPlus size={16} />
                 </>
               )}
             </button>
             <button className="button button-secondary" onClick={() => void addWorkspace()}>
               <FolderPlus size={15} />
-              添加项目文件夹
+              {t('pages.home.addFolder')}
             </button>
           </div>
           <div className="hero-hints">
             <span>
-              <kbd>Ctrl</kbd> <kbd>K</kbd> 命令面板
+              <kbd>Ctrl</kbd> <kbd>K</kbd>  {t('pages.home.palette')}
             </span>
             <span>
-              <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>H</kbd> 唤出窗口
+              <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>H</kbd>  {t('pages.home.showWindow')}
             </span>
           </div>
         </div>
@@ -129,11 +131,11 @@ export function Home(): React.JSX.Element {
           <div className="runtime-copy">
             <div className="runtime-label">
               <CircleDot size={13} />
-              Harness 运行时
+              {t('pages.home.runtime')}
             </div>
             <div className="runtime-state">{hostStateLabel(host.state)}</div>
             <div className="runtime-meta">
-              <span>dsh {runtime?.version ?? '未检测'}</span>
+              <span>dsh {runtime?.version ?? t('pages.home.notDetected')}</span>
               <span className="dot-sep" />
               <span>{host.port ? `127.0.0.1:${host.port}` : sourceLabel(runtime?.source)}</span>
             </div>
@@ -143,11 +145,11 @@ export function Home(): React.JSX.Element {
                 <strong>{runtime?.nodeVersion ?? '—'}</strong>
               </div>
               <div>
-                <span>端口</span>
+                <span>{t('pages.home.port')}</span>
                 <strong>{host.port ?? '—'}</strong>
               </div>
               <div>
-                <span>运行</span>
+                <span>{t('pages.home.uptime')}</span>
                 <strong>{uptime(host.startedAt)}</strong>
               </div>
             </div>
@@ -155,13 +157,13 @@ export function Home(): React.JSX.Element {
           <div className="runtime-actions">
             {ready ? (
               <>
-                <button className="button button-subtle" onClick={() => void restartHost()} title="重启运行时">
+                <button className="button button-subtle" onClick={() => void restartHost()} title={t('pages.home.restartRuntime')}>
                   <RefreshCw size={14} />
-                  重启
+                  {t('pages.home.restart')}
                 </button>
                 <button className="button button-subtle danger-hover" onClick={() => void stopHost()}>
                   <Pause size={14} />
-                  停止
+                  {t('pages.home.stop')}
                 </button>
               </>
             ) : (
@@ -171,10 +173,10 @@ export function Home(): React.JSX.Element {
                 onClick={() => void startHost()}
               >
                 <Play size={14} />
-                {starting ? '启动中…' : '启动运行时'}
+                {starting ? t('pages.home.starting') : t('pages.home.startRuntime')}
               </button>
             )}
-            <button className="icon-button" onClick={() => setView('logs')} title="查看日志">
+            <button className="icon-button" onClick={() => setView('logs')} title={t('pages.home.viewLogs')}>
               <ScrollText size={15} />
             </button>
           </div>
@@ -188,9 +190,9 @@ export function Home(): React.JSX.Element {
           </div>
           <div className="stat-body">
             <div className="stat-value">{workspaces.length}</div>
-            <div className="stat-label">项目工作区</div>
+            <div className="stat-label">{t('pages.home.workspaces')}</div>
           </div>
-          <button className="stat-action" onClick={() => void addWorkspace()} title="添加工作区">
+          <button className="stat-action" onClick={() => void addWorkspace()} title={t('pages.home.addWorkspace')}>
             <FolderPlus size={15} />
           </button>
         </div>
@@ -200,9 +202,9 @@ export function Home(): React.JSX.Element {
           </div>
           <div className="stat-body">
             <div className="stat-value">{prompts.length}</div>
-            <div className="stat-label">可复用提示词</div>
+            <div className="stat-label">{t('pages.home.prompts')}</div>
           </div>
-          <button className="stat-action" onClick={() => setView('prompts')} title="打开提示词库">
+          <button className="stat-action" onClick={() => setView('prompts')} title={t('pages.home.openPrompts')}>
             <ArrowUpRight size={15} />
           </button>
         </div>
@@ -212,9 +214,9 @@ export function Home(): React.JSX.Element {
           </div>
           <div className="stat-body">
             <div className="stat-value">{insights ? compactTokens(insights.totals.totalTokens) : '—'}</div>
-            <div className="stat-label">累计 Token</div>
+            <div className="stat-label">{t('pages.home.totalTokens')}</div>
           </div>
-          <button className="stat-action" onClick={() => setView('insights')} title="打开会话洞察">
+          <button className="stat-action" onClick={() => setView('insights')} title={t('pages.home.openInsights')}>
             <ArrowUpRight size={15} />
           </button>
         </div>
@@ -224,7 +226,7 @@ export function Home(): React.JSX.Element {
           </div>
           <div className="stat-body">
             <div className="stat-value">{info?.version ?? '0.0.0'}</div>
-            <div className="stat-label">Studio 版本</div>
+            <div className="stat-label">{t('pages.home.version')}</div>
           </div>
           <span className="mini-chip">{info?.arch ?? ''}</span>
         </div>
@@ -233,12 +235,12 @@ export function Home(): React.JSX.Element {
       <section className="section-block">
         <div className="section-head">
           <div>
-            <h2>最近的工作区</h2>
-            <p>每个工作区绑定自己的目录与会话上下文，切换时复用同一个 Host。</p>
+            <h2>{t('pages.home.recentWorkspaces')}</h2>
+            <p>{t('pages.home.recentDesc')}</p>
           </div>
           <button className="button button-ghost button-small" onClick={() => void addWorkspace()}>
             <FolderPlus size={14} />
-            添加
+            {t('pages.home.add')}
           </button>
         </div>
 
@@ -248,11 +250,11 @@ export function Home(): React.JSX.Element {
               <FolderPlus size={26} />
             </div>
             <div className="empty-copy">
-              <h3>从一个项目文件夹开始</h3>
-              <p>选择你正在开发的仓库，Studio 会为它启动独立的 Harness 会话，并记住最近打开的位置。</p>
+              <h3>{t('pages.home.emptyTitle')}</h3>
+              <p>{t('pages.home.emptyDesc')}</p>
             </div>
             <button className="button button-primary" onClick={() => void addWorkspace()}>
-              选择文件夹
+              {t('pages.home.chooseFolder')}
               <ArrowRight size={15} />
             </button>
           </div>
@@ -268,7 +270,7 @@ export function Home(): React.JSX.Element {
                   <button
                     className={`icon-button ${workspace.pinned ? 'is-pinned' : ''}`}
                     onClick={() => void updateWorkspace(workspace.id, { pinned: !workspace.pinned })}
-                    title={workspace.pinned ? '取消固定' : '固定到前面'}
+                    title={workspace.pinned ? t('pages.home.unpin') : t('pages.home.pin')}
                   >
                     <Pin size={14} />
                   </button>
@@ -279,7 +281,7 @@ export function Home(): React.JSX.Element {
                 <div className="workspace-card-bottom">
                   <span className="workspace-time">{relativeTime(workspace.lastOpenedAt)}</span>
                   <button className="workspace-open" onClick={() => void openWorkspace(workspace.id)}>
-                    打开
+                    {t('pages.home.open')}
                     <ArrowRight size={14} />
                   </button>
                 </div>
@@ -293,24 +295,24 @@ export function Home(): React.JSX.Element {
         <div className="panel runtime-panel">
           <div className="panel-head">
             <div>
-              <h3>运行时诊断</h3>
-              <p>DeepSeek Harness 的版本、来源与依赖状态。</p>
+              <h3>{t('pages.home.diagnostics')}</h3>
+              <p>{t('pages.home.diagnosticsDesc')}</p>
             </div>
-            <button className="icon-button" onClick={() => void refreshRuntime()} title="重新检测运行时">
+            <button className="icon-button" onClick={() => void refreshRuntime()} title={t('pages.home.detectRuntime')}>
               <RefreshCw size={15} />
             </button>
           </div>
           <dl className="kv-list">
             <div>
-              <dt>状态</dt>
+              <dt>{t('pages.home.status')}</dt>
               <dd>
                 <span className={`state-inline state-${runtime?.state ?? 'unknown'}`}>
-                  {runtime?.state === 'ready' ? '可用' : runtime?.state === 'missing' ? '未安装' : '检测中'}
+                  {runtime?.state === 'ready' ? t('pages.home.ready') : runtime?.state === 'missing' ? t('pages.home.missing') : t('pages.home.checking')}
                 </span>
               </dd>
             </div>
             <div>
-              <dt>来源</dt>
+              <dt>{t('pages.home.source')}</dt>
               <dd>{sourceLabel(runtime?.source)}</dd>
             </div>
             <div>
@@ -327,11 +329,11 @@ export function Home(): React.JSX.Element {
           {runtime?.state !== 'ready' ? (
             <div className="panel-callout">
               <div>
-                <strong>{runtime?.state === 'missing' ? '还没有可用的运行时' : '运行时需要修复'}</strong>
-                <p>{runtime?.error ?? '安装便携运行时后即可离线使用。'}</p>
+                <strong>{runtime?.state === 'missing' ? t('pages.home.runtimeUnavailable') : t('pages.home.runtimeRepair')}</strong>
+                <p>{runtime?.error ?? t('pages.home.installHint')}</p>
               </div>
               <button className="button button-primary button-small" onClick={() => void installRuntime()}>
-                一键安装
+                {t('pages.home.install')}
               </button>
             </div>
           ) : (
@@ -347,41 +349,41 @@ export function Home(): React.JSX.Element {
         <div className="panel shortcuts-panel">
           <div className="panel-head">
             <div>
-              <h3>快捷操作</h3>
-              <p>少一次鼠标移动，多一次心流。</p>
+              <h3>{t('pages.home.quickActions')}</h3>
+              <p>{t('pages.home.quickActionsDesc')}</p>
             </div>
           </div>
           <div className="shortcut-list">
             <div className="shortcut-row" onClick={() => window.studio.studio.showPalette()}>
-              <span>命令面板</span>
+              <span>{t('pages.home.palette')}</span>
               <span className="keys">
                 <kbd>Ctrl</kbd>
                 <kbd>K</kbd>
               </span>
             </div>
             <div className="shortcut-row" onClick={() => setView('insights')}>
-              <span>会话洞察</span>
+              <span>{t('pages.home.insights')}</span>
               <span className="keys">
                 <kbd>Ctrl</kbd>
                 <kbd>3</kbd>
               </span>
             </div>
             <div className="shortcut-row" onClick={() => setView('prompts')}>
-              <span>提示词库</span>
+              <span>{t('pages.home.promptLibrary')}</span>
               <span className="keys">
                 <kbd>Ctrl</kbd>
                 <kbd>4</kbd>
               </span>
             </div>
             <div className="shortcut-row" onClick={() => setView('logs')}>
-              <span>运行日志</span>
+              <span>{t('pages.home.logs')}</span>
               <span className="keys">
                 <kbd>Ctrl</kbd>
                 <kbd>5</kbd>
               </span>
             </div>
             <div className="shortcut-row" onClick={() => setView('settings')}>
-              <span>设置</span>
+              <span>{t('pages.home.settings')}</span>
               <span className="keys">
                 <kbd>Ctrl</kbd>
                 <kbd>,</kbd>
@@ -390,7 +392,7 @@ export function Home(): React.JSX.Element {
           </div>
           <div className="panel-foot muted">
             <Sparkles size={13} />
-            <span>提示：把常用的提示词固定到命令面板，输入即用。</span>
+            <span>{t('pages.home.tip')}</span>
           </div>
         </div>
       </section>

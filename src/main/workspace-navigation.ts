@@ -1,3 +1,4 @@
+import { t } from './i18n'
 import type { WebContents } from 'electron'
 import { randomUUID } from 'node:crypto'
 import type { OpenTabWorkspaceResult, TabWorkspaceState, Workspace } from '@shared/types'
@@ -42,10 +43,10 @@ function evaluate<T>(contents: WebContents, code: string, signal?: AbortSignal):
       if (error) reject(error)
       else resolve(value as T)
     }
-    const abort = (): void => finish(undefined, new Error('工作区切换已取消'))
+    const abort = (): void => finish(undefined, new Error(t('main.navigationCancelled')))
     if (signal?.aborted) { abort(); return }
     signal?.addEventListener('abort', abort, { once: true })
-    timer = setTimeout(() => finish(undefined, new Error('会话界面响应超时，请稍后重试')), 12_000)
+    timer = setTimeout(() => finish(undefined, new Error(t('main.navigationTimeout'))), 12_000)
     try {
       Promise.resolve(contents.executeJavaScript(code, true)).then((value: T) => finish(value), (error: Error) => finish(undefined, error))
     } catch (error) {
@@ -67,7 +68,7 @@ async function rpc<T>(contents: WebContents, method: string, request: object, si
     })
     const body = await response.json()
     if (!response.ok || body.rpcId !== rpcId || body.result?.ok !== true) {
-      throw new Error('Harness 工作区接口不可用，请稍后重试或查看运行时日志')
+      throw new Error(${JSON.stringify(t('main.rpcUnavailable'))})
     }
     return body.result.value
   })()`, signal)
@@ -184,7 +185,7 @@ export class WorkspaceNavigator {
 
   open(contents: WebContents, workspace: Workspace): Promise<OpenTabWorkspaceResult> {
     const state = this.states.get(contents)
-    if (!state) return Promise.resolve({ status: 'failed', message: '会话界面尚未就绪' })
+    if (!state) return Promise.resolve({ status: 'failed', message: t('main.guestNotReady') })
     const revision = ++state.revision
     for (const previous of state.pending) previous.abort()
     const cancellation = new AbortController()
@@ -207,7 +208,7 @@ export class WorkspaceNavigator {
         if (!valid()) return { status: 'cancelled' }
         const target = registered.workspace
         if (!target?.workspaceId || typeof target.path !== 'string' || pathKey(target.path) !== pathKey(workspace.path)) {
-          throw new Error('Harness 返回的项目目录不匹配，工作区未切换')
+          throw new Error(t('main.workspaceMismatch'))
         }
         const saved = state.history.get(pathKey(workspace.path))
         let clicked = false
@@ -242,11 +243,11 @@ export class WorkspaceNavigator {
           })()`, cancellation.signal)
           if (action === 'cancelled') return { status: 'cancelled' }
           if (action === 'clicked') { clicked = true; break }
-          if (action === 'unsupported') throw new Error('无法找到 Harness 的打开会话入口，请在内嵌界面左侧选择项目')
+          if (action === 'unsupported') throw new Error(t('main.navigationUnsupported'))
           await pause(200)
         }
         if (!valid()) return { status: 'cancelled' }
-        if (!clicked) throw new Error('项目列表尚未就绪，请稍后重试')
+        if (!clicked) throw new Error(t('main.projectsLoading'))
         // Confirm the actual opened Session's cwd; a click alone is not success.
         for (let attempt = 0; attempt < 40 && valid(); attempt++) {
           const current = await this.location(contents, undefined, cancellation.signal)
@@ -257,10 +258,10 @@ export class WorkspaceNavigator {
           await pause(250)
         }
         if (!valid()) return { status: 'cancelled' }
-        throw new Error('未能确认会话的项目目录，请在内嵌界面检查后重试')
+        throw new Error(t('main.workspaceUnconfirmed'))
       } catch (error) {
         if (!valid()) return { status: 'cancelled' }
-        return { status: 'failed', message: error instanceof Error ? error.message : '工作区切换失败' }
+        return { status: 'failed', message: error instanceof Error ? error.message : t('main.navigationFailed') }
       }
     }).finally(() => {
       state.busy--

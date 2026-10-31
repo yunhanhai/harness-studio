@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { execFile, execFileSync, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { appendFile, cp, mkdir, readFile, writeFile } from 'node:fs/promises'
@@ -234,7 +235,7 @@ export class HostManager {
     if (!this.canAdoptWorkspace(options)) return false
     this.lastOptions = options
     this.emitStatus({ workspaceId: options.workspaceId, error: undefined })
-    this.append('sys', `切换工作区（复用运行中的 Host）: ${options.workspacePath}`)
+    this.append('sys', t('main.workspaceAdoptedLog', { path: options.workspacePath ?? t('main.unknown') }))
     return true
   }
 
@@ -242,7 +243,7 @@ export class HostManager {
     const { runtime, settings } = options
     if (this.status.state === 'ready' || this.status.state === 'starting') return this.getStatus()
     if (!runtime.nodePath || !runtime.cliPath) {
-      this.emitStatus({ state: 'error', error: '运行时尚未就绪：缺少 Node.js 或 dsh CLI。' })
+      this.emitStatus({ state: 'error', error: t('main.runtimePartsMissing') })
       return this.getStatus()
     }
 
@@ -282,7 +283,7 @@ export class HostManager {
     this.logFile = join(logDir, `host-${todayStamp()}.log`)
     void mkdir(logDir, { recursive: true }).catch(() => undefined)
 
-    this.append('sys', `工作目录: ${cwd}`)
+    this.append('sys', t('main.workingDirectoryLog', { path: cwd }))
     this.append('sys', `DSH_HOME: ${env.DSH_HOME}`)
 
     try {
@@ -290,8 +291,8 @@ export class HostManager {
       this.append(
         'sys',
         profile.cloned
-          ? `已从 web 配置创建独立档案: ${profile.profile}`
-          : `配置档案: ${profile.profile}${profile.fromDefault ? '（首次启动，将从内置模板创建）' : ''}`
+          ? t('main.profileCreatedLog', { profile: profile.profile })
+          : t('main.profileLog', { profile: profile.profile, note: profile.fromDefault ? t('main.profileTemplateNote') : '' })
       )
 
       const args = [runtime.cliPath, '--profile', profile.profile]
@@ -329,7 +330,7 @@ export class HostManager {
 
       child.on('error', (error) => {
         this.clearReadyTimer()
-        this.append('sys', `启动失败: ${error.message}`)
+        this.append('sys', t('main.hostLaunchFailedLog', { message: error.message }))
         this.emitStatus({ state: 'error', error: error.message, pid: undefined })
         this.child = null
       })
@@ -342,22 +343,22 @@ export class HostManager {
         if (stdoutBuffer.trim()) this.handleOutput('out', stdoutBuffer)
         if (stderrBuffer.trim()) this.handleOutput('err', stderrBuffer)
         if (wasStopping) {
-          this.append('sys', 'Host 已停止。')
+          this.append('sys', t('main.hostStopped'))
           this.emitStatus({ state: 'stopped', url: undefined, port: undefined, pid: undefined, startedAt: undefined, error: undefined, recovery: undefined })
         } else {
           const locked = this.logs
             .slice(-40)
             .some((line) => line.text.includes('EPERM') && line.text.includes('cordis.yml'))
           const reason = locked
-            ? 'Host 无法写入配置档案，已被另一个 DSH 进程占用。可在「设置 → 运行时 → 其他 DSH 进程」里看清是哪个进程并结束它，或更换配置档案后重试。'
-            : `Host 进程意外退出（${signal ? `信号 ${signal}` : `退出码 ${code ?? '未知'}`}）。`
+            ? t('main.hostProfileLocked')
+            : t('main.hostExited', { reason: signal ? t('main.hostSignal', { signal }) : t('main.hostExitCode', { code: code ?? t('main.unknown') }) })
           this.append('sys', reason)
           this.emitStatus({ state: 'error', error: reason, url: undefined, port: undefined, pid: undefined })
 
           // A locked profile will stay locked on retry, so fail fast with the
           // actionable message above instead of looping.
           if (locked) {
-            this.append('sys', '配置档案被占用，已跳过自动重启。')
+            this.append('sys', t('main.profileRecoverySkipped'))
             this.resetRecovery()
           } else {
             this.scheduleRecovery(reason)
@@ -367,7 +368,7 @@ export class HostManager {
 
       this.readyTimer = setTimeout(() => {
         if (this.status.state !== 'starting') return
-        const error = 'Host 启动超时（150 秒）。请查看日志，或检查模型凭据与端口占用。'
+        const error = t('main.hostStartupTimeout')
         this.append('sys', error)
         this.emitStatus({ state: 'error', error })
         void this.killTree()
@@ -375,14 +376,14 @@ export class HostManager {
       }, READY_TIMEOUT_MS)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      this.append('sys', `无法启动 Host: ${message}`)
+      this.append('sys', t('main.hostStartFailedLog', { message }))
       this.emitStatus({ state: 'error', error: message })
       // A retry that fails to even spawn should keep backing off, unless the
       // failure is a permission problem that will not resolve by waiting.
       const permissionDenied = /EPERM|EACCES|operation not permitted/i.test(message)
       if (this.recoveryAttempt > 0) {
         if (permissionDenied) {
-          this.append('sys', '权限不足，已跳过自动重启。')
+          this.append('sys', t('main.permissionRecoverySkipped'))
           this.resetRecovery()
         } else {
           this.scheduleRecovery(message)
@@ -404,7 +405,7 @@ export class HostManager {
 
     const attempt = this.recoveryAttempt + 1
     if (attempt > RECOVERY_DELAYS_MS.length) {
-      this.append('sys', `自动重启已尝试 ${RECOVERY_DELAYS_MS.length} 次仍失败，已停止重试。`)
+      this.append('sys', t('main.recoveryExhaustedLog', { count: RECOVERY_DELAYS_MS.length }))
       this.emitStatus({ recovery: undefined })
       return
     }
@@ -421,12 +422,12 @@ export class HostManager {
         reason
       }
     })
-    this.append('sys', `将在 ${Math.round(delay / 1000)} 秒后自动重启（第 ${attempt}/${RECOVERY_DELAYS_MS.length} 次）。`)
+    this.append('sys', t('main.recoveryScheduledLog', { seconds: Math.round(delay / 1000), attempt, total: RECOVERY_DELAYS_MS.length }))
 
     this.recoveryTimer = setTimeout(() => {
       this.recoveryTimer = null
       if (this.recoveryCancelled || !this.lastOptions) return
-      this.append('sys', '正在自动重启 Host…')
+      this.append('sys', t('main.hostRestarting'))
       void this.enqueue(async () => {
         if (this.recoveryCancelled || !this.lastOptions) return
         // Clear the terminal error so startInternal is allowed to run again.
@@ -450,9 +451,9 @@ export class HostManager {
       } catch {
         port = undefined
       }
-      this.append('sys', `Host 已就绪，监听端口 ${port ?? '未知'}。`)
+      this.append('sys', t('main.hostReadyLog', { port: port ?? t('main.unknown') }))
       if (this.recoveryAttempt > 0) {
-        this.append('sys', `自动重启成功（第 ${this.recoveryAttempt} 次尝试）。`)
+        this.append('sys', t('main.recoverySucceededLog', { attempt: this.recoveryAttempt }))
         this.recoveryAttempt = 0
       }
       this.emitStatus({ state: 'ready', url, port, error: undefined, recovery: undefined })

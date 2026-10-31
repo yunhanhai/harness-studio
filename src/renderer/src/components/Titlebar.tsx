@@ -1,3 +1,4 @@
+import { useI18n } from '../lib/i18n'
 import { useEffect, useState } from 'react'
 import { Copy, Minus, Search, Square, X } from 'lucide-react'
 import { useApp } from '../store'
@@ -5,6 +6,7 @@ import { BrandMark } from './BrandMark'
 import { hostStateLabel, shortPath } from '../lib/format'
 
 export function Titlebar(): React.JSX.Element {
+  const { t } = useI18n()
   const view = useApp((state) => state.view)
   const host = useApp((state) => state.host)
   const workspaces = useApp((state) => state.workspaces)
@@ -20,16 +22,16 @@ export function Titlebar(): React.JSX.Element {
   const workspace = workspaces.find((item) => item.id === activeTab?.workspaceId)
   const contextLabel =
     view === 'workspace'
-      ? (workspace?.name ?? (activeTab?.path ? shortPath(activeTab.path, 32) : '工作区'))
+      ? (workspace?.name ?? (activeTab?.path ? shortPath(activeTab.path, 32) : t('shell.workspace')))
       : view === 'home'
-        ? '启动台'
+        ? t('shell.home')
         : view === 'insights'
-          ? '会话洞察'
+          ? t('shell.sessionInsights')
           : view === 'prompts'
-            ? '提示词库'
+            ? t('shell.promptLibrary')
             : view === 'logs'
-              ? '运行日志'
-              : '设置'
+              ? t('shell.runtimeLogs')
+              : t('shell.settings')
 
   return (
     <header className="titlebar">
@@ -40,35 +42,35 @@ export function Titlebar(): React.JSX.Element {
         </span>
         <span className="titlebar-beta">BETA</span>
         <span className="titlebar-divider" />
-        <button className="titlebar-context" onClick={() => setView('home')} title="返回启动台">
+        <button className="titlebar-context" onClick={() => setView('home')} title={t('shell.backToHome')}>
           {contextLabel}
         </button>
       </div>
 
-      <button className="command-pill" onClick={() => window.studio.studio.showPalette()} title="打开命令面板">
+      <button className="command-pill" onClick={() => window.studio.studio.showPalette()} title={t('shell.openCommandPalette')}>
         <Search size={13} strokeWidth={2.2} />
-        <span>搜索命令、工作区或提示词</span>
+        <span>{t('shell.searchCommandsWorkspacesOrPrompts82')}</span>
         <kbd>Ctrl K</kbd>
       </button>
 
       <div className="titlebar-right">
-        <button className={`host-pill host-${host.state}`} onClick={() => setView('workspace')} title="查看工作区">
+        <button className={`host-pill host-${host.state}`} onClick={() => setView('workspace')} title={t('shell.viewWorkspace')}>
           <span className="status-dot" />
           <span>{hostStateLabel(host.state)}</span>
           {host.state === 'ready' && host.port ? <span className="host-port">:{host.port}</span> : null}
         </button>
         <div className="window-controls">
-          <button className="window-button" onClick={() => window.studio.app.minimize()} title="最小化">
+          <button className="window-button" onClick={() => window.studio.app.minimize()} title={t('shell.minimize')}>
             <Minus size={15} />
           </button>
           <button
             className="window-button"
             onClick={() => window.studio.app.toggleMaximize()}
-            title={maximized ? '还原' : '最大化'}
+            title={maximized ? t('shell.restore') : t('shell.maximize')}
           >
             {maximized ? <Copy size={13} /> : <Square size={13} />}
           </button>
-          <button className="window-button window-close" onClick={() => window.studio.app.close()} title="关闭">
+          <button className="window-button window-close" onClick={() => window.studio.app.close()} title={t('shell.close')}>
             <X size={15} />
           </button>
         </div>

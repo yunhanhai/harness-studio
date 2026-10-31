@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { execFile } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
@@ -116,14 +117,14 @@ export async function detectRuntime(settings: Settings, userData: string): Promi
       state: 'missing',
       source: null,
       dshHome,
-      error: '未找到 Node.js。请安装 Node.js 22+，或使用「安装便携运行时」。',
+      error: t('main.nodeMissing'),
       checkedAt
     }
   }
 
   const nVersion = await nodeVersion(nodePath)
   if (!nVersion) {
-    return { state: 'error', source, nodePath, dshHome, error: 'Node.js 无法执行，请检查路径。', checkedAt }
+    return { state: 'error', source, nodePath, dshHome, error: t('main.nodeNotExecutable'), checkedAt }
   }
 
   if (!cliPath) {
@@ -133,7 +134,7 @@ export async function detectRuntime(settings: Settings, userData: string): Promi
       nodePath,
       nodeVersion: nVersion,
       dshHome,
-      error: '未找到 DeepSeek Harness CLI。可以使用「安装便携运行时」一键部署。',
+      error: t('main.dshMissing'),
       checkedAt
     }
   }
