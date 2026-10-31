@@ -6,10 +6,10 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 版本 | `0.1.7`（本地已安装，GitHub 已发布；Gitee 已同步代码和标签，安装包待上传） |
+| 版本 | `0.1.7`（本地已安装，双平台已发布，公开下载校验通过） |
 | 本地 HEAD | `git log --oneline -1` 确认 |
 | 工作区 | `git status` 确认 |
-| 已发布 | GitHub：v0.1.0～v0.1.7；Gitee：v0.1.0～v0.1.4、v0.1.6（v0.1.5 / v0.1.7 只有标签；v0.1.0 仅保留说明与源码包，旧安装包已移除并备份） |
+| 已发布 | GitHub：v0.1.0～v0.1.7；Gitee：v0.1.0～v0.1.4、v0.1.6～v0.1.7（v0.1.5 只有标签；v0.1.0 / v0.1.1 仅保留说明与源码包，旧安装包已移除并备份） |
 | 远端 | `origin` → GitHub，`gitee` → Gitee |
 | 平台 | Windows 10/11 x64（主要目标） |
 
@@ -40,7 +40,7 @@
 
 从下面挑一个，或者提你自己的需求：
 
-- "完成 v0.1.7 的 Gitee 安装包发布，先读当前收尾状态"
+- "按 HANDOFF「下一步建议」选择后续功能"
 - "做界面英文化，按 HANDOFF「下一步建议 → 其他」里的方向"
 - "给 xxx 页面加 yyy 功能"
 
@@ -53,8 +53,8 @@
 ```text
 在 D:\Program Files\develop\vscode\her 继续开发 Harness Studio。
 先读 docs/HANDOFF.md 和 docs/ARCHITECTURE.md。
-v0.1.7 已在 GitHub 发布，本地桌面版已更新；Gitee 只有代码和标签，安装包还等旧附件清理确认。
-不要重复发布 GitHub 或移动已存在的标签，先读当前收尾状态。
+v0.1.7 已在 GitHub 与 Gitee 发布，本地桌面版已更新，公开安装包下载校验通过。
+不要重复发布或移动已存在的标签，先读当前收尾状态。
 接下来做：<写清楚新需求>。
 ```
 
@@ -70,7 +70,9 @@ v0.1.7 已在 GitHub 发布，本地桌面版已更新；Gitee 只有代码和�
 
 两平台 main / v0.1.7 标签均已推送。GitHub 不同历史通过 `.tools/github-bridge-v0.1.7.mjs` 桥接，保留 tree、提交元数据与原有标签：本地/Gitee 发布提交为 `817fef6`，GitHub 为 `8e3b753`，tree 同为 `9350addd6f0acef3ac802c2fbc8af84dc32477f8`。GitHub [v0.1.7 发行版](https://github.com/yunhanhai/harness-studio/releases/tag/v0.1.7)（ID 430015660）已公开发布，包含 Setup / Portable / blockmap / latest.yml；[Release 工作流](https://github.com/yunhanhai/harness-studio/actions/runs/41214542918) 与 [CI](https://github.com/yunhanhai/harness-studio/actions/runs/41214542733) 均成功，发行说明已按 CHANGELOG 更新。四件公开附件已完整下载，大小与 API SHA-256 digest 全部匹配；公开 Setup 为 103,983,338 bytes，Portable 为 103,713,803 bytes，Setup 的 SHA-512 与公开 latest.yml 两处值一致。验收记录为 `.tools/v0.1.7-github-download-verification.json`。两平台分别构建，下载哈希各自核对，不要求与另一平台构建逐字节相同。
 
-Gitee 安装包尚未上传：总附件占用 1,038,316,166 bytes，新包需要更多空间。v0.1.1 两件旧安装包已完整备份并核对哈希（`.tools/gitee-v0.1.1-backup/`），候选附件 ID 为 3455589 / 3455592，合计释放 207,651,144 bytes；是否删除仍待用户本次确认，此前的授权只包含 v0.1.0。GitHub 同版安装包、Gitee 标签/发行说明/源码包及其他版本均保留。收到确认后才运行 `.tools/gitee-prune-v0.1.1.mjs --execute`，再运行 `.tools/gitee-release-v0.1.7.mjs --publish` 并校验公开下载。README 的 Gitee 徽章和链接目前继续指向 v0.1.6；不要先改成尚无安装包的 v0.1.7。
+Gitee [v0.1.7 发行版](https://gitee.com/yunhanhai/harness-studio/releases)（ID 1260876）已发布，两件附件为 Setup（ID 3554461，103,983,344 bytes）与 Portable（ID 3554462，103,713,805 bytes）。两件公开安装包已完整下载，大小及 SHA-256 / SHA-512 均与本地上传文件一致，报告为 `.tools/v0.1.7-gitee-download-verification.json`。公开 API 返回 403，附件元数据通过令牌在进程内只读核验；安装包下载无需鉴权。README 的两平台下载链接与 Gitee 徽章均已更新为 v0.1.7。
+
+经用户本次确认，仅删除了 Gitee v0.1.1 的两件旧安装附件（ID 3455589 / 3455592），释放 207,651,144 bytes。删除前完整备份到 `.tools/gitee-v0.1.1-backup/` 并复核哈希；GitHub 同版安装包、Gitee 标签/发行说明/源码包及其他版本均保留。最终附件合计 1,038,362,171 bytes，按 1 GiB 上限尚余 35,379,653 bytes；下次发布仍需检查配额。发行说明、所有原发行版与其他附件保留情况已核验，记录为 `.tools/v0.1.7-gitee-final-audit.json`。
 
 已清理约 619.5 MiB 测试环境、旧安装包与 staging。Electron 报告和截图已复制到 `.tools/v0.1.7-workspace-verification/`，`npm run status` 确认一个程序目录、两个快捷方式、安装版本 0.1.7.0，没有 staging 副本。旧 stash 和仓库外未获准删除的验证脚本仍保留。v0.1.6 标签和公开安装包保持原样。
 
@@ -78,7 +80,7 @@ Gitee 安装包尚未上传：总附件占用 1,038,316,166 bytes，新包需要
 
 v0.1.6（会话标签页）的代码在 `0620838` 提交，发布文档提交为 `6ba8677`。2026-10-31 已完成本地原地安装、发布包构建、双平台 main 与 v0.1.6 标签推送及发行版发布。[GitHub Release](https://github.com/yunhanhai/harness-studio/releases/tag/v0.1.6) 包含 Setup / Portable / blockmap / latest.yml 四件附件，[Gitee 发行版](https://gitee.com/yunhanhai/harness-studio/releases) 包含 v0.1.6 Setup / Portable 两件附件（发行版 ID `1260636`）。[Release 工作流](https://github.com/yunhanhai/harness-studio/actions/runs/41158548249) 与 CI 均通过。
 
-GitHub 使用本机 Git Credential Manager 中的有效 PAT（`repo` + `workflow`）。Gitee 通过用户提供的 `projects` 令牌调用官方 API 创建发行版、上传附件，令牌保存在已忽略的 `.tools/gitee-token.txt`。README 的两平台下载链接与 Gitee 徽章均指向 v0.1.6。
+GitHub 使用本机 Git Credential Manager 中的有效 PAT（`repo` + `workflow`）。Gitee 通过用户提供的 `projects` 令牌调用官方 API 创建发行版、上传附件，令牌保存在已忽略的 `.tools/gitee-token.txt`。当时 README 的两平台下载链接与 Gitee 徽章均指向 v0.1.6。
 
 GitHub 发布标签指向 `d59c4b2`，Gitee 与本地标签指向 `6ba8677`，tree 都是 `37adaf493d1db16aab826c9447f08021f3844173`。本次通过 `git commit-tree` 在远端历史后追加内容一致的提交，再原子推送 main/tag，没有强推；本地原提交、main 与标签均保留。
 
@@ -113,15 +115,15 @@ GitHub 发布标签指向 `d59c4b2`，Gitee 与本地标签指向 `6ba8677`，tr
 
 本次 Gitee 发布包：Setup 为 103,977,982 bytes（约 99.2 MiB），Portable 为 103,708,449 bytes（约 98.9 MiB），均已上传成功。GitHub 使用 Actions 构建的附件，Setup 为 103,977,976 bytes、Portable 为 103,708,446 bytes；两平台来自相同源码，但构建产物字节略有差别，各自的下载校验分别通过。
 
-Gitee 初次上传返回 `400`：「文件大小已超出仓库附件配额：1 GB」。经用户确认，已仅删除 Gitee v0.1.0 的两个旧安装附件（ID `3452550` / `3452553`），释放 207,636,134 bytes；标签、发行说明、源码包、其他版本及 GitHub 安装包均保留。旧安装包先完整备份到 `.tools/gitee-v0.1.0-backup/`，核对了大小与 SHA-256，后续可恢复。Gitee 现有安装附件合计 1,038,316,166 bytes，发布下一版前仍需检查总附件额度。
+Gitee 初次上传返回 `400`：「文件大小已超出仓库附件配额：1 GB」。经用户确认，已仅删除 Gitee v0.1.0 的两个旧安装附件（ID `3452550` / `3452553`），释放 207,636,134 bytes；标签、发行说明、源码包、其他版本及 GitHub 安装包均保留。旧安装包先完整备份到 `.tools/gitee-v0.1.0-backup/`，核对了大小与 SHA-256，后续可恢复。v0.1.6 发布后安装附件合计 1,038,316,166 bytes，当前配额见顶部 v0.1.7 记录。
 
-`npm run clean:dist` 已清掉测试目录、旧安装包和 staging 副本，共释放约 1051.8 MiB；`npm run status` 确认只有一个程序目录、两个快捷方式，安装版本为 0.1.6.0。`stash@{0}` 仍保留；仓库外 `C:\Users\Administrator\AppData\Local\Temp\hs-tabs-verify` 的删除被自动审批策略拒绝，也仍保留。
+v0.1.6 发布后的 `npm run clean:dist` 已清掉测试目录、旧安装包和 staging 副本，共释放约 1051.8 MiB；当时 `npm run status` 确认只有一个程序目录、两个快捷方式，安装版本为 0.1.6.0。`stash@{0}` 仍保留；仓库外 `C:\Users\Administrator\AppData\Local\Temp\hs-tabs-verify` 的删除被自动审批策略拒绝，也仍保留。
 
 ### 不需要重新做的事
 
 - 仓库已建好、双平台已发布，不用重新初始化；
 - 依赖已装好（`node_modules` 在），除非你要升级依赖；
-- v0.1.6 的功能、typecheck、build 与真机验证都已完成，不用重做（见下方「已完成（v0.1.6）」）。
+- v0.1.6 / v0.1.7 的功能、typecheck、build、导航回归与隔离 Electron 验证已完成，不用重做；两项真实键盘检查仍待人工确认（见发布记录）。
 
 ### 已经改过、但**不在仓库里**的配置（重要）
 
