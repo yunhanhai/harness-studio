@@ -60,6 +60,8 @@ v0.1.6 已在 GitHub 与 Gitee 发布，本地桌面版也已更新，不要重�
 
 ## 当前收尾状态（v0.1.6）
 
+**发布后的开发改动（未发布）**：已修复 `confirmSend` 开启、`confirmQueued` 关闭时，带队列发送绕过确认的问题；已去重 workspace preload 的主题监听，并在构建脚本中加入 IPC 通道契约检查。真实函数的 18 个发送确认场景、17 个隔离 preload fixture、`npm run typecheck` 与 `npm run build` 均通过。版本号仍为 0.1.6，已发布安装包与标签没有改动。工作区真正联动正在隔离环境中验证。
+
 v0.1.6（会话标签页）的代码在 `0620838` 提交，发布文档提交为 `6ba8677`。2026-10-31 已完成本地原地安装、发布包构建、双平台 main 与 v0.1.6 标签推送及发行版发布。[GitHub Release](https://github.com/yunhanhai/harness-studio/releases/tag/v0.1.6) 包含 Setup / Portable / blockmap / latest.yml 四件附件，[Gitee 发行版](https://gitee.com/yunhanhai/harness-studio/releases) 包含 v0.1.6 Setup / Portable 两件附件（发行版 ID `1260636`）。[Release 工作流](https://github.com/yunhanhai/harness-studio/actions/runs/41158548249) 与 CI 均通过。
 
 GitHub 使用本机 Git Credential Manager 中的有效 PAT（`repo` + `workflow`）。Gitee 通过用户提供的 `projects` 令牌调用官方 API 创建发行版、上传附件，令牌保存在已忽略的 `.tools/gitee-token.txt`。README 的两平台下载链接与 Gitee 徽章均指向 v0.1.6。
@@ -295,8 +297,6 @@ Host 崩溃自动恢复已实现并验证：非主动退出后按 2s → 5s → 
 
 **遗留的小事**：
 
-- `src/preload/workspace.ts` 开头的注释说主进程会校验 preload 里就地写的通道名，其实没有任何校验。改了 `channels.ts` 里的 `guest:*` 名称而忘了同步，内嵌界面里的快捷键、提示镜像、发送确认会静默失效。可以在 `scripts/check-preload.mjs` 里加一次比对；
-- 同一个文件对 `guest:theme` 注册了两个监听（一个写字面量、一个用常量），功能无碍，但会重复应用主题；
 - 内嵌界面会把输入草稿存进浏览器存储，新标签打开某个会话时会带出这个会话之前保存的草稿；之后各标签里的输入互不影响（真机验证过）。
 
 ## 不要做的事

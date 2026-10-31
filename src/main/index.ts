@@ -580,9 +580,10 @@ function confirmSend(request: { kind?: string; preview?: string; queued?: number
   const queued = Number(request.queued) || 0
   const isQueuedSend = request.kind === 'queued'
 
-  // `confirmQueued` guards the narrower case: this send will also flush the queue.
+  // `confirmSend` covers every send. `confirmQueued` can enable confirmation
+  // only for sends that also flush the queue.
   if (isQueuedSend) {
-    if (!composer.confirmQueued) return true
+    if (!composer.confirmQueued && !composer.confirmSend) return true
   } else if (!composer.confirmSend) {
     return true
   }

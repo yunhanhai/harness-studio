@@ -6,11 +6,11 @@ import type { GuestNotice, TabCommand } from '@shared/types'
  * `sandbox: true`, where `require` only resolves Electron's own modules. Any
  * import from `@shared/*` makes Rollup emit a shared chunk that the sandboxed
  * preload cannot load, which silently kills the whole preload. `channels.ts`
- * remains the source of truth; the main process asserts the values below.
+ * remains the source of truth; the build check asserts the values below.
  */
 const GUEST_NOTICE_CHANNEL = 'guest:notice'
 const GUEST_THEME_CHANNEL = 'guest:theme'
-const GUEST_CONFIRM_CHANNEL = 'guest:confirm-send'
+const GUEST_CONFIRM_SEND_CHANNEL = 'guest:confirm-send'
 const GUEST_SHORTCUT_CHANNEL = 'guest:shortcut'
 
 interface ComposerGuard {
@@ -76,8 +76,6 @@ function apply(payload: ThemePayload): void {
     document.head.append(styleElement)
   }
 }
-
-ipcRenderer.on('guest:theme', (_event, payload: ThemePayload) => apply(payload))
 
 /**
  * Mirror Harness' transient toast into Studio.
@@ -232,7 +230,7 @@ function requestConfirmation(kind: 'send' | 'queued'): boolean {
   if (testAnswer !== null) return testAnswer
   const preview = editorText().slice(0, 160)
   try {
-    return ipcRenderer.sendSync(GUEST_CONFIRM_CHANNEL, {
+    return ipcRenderer.sendSync(GUEST_CONFIRM_SEND_CHANNEL, {
       kind,
       preview,
       queued: queuedCount()
@@ -358,7 +356,7 @@ window.addEventListener('DOMContentLoaded', () => {
   forwardTabShortcuts()
   // Ask for the current settings; the theme push only arrives on change.
   try {
-    applyGuard(ipcRenderer.sendSync(GUEST_CONFIRM_CHANNEL, { kind: 'settings' }) ?? {})
+    applyGuard(ipcRenderer.sendSync(GUEST_CONFIRM_SEND_CHANNEL, { kind: 'settings' }) ?? {})
   } catch {
     /* keep defaults */
   }
