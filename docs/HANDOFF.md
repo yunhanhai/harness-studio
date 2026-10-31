@@ -6,10 +6,10 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 版本 | `0.1.6`（本地已提交，**未发布、未推送**） |
+| 版本 | `0.1.6`（本地已安装；GitHub 已发布；Gitee 代码与标签已推送，发行版待创建） |
 | 本地 HEAD | `git log --oneline -1` 确认 |
 | 工作区 | `git status` 确认 |
-| 已发布 | GitHub：v0.1.0～v0.1.5；Gitee：v0.1.0～v0.1.4（v0.1.5 只有标签，未建发行版） |
+| 已发布 | GitHub：v0.1.0～v0.1.6；Gitee：v0.1.0～v0.1.4（v0.1.5 / v0.1.6 只有标签，未建发行版） |
 | 远端 | `origin` → GitHub，`gitee` → Gitee |
 | 平台 | Windows 10/11 x64（主要目标） |
 
@@ -25,7 +25,7 @@
 | v0.1.3 | 快速提问历史记录（持久化 + 一键回填） |
 | v0.1.4 | Host 崩溃自动恢复（指数退避 + 界面倒计时） |
 | v0.1.5 | 会话/档案被占用诊断：提示可选中可关闭、DSH 进程列表与一键结束 |
-| v0.1.6（未发布） | 会话标签页：一个 Host 上并排打开多个会话；工作区页面常驻，切页不再重新加载 |
+| v0.1.6 | 会话标签页：一个 Host 上并排打开多个会话；工作区页面常驻，切页不再重新加载（GitHub 已发布，Gitee 待补发行版） |
 
 ## 在新对话中如何继续
 
@@ -52,16 +52,20 @@
 ```text
 在 D:\Program Files\develop\vscode\her 继续开发 Harness Studio。
 先读 docs/HANDOFF.md（尤其「当前收尾状态」一节）和 docs/ARCHITECTURE.md，
-然后发布 v0.1.6：跑 npm run install:local 原地更新桌面版、
-npm run status 确认无堆积，按 docs/PUBLISHING.md 打标签、构建并推送 GitHub 与 Gitee。
-我的 GitHub PAT 是 xxx，Gitee 令牌是 xxx。
+然后完成 Gitee v0.1.6 发行版：代码与标签已推送，安装包在 dist/，
+GitHub 已发布，直接创建 Gitee 发行版并上传 Setup / Portable，核验下载后更新 README 与本页。
+Gitee 令牌已保存在 .tools/gitee-token.txt（projects 权限），不要打印或提交。
 ```
 
 如果这条消息里包含令牌，注意它们会留在对话记录里，事后应当轮换。
 
 ## 当前收尾状态（v0.1.6）
 
-v0.1.6（会话标签页）的代码已在 `0620838` 提交；2026-10-31 已完成本地原地安装与发布包构建，还**没有**推送、打标签、发布。GitHub 的本机认证有效（`repo` + `workflow`），Gitee 的已存凭据返回 401，需要有效令牌。验证结果：
+v0.1.6（会话标签页）的代码在 `0620838` 提交，发布文档提交为 `6ba8677`。2026-10-31 已完成本地原地安装、发布包构建、双平台 main 与 v0.1.6 标签推送；[GitHub Release](https://github.com/yunhanhai/harness-studio/releases/tag/v0.1.6) 已公开，Setup / Portable / blockmap / latest.yml 四件附件齐全，[Release 工作流](https://github.com/yunhanhai/harness-studio/actions/runs/41158548249) 与 CI 均通过。
+
+GitHub 使用本机 Git Credential Manager 中的有效 PAT（`repo` + `workflow`）。Gitee 的 Git 推送凭据有效，但同一凭据调用发行版 API 返回 401；**创建 Gitee 发行版与上传附件仍需有效的 `projects` 令牌**。README 的 Gitee 徽章与下载链接暂指向实际可下载的 v0.1.4，上传成功后再改为 v0.1.6。
+
+GitHub 发布标签指向 `d59c4b2`，Gitee 与本地标签指向 `6ba8677`，tree 都是 `37adaf493d1db16aab826c9447f08021f3844173`。本次通过 `git commit-tree` 在远端历史后追加内容一致的提交，再原子推送 main/tag，没有强推；本地原提交、main 与标签均保留。
 
 | 项目 | 结果 |
 | --- | --- |
@@ -89,9 +93,11 @@ v0.1.6（会话标签页）的代码已在 `0620838` 提交；2026-10-31 已完�
 - 真实键盘焦点：`Ctrl+Tab` 切换后，Studio 一侧的 `document.activeElement` 已确认指向新标签的 webview，但测试窗口拿不到系统焦点，「接着打字是否落在新标签」需要手动试一次；
 - v0.1.5 遗留：开启「每次发送前确认」后，在输入框里真实按回车应弹出确认框（Lexical 忽略 CDP 合成事件，无法自动验证）。
 
-**发布还要做**：提交发布文档、打 v0.1.6 标签、按 `docs/PUBLISHING.md` 推送 GitHub 与 Gitee；GitHub Actions 生成发行版，Gitee 需创建发行版并上传安装包。完成后更新本页的双平台状态。本地安装与发布包构建已完成。
+**发布还要做**：拿到有效 Gitee 令牌后，为已有 v0.1.6 标签创建发行版并上传 `dist/Harness-Studio-0.1.6-x64-Setup.exe` 与 `dist/Harness-Studio-0.1.6-x64-Portable.exe`，核验公开下载，更新 README 的 Gitee 链接与徽章、以及本页的双平台状态。本地安装、构建、打标签、代码推送和 GitHub 发布均已完成，不要重复打标签或发布。
 
 本次本地发布包：Setup 为 103,977,982 bytes（约 99.2 MiB），Portable 为 103,708,449 bytes（约 98.9 MiB），均低于 100 MiB。Gitee 已接受大小相近的 v0.1.4 附件，但其公开文档没有明确说明「100 MB」采用哪种单位，最终以实际上传验收为准。
+
+`npm run clean:dist` 已清掉测试目录、旧安装包和 staging 副本，共释放约 1051.8 MiB；`npm run status` 确认只有一个程序目录、两个快捷方式，安装版本为 0.1.6.0。`stash@{0}` 仍保留；仓库外 `C:\Users\Administrator\AppData\Local\Temp\hs-tabs-verify` 的删除被自动审批策略拒绝，也仍保留。
 
 ### 不需要重新做的事
 
