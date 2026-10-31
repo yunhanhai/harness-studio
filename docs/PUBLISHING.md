@@ -90,12 +90,31 @@ git push gitee main --tags
 
 ### 3.2 在 Gitee 发布附件
 
-Gitee 的 Release 不会自动运行 GitHub Actions，需要手动上传：
+Gitee 的 Release 不会自动运行 GitHub Actions，需要上传已构建的安装包。可以通过网页操作：
 
 1. 打开 Gitee 仓库 → **发行版** → **新建发行版**；
 2. 标签填 `v0.1.0`，标题填 `Harness Studio v0.1.0`；
 3. 上传 `dist/` 下的 Setup / Portable 安装包；
 4. 发布说明可以从 GitHub Release 直接复制。
+
+也可以使用 [Gitee 官方 REST API](https://gitee.com/api/v5/swagger_doc)。以下路径均相对于 `https://gitee.com/api/v5`：
+
+| 操作 | 方法与路径 | 请求格式 |
+| --- | --- | --- |
+| 查询发行版 | `GET /repos/{owner}/{repo}/releases` | 查询参数，`per_page` 最大 100 |
+| 创建发行版 | `POST /repos/{owner}/{repo}/releases` | JSON：`access_token`、`tag_name`、`name`、`body`、`target_commitish`、`prerelease` |
+| 查询附件 | `GET /repos/{owner}/{repo}/releases/{release_id}/attach_files` | 查询参数，`per_page` 最大 100 |
+| 上传附件 | `POST /repos/{owner}/{repo}/releases/{release_id}/attach_files` | `multipart/form-data`：`access_token` 与 `file` |
+
+令牌需要 `projects` 权限，可从环境变量或已忽略的 `.tools/gitee-token.txt` 读取，不要打印、提交或写进命令行。Git 推送成功并不代表同一凭据可调用发行版 API，应先验证 API 认证。
+
+1. 确认目标标签已推送；已有标签直接复用，不重复打标签。
+2. 分页查询发行版，按 `tag_name` 查找目标版本。不存在时再创建：例如 `tag_name` 为 `v0.1.6`、`name` 为 `Harness Studio v0.1.6`，`body` 为该版本发布说明，`target_commitish` 为 `main`，`prerelease` 为 `false`。创建成功返回 `201` 和发行版 ID。
+3. 查询该发行版的附件，再分别上传 Setup 与 Portable。已有同名且大小一致的附件可跳过；大小冲突时停止核查，不覆盖。上传成功返回 `201`，包含附件名、大小与 `browser_download_url`。
+4. 重新查询附件，核对两份文件的名称与大小，并验证公开下载 URL。GitHub 的 `latest.yml` 必须匹配 GitHub 实际发布的 Setup 文件名、大小和 SHA-512；不要混用不同构建的更新清单与安装包。
+5. 附件下载验收后再更新 README 的 Gitee 徽章、下载链接和 HANDOFF 的发布状态。
+
+如果上传返回 `400` 并提示「文件大小已超出仓库附件配额：1 GB」，需要统计仓库已有附件的总大小。单个安装包满足上传限制，并不代表仓库还有足够的总额度。可在备份并确认保留策略后清理旧安装附件，保留标签、发行说明和源码包，再重试上传；不要反复提交同一个超额文件。
 
 ### 3.3 让 Gitee 用户也能收到更新提示
 
