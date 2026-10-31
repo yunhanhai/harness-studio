@@ -261,6 +261,12 @@ const MOCK = ${JSON.stringify(mock)};
 const MOCK_INSTANCES = ${JSON.stringify(instances)};
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const listeners = () => () => {};
+const workspaceListeners = new Set();
+const mockGuestWorkspaces = new Map();
+const reportMockWorkspace = (observation) => {
+  mockGuestWorkspaces.set(observation.guestId, observation);
+  for (const listener of workspaceListeners) listener(clone(observation));
+};
 const merge = (base, patch) => {
   const out = { ...base };
   for (const [key, value] of Object.entries(patch || {})) {
@@ -346,7 +352,28 @@ window.studio = {
     revealSession: async () => true
   },
   tabs: {
-    setActiveGuest: () => {}
+    setActiveGuest: () => {},
+    cancelWorkspace: () => {},
+    openWorkspace: async (workspaceId, webContentsId, path) => {
+      const workspace = MOCK.workspaces.find((item) => workspaceId
+        ? item.id === workspaceId
+        : item.path.toLowerCase() === String(path || '').toLowerCase());
+      if (workspaceId && !workspace) return { status: 'failed', message: '找不到这个工作区（演示）' };
+      const actualPath = workspace?.path || path;
+      if (!actualPath) return { status: 'failed', message: '没有提供工作区目录（演示）' };
+      const result = {
+        status: 'opened',
+        workspaceId: workspace?.id,
+        sessionId: 'preview-' + webContentsId + '-' + (workspace?.id || actualPath),
+        path: actualPath
+      };
+      reportMockWorkspace({ guestId: webContentsId, workspaceId: result.workspaceId, sessionId: result.sessionId, path: actualPath });
+      return result;
+    },
+    onWorkspaceChanged: (callback) => {
+      workspaceListeners.add(callback);
+      return () => workspaceListeners.delete(callback);
+    }
   },
   quickAsk: {
     submit: async () => ({ status: 'sent' }),
@@ -391,5 +418,62 @@ window.studio = {
   clipboard: { write: async () => {}, read: async () => '' },
   zoom: { get: async () => 1, set: () => {}, onChange: listeners }
 };
+// Browser previews have inert <webview> elements. Supply only the guest methods
+// and lifecycle events the renderer uses, keeping preview branches out of it.
+if (typeof document !== 'undefined' && typeof MutationObserver === 'function') {
+  let mockGuestSeq = 1000;
+  const prepared = new WeakSet();
+  const installMockWebview = (element) => {
+    if (prepared.has(element)) return;
+    prepared.add(element);
+    const guestId = ++mockGuestSeq;
+    let zoomFactor = 1;
+    const ready = () => {
+      if (!element.isConnected) return;
+      element.dispatchEvent(Object.assign(new Event('did-start-navigation'), {
+        isMainFrame: true,
+        isInPlace: false,
+        url: element.getAttribute('src') || ''
+      }));
+      element.dispatchEvent(new Event('did-start-loading'));
+      setTimeout(() => {
+        if (!element.isConnected) return;
+        let observation = mockGuestWorkspaces.get(guestId);
+        if (!observation) {
+          const workspace = MOCK.workspaces.find((item) => item.id === MOCK.host.workspaceId) || MOCK.workspaces[0];
+          if (workspace) observation = { guestId, workspaceId: workspace.id, sessionId: 'preview-' + guestId + '-' + workspace.id, path: workspace.path };
+        }
+        if (observation) reportMockWorkspace(observation);
+        element.dispatchEvent(new Event('dom-ready'));
+        element.dispatchEvent(new Event('did-stop-loading'));
+      }, 30);
+    };
+    Object.assign(element, {
+      getWebContentsId: () => guestId,
+      getURL: () => element.getAttribute('src') || '',
+      canGoBack: () => false,
+      canGoForward: () => false,
+      goBack: () => {},
+      goForward: () => {},
+      getZoomFactor: () => zoomFactor,
+      setZoomFactor: (factor) => { zoomFactor = factor; },
+      reload: ready,
+      openDevTools: () => {},
+      isDevToolsOpened: () => false
+    });
+    setTimeout(ready, 50);
+  };
+  const observer = new MutationObserver((records) => {
+    for (const record of records) {
+      for (const node of record.addedNodes) {
+        if (node.nodeType !== 1) continue;
+        if (node.matches('webview')) installMockWebview(node);
+        for (const element of node.querySelectorAll('webview')) installMockWebview(element);
+      }
+    }
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+  for (const element of document.querySelectorAll('webview')) installMockWebview(element);
+}
 `
 }

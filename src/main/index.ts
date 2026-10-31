@@ -14,7 +14,7 @@ import {
 import { existsSync, writeFileSync } from 'node:fs'
 import { readdir } from 'node:fs/promises'
 import { writeFile } from 'node:fs/promises'
-import { basename, join, resolve } from 'node:path'
+import { basename, isAbsolute, join, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { ACCENTS, DEFAULT_SETTINGS, GITHUB_REPO, GITHUB_URL, GITEE_URL, PRODUCT_NAME } from '@shared/defaults'
 import { IPC } from '@shared/channels'
@@ -40,6 +40,7 @@ import { RuntimeInstaller } from './runtime/installer'
 import { createMainWindow, createPaletteWindow, createQuickAskWindow, preloadPath } from './windows'
 import { applyTheme } from './windows'
 import { injectIntoComposer } from './quickask'
+import { WorkspaceNavigator } from './workspace-navigation'
 import { registerGlobalShortcuts } from './shortcuts'
 import { installApplicationMenu } from './menu'
 import { createTray } from './tray'
@@ -59,6 +60,7 @@ let paletteWindow: BrowserWindow | null = null
 let quickAskWindow: BrowserWindow | null = null
 let stores: Stores
 let host: HostManager
+let workspaceNavigator: WorkspaceNavigator
 let installer: RuntimeInstaller
 let runtimeInfo: RuntimeInfo | null = null
 let quitting = false
@@ -69,6 +71,7 @@ let closeNoticeShown = false
  * front (`tabs:active-guest`) so Quick Ask types into the tab the user sees.
  */
 const guests = new Map<number, Electron.WebContents>()
+const workspaceOpenRequests = new Map<number, number>()
 let activeGuestId: number | null = null
 const guestWaiters: Array<(contents: Electron.WebContents) => void> = []
 
@@ -77,12 +80,9 @@ function liveGuest(id: number | null): Electron.WebContents | null {
   return contents && !contents.isDestroyed() ? contents : null
 }
 
-/** The guest in front, else the most recently attached live one. */
+/** Only the guest the renderer explicitly reported as being in front. */
 function activeGuest(): Electron.WebContents | null {
-  const front = liveGuest(activeGuestId)
-  if (front) return front
-  // A Map iterates in insertion order, so the newest guest is last.
-  return [...guests.values()].reverse().find((contents) => !contents.isDestroyed()) ?? null
+  return liveGuest(activeGuestId)
 }
 
 /** Wait for the embedded Harness webview to attach (after switching to the workspace view). */
@@ -209,7 +209,7 @@ async function submitQuickAsk(
   const autoSend = options.autoSend ?? current.quickAsk.autoSend
   const reveal = options.reveal ?? current.quickAsk.revealAfterSend
 
-  if (!workspaceList().length) {
+  if (!workspaceList().length && guests.size === 0) {
     return { status: 'no-workspace', message: '还没有工作区' }
   }
 
@@ -227,14 +227,21 @@ async function submitQuickAsk(
     // the text is the one the user sees.
     sendMain(IPC.action, { type: 'navigate', view: 'workspace' } satisfies StudioAction)
   } else {
-    sendAction({ type: 'open-workspace', id: status.workspaceId })
+    if (guests.size > 0) sendMain(IPC.action, { type: 'navigate', view: 'workspace' } satisfies StudioAction)
+    else sendAction({ type: 'open-workspace' })
     hideQuickAsk()
     guest = await waitForGuest()
     if (!guest) return { status: 'needs-host', message: '会话界面没有加载完成，请稍后重试' }
     await new Promise((resolve) => setTimeout(resolve, 1200))
   }
 
-  const result = await injectIntoComposer(guest, text, { autoSend })
+  if (workspaceNavigator.isBusy(guest)) {
+    return { status: 'needs-host', message: '工作区正在切换，请就绪后再发送' }
+  }
+  const targetId = guest.id
+  const authorization = workspaceNavigator.authorizeInput(guest, () => activeGuest()?.id === targetId)
+  const result = await injectIntoComposer(guest, text, { autoSend, isCurrent: authorization.valid, authorizationKey: authorization.key })
+    .finally(authorization.release)
 
   if (result.status === 'sent' || result.status === 'inserted') {
     const limit = Math.max(1, Math.min(20, current.quickAsk.recentLimit))
@@ -464,15 +471,14 @@ function configureWebviewSecurity(window: BrowserWindow): void {
   })
 
   window.webContents.on('did-attach-webview', (_event, contents) => {
-    // One guest per session tab. The renderer reports which one is in front;
-    // until it does, a new guest takes Quick Ask only if no live guest has it.
+    // One guest per session tab. The renderer reports which one is in front.
     const id = contents.id
     guests.set(id, contents)
-    if (!liveGuest(activeGuestId)) activeGuestId = id
-    for (const resolve of guestWaiters.splice(0)) resolve(contents)
+    workspaceNavigator.track(contents)
     contents.once('destroyed', () => {
       guests.delete(id)
-      if (activeGuestId === id) activeGuestId = activeGuest()?.id ?? null
+      workspaceOpenRequests.delete(id)
+      if (activeGuestId === id) activeGuestId = null
     })
     contents.setWindowOpenHandler(({ url }) => {
       if (isHttp(url)) void shell.openExternal(url)
@@ -491,6 +497,12 @@ function configureWebviewSecurity(window: BrowserWindow): void {
     })
     contents.on('before-input-event', (event, input) => handleShortcut(event, input))
     contents.on('ipc-message', (_ipcEvent, channel, payload) => {
+      if (channel === IPC.guestSession) {
+        if (typeof payload === 'string' && payload.length > 0 && payload.length < 256) {
+          void workspaceNavigator.observe(contents, payload)
+        }
+        return
+      }
       if (channel === IPC.guestShortcut) {
         // A tab key pressed inside the embedded UI. The workspace preload decides
         // which keys are ours (it can see whether the terminal has focus); the
@@ -656,7 +668,50 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
    */
   ipcMain.on(IPC.tabsActiveGuest, (event, id: unknown) => {
     if (!mainWindow || mainWindow.isDestroyed() || mainWindow.webContents !== event.sender) return
-    if (id === null || (typeof id === 'number' && guests.has(id))) activeGuestId = id
+    if (id === null || (typeof id === 'number' && guests.has(id))) {
+      activeGuestId = id
+      const front = activeGuest()
+      if (front) for (const resolve of guestWaiters.splice(0)) resolve(front)
+    }
+  })
+  ipcMain.handle(IPC.tabsOpenWorkspace, async (event, workspaceId: unknown, guestId: unknown, path: unknown) => {
+    if (!mainWindow || mainWindow.webContents !== event.sender) throw new Error('IPC request from an untrusted renderer')
+    const guest = typeof guestId === 'number' ? liveGuest(guestId) : null
+    if (!guest) return { status: 'cancelled' }
+    const startingStatus = host.getStatus()
+    const request = (workspaceOpenRequests.get(guest.id) ?? 0) + 1
+    workspaceOpenRequests.set(guest.id, request)
+    let workspace = typeof workspaceId === 'string' ? workspaceList().find((item) => item.id === workspaceId) : undefined
+    if (!workspace && workspaceId === '' && typeof path === 'string' && isAbsolute(path)) {
+      const directory = resolve(path)
+      try { await readdir(directory) } catch { return { status: 'failed', message: '项目目录不存在或无法访问' } }
+      workspace = { id: '', name: basename(directory), path: directory, pinned: false, color: ACCENTS[0], createdAt: 0, lastOpenedAt: 0 }
+    }
+    if (!workspace) return { status: 'failed', message: '找不到这个 Studio 工作区' }
+    if (guest.isDestroyed() || workspaceOpenRequests.get(guest.id) !== request) return { status: 'cancelled' }
+    const currentStatus = host.getStatus()
+    if (currentStatus.state !== 'ready' || currentStatus.url !== startingStatus.url || currentStatus.pid !== startingStatus.pid || currentStatus.startedAt !== startingStatus.startedAt) {
+      return { status: 'cancelled' }
+    }
+    const result = await workspaceNavigator.open(guest, workspace)
+    if (result.status === 'opened' && result.workspaceId) {
+      const next = await stores.settings.update((value) => ({ ...value, lastWorkspaceId: result.workspaceId! }))
+      await stores.workspaces.update((list) => list.map((item) => item.id === result.workspaceId ? { ...item, lastOpenedAt: Date.now() } : item))
+      broadcast(IPC.settingsChanged, next)
+      broadcast(IPC.workspacesChanged, workspaceList())
+    }
+    return result
+  })
+  ipcMain.on(IPC.tabsCancelWorkspace, (event, guestId: unknown) => {
+    if (!mainWindow || mainWindow.webContents !== event.sender) return
+    const guest = typeof guestId === 'number' ? liveGuest(guestId) : null
+    if (!guest) return
+    workspaceOpenRequests.set(guest.id, (workspaceOpenRequests.get(guest.id) ?? 0) + 1)
+    workspaceNavigator.cancel(guest)
+  })
+  ipcMain.on(IPC.guestWorkspaceCheck, (event, key: unknown) => {
+    event.returnValue = guests.get(event.sender.id) === event.sender && typeof key === 'string'
+      && workspaceNavigator.authorize(event.sender, key)
   })
 
   handle(IPC.appInfo, () => buildAppInfo())
@@ -813,7 +868,6 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
           value.lastWorkspaceId === id ? (remaining[0]?.id ?? '') : value.lastWorkspaceId
       }
     })
-    if (host.getStatus().workspaceId === id) await host.stop()
     broadcast(IPC.workspacesChanged, workspaceList())
     broadcast(IPC.settingsChanged, nextSettings)
     return workspaceList()
@@ -1045,9 +1099,17 @@ async function bootstrap(): Promise<void> {
   stores = createStores(app.getPath('userData'))
   await loadStores(stores)
   host = new HostManager()
+  workspaceNavigator = new WorkspaceNavigator(workspaceList, (contents) => {
+    const status = host.getStatus()
+    if (status.state !== 'ready' || !status.url || contents.isDestroyed()) return false
+    try { return new URL(contents.getURL()).origin === new URL(status.url).origin } catch { return false }
+  }, (state) => sendMain(IPC.tabsWorkspaceChanged, state))
   installer = new RuntimeInstaller()
 
-  host.onStatus((status) => broadcast(IPC.hostStatusChanged, status))
+  host.onStatus((status) => {
+    if (status.state !== 'ready') workspaceNavigator.cancelAll(guests.values())
+    broadcast(IPC.hostStatusChanged, status)
+  })
   host.onLog((line) => sendMain(IPC.hostLogLine, line))
   autoUpdater.on('download-progress', (progress) => {
     sendMain(IPC.updateProgress, {

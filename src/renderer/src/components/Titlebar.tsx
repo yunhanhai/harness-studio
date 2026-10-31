@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 import { Copy, Minus, Search, Square, X } from 'lucide-react'
 import { useApp } from '../store'
 import { BrandMark } from './BrandMark'
-import { hostStateLabel } from '../lib/format'
+import { hostStateLabel, shortPath } from '../lib/format'
 
 export function Titlebar(): React.JSX.Element {
   const view = useApp((state) => state.view)
   const host = useApp((state) => state.host)
   const workspaces = useApp((state) => state.workspaces)
+  const activeTab = useApp((state) => state.tabs.find((tab) => tab.id === state.activeTabId))
   const setView = useApp((state) => state.setView)
   const [maximized, setMaximized] = useState(false)
 
@@ -16,10 +17,10 @@ export function Titlebar(): React.JSX.Element {
     return window.studio.settings.onWindowState((state) => setMaximized(state.maximized))
   }, [])
 
-  const workspace = workspaces.find((item) => item.id === host.workspaceId)
+  const workspace = workspaces.find((item) => item.id === activeTab?.workspaceId)
   const contextLabel =
     view === 'workspace'
-      ? (workspace?.name ?? '工作区')
+      ? (workspace?.name ?? (activeTab?.path ? shortPath(activeTab.path, 32) : '工作区'))
       : view === 'home'
         ? '启动台'
         : view === 'insights'

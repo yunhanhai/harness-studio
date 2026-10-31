@@ -38,7 +38,7 @@ Harness Studio 是一个 Electron 外壳，不重写模型能力，也不复制 
    ```
 3. 从 stdout 读取 `dsh web: http://127.0.0.1:<port>/?token=...`；
 4. 把 URL 写入 `HostStatus`，渲染进程据此设置 `<webview src>`；
-5. 退出应用或切换工作区时，Windows 使用 `taskkill /T` 结束整棵进程树。
+5. 停止、重启运行时或退出应用时，Windows 使用 `taskkill /T` 结束整棵进程树。
 
 访问令牌只存在于内存和 Webview 的启动 URL 中；写入日志前会被替换为 `token=***`。
 
@@ -58,8 +58,18 @@ Host 冷启动约 **10 秒**。实测结论（避免后人重复排查）：
 **关键架构事实：DSH 本身是多工作区服务。** `ctx.workspaceRegistry` 维护持久项目列表（`workspace/create`、`insertBefore` 等 Remote 方法），**每个会话自带 `cwd`**（`session.header.cwd`），进程的工作目录只是默认值。因此切工作区**不需要重启进程**：
 
 - `HostManager.canAdoptWorkspace()` 比较运行时、`DSH_HOME`、profile、端口与额外参数（`processIdentity()`）——这些是进程无法被改变的，任一变化仍需真正重启；
-- 全部相同时 `adoptWorkspace()` 只更新 `HostStatus.workspaceId`，目录由 Host 自己的注册表处理；
+- 全部相同时可复用 Host；`HostStatus.workspaceId` 是服务的启动/恢复目标，不代表每个标签页当前的目录；
 - 冷启动时 `bootstrap()` 在窗口创建后**立即并行**探测运行时并启动 Host（`warmup`），把等待藏在界面加载与更新检查背后。
+
+### 当前标签页的工作区联动（未发布）
+
+`store.openWorkspace()` 捕获目标 tab，先显示工作区页面、确保共享 Host 就绪，再等待这个 tab 自己的 guest 绑定。`tabs:open-workspace` 只允许主窗口调用，并指定确切的 `webContents.id`；后台预热不等待 guest，也不会导航隐藏的页面。
+
+`src/main/workspace-navigation.ts` 在 guest 内使用同源认证请求登记目录（`workspace/create`），然后通过官方侧栏打开会话。返回旧项目时优先点击这个 guest 记住的会话行，找不到时使用项目行的「新建会话」入口。点击后读取 `[data-conversation-content][data-conversation-session]`，调用只读 `session/list` 核对实际 `cwd`，成功后才确认项目。注意 `session/list` 的参数名是 `_request`，返回行的会话字段是 `sessionId`；两者与 Studio 的洞察类型不同。
+
+每个 guest 的请求串行执行，新目标取消旧请求；关闭 tab、刷新主文档、Host 离开就绪状态及显式取消都会使旧请求失效。取消会立即结算等待中的请求，所有 guest 脚本求值都有超时，避免销毁 webview 后 Electron 的 Promise 永久悬空。实际执行点击前，preload 通过 `guest:workspace-check` 同步核对主进程的请求令牌，防止已排队的旧脚本晚执行。Studio 维护各 tab 的已确认目录与待打开目标，切 tab 仅切显示和焦点。preload 观察真实会话 DOM，通过 `guest:session` 报告手动导航；主进程再次核对目录后同步工具栏、标题栏与状态栏。不能使用 `localStorage['dsh.sessions.current']` 判断某个 tab 的当前会话，因为所有 guest 共用浏览器存储。
+
+**边界**：登记/查询使用上游 RPC，打开使用上游 DOM，二者都没有长期兼容承诺；入口不可用时显示失败，保留最后确认的实际目录。官方侧栏隐藏非当前空会话，因此返回只有草稿、尚无消息的项目时可能新建空会话；旧草稿仍属于原会话，不会自动搬到新项目。没有使用空会话的项目下拉来复用，因为上游该入口会转移草稿和附件。删除 Studio 书签只解除映射，不删除 Host 工作区或停止共享进程。
 
 ### 发送确认
 
@@ -204,7 +214,7 @@ DSH 本身就是多工作区、多会话服务（见上文「启动耗时与工�
 
 ### 约束与取舍
 
-- **内嵌界面没有 URL 路由。** 当前会话由前端自己的状态决定（`ctx.uiWorkspace.openSession`），地址里没有会话或工作区。所以新标签打开在内嵌界面上次所在的位置，由用户在左侧列表里选择。Studio 不去驱动内嵌界面跳到某个会话：那需要私有 RPC 或模拟点击，比 webview 本身更脆弱。
+- **内嵌界面没有 URL 路由。** 当前会话由前端自己的状态决定（`ctx.uiWorkspace.openSession`），地址里没有会话或工作区。v0.1.6 新标签恢复内嵌界面上次所在的位置；未发布的工作区联动会显式打开捕获的当前项目，见「当前标签页的工作区联动」。
 - **重启运行时会收拢成一个标签。** Host 用随机端口，新进程就是新的 origin：cookie 绑定 host:port，localStorage 按 origin 隔离，旧标签的位置本来就回不来。渲染进程在「就绪且 URL 变了」时把标签重置为一个。
 - **工作区页面常驻。** 以前离开工作区视图会卸载 `<webview>`，切回来要整页重新加载。现在第一次进入工作区后页面一直挂着，离开时只用 `visibility: hidden` + `pointer-events: none` 藏起来。**不能用 `display: none`**：零尺寸的 webview 会丢布局与滚动位置，快速提问「找可见输入框」的检查也会失败。代价是离开工作区页面时，这些标签占用的内存不会释放；冷启动后没进过工作区就不会创建任何 webview。实测多开一个空会话标签，Electron 进程私有内存合计多约 100 MB（368 → 474 MB，单次测量），会话内容越多占用越大，这就是上限默认 4 的原因。
 - **标签名**取自内嵌界面的 `document.title`。它的格式是「会话标题 — 产品名」，没有会话标题时只有产品名；Studio 取最后一个 ` — ` 之前的部分，取不到就显示「会话 N」。
@@ -213,7 +223,7 @@ DSH 本身就是多工作区、多会话服务（见上文「启动耗时与工�
 
 主进程以前只记一个 `guestContents`。现在按 `webContents.id` 记录全部已挂载的 guest，渲染进程通过 `tabs:active-guest` 告诉主进程前台是哪一个（id 来自 `<webview>.getWebContentsId()`，dom-ready 之后才能读）：
 
-- 快速提问注入**前台标签**的 guest；guest 存在但用户停在别的页面时，先切回工作区再注入；
+- 快速提问注入**渲染进程明确报告的前台标签**；前台未就绪时等待它，不回退到后台 guest；guest 存在但用户停在别的页面时，先切回工作区再注入。聚焦期间切换目标会停止注入，自动发送实际执行前再同步核对目标与会话 ID；
 - 主题与发送确认开关推给**所有** guest；`guest:confirm-send` 与 `guest:notice` 接受任一已登记的 guest；
 - `tabs:active-guest` 只接受主窗口发来的、已登记的 id。
 

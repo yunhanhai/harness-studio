@@ -6,8 +6,10 @@ export function StatusBar(): React.JSX.Element {
   const host = useApp((state) => state.host)
   const runtime = useApp((state) => state.runtime)
   const workspaces = useApp((state) => state.workspaces)
+  const activeTab = useApp((state) => state.tabs.find((tab) => tab.id === state.activeTabId))
   const view = useApp((state) => state.view)
-  const workspace = workspaces.find((item) => item.id === host.workspaceId)
+  const workspace = workspaces.find((item) => item.id === activeTab?.workspaceId)
+  const path = activeTab?.path ?? workspace?.path
 
   return (
     <footer className="statusbar">
@@ -21,9 +23,9 @@ export function StatusBar(): React.JSX.Element {
             <Radio size={12} /> 127.0.0.1:{host.port}
           </span>
         ) : null}
-        {workspace && view !== 'home' ? (
-          <span className="statusbar-item statusbar-path" title={workspace.path}>
-            <FolderOpen size={12} /> {shortPath(workspace.path, 52)}
+        {path && view !== 'home' ? (
+          <span className="statusbar-item statusbar-path" title={path}>
+            <FolderOpen size={12} /> {shortPath(path, 52)}
           </span>
         ) : null}
       </div>

@@ -26,6 +26,7 @@ export function Home(): React.JSX.Element {
   const runtime = useApp((state) => state.runtime)
   const host = useApp((state) => state.host)
   const workspaces = useApp((state) => state.workspaces)
+  const activeTab = useApp((state) => state.tabs.find((tab) => tab.id === state.activeTabId))
   const prompts = useApp((state) => state.prompts)
   const addWorkspace = useApp((state) => state.addWorkspace)
   const openWorkspace = useApp((state) => state.openWorkspace)
@@ -43,10 +44,13 @@ export function Home(): React.JSX.Element {
     if (!insights) void loadInsights()
   }, [insights, loadInsights])
 
+  const activeWorkspace = workspaces.find((item) => item.id === activeTab?.workspaceId)
   const current =
-    workspaces.find((item) => item.id === host.workspaceId) ??
+    activeWorkspace ??
     workspaces.find((item) => item.id === settings?.lastWorkspaceId) ??
     workspaces[0]
+  const currentName = activeTab?.path && !activeWorkspace ? shortPath(activeTab.path, 42) : current?.name
+  const currentPath = activeTab?.path ?? current?.path
   const sorted = [...workspaces].sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.lastOpenedAt - a.lastOpenedAt)
   const ready = host.state === 'ready'
   const starting = host.state === 'starting'
@@ -60,7 +64,10 @@ export function Home(): React.JSX.Element {
   }
 
   const openPrimary = (): void => {
-    if (current) void openWorkspace(current.id)
+    if (activeTab?.path && !activeWorkspace) {
+      setView('workspace')
+      void startHost()
+    } else if (current) void openWorkspace(current.id)
     else void addWorkspace()
   }
 
@@ -81,10 +88,10 @@ export function Home(): React.JSX.Element {
             一个更专注的桌面外壳。多项目工作区、一键运行时、原生快捷键、完整日志与提示词库，全部围绕你的开发流。
           </p>
           <div className="hero-actions">
-            <button className="button button-primary" onClick={openPrimary}>
-              {current ? (
+            <button className="button button-primary" onClick={openPrimary} title={currentPath}>
+              {currentName ? (
                 <>
-                  打开 {current.name}
+                  打开 {currentName}
                   <ArrowRight size={16} />
                 </>
               ) : (
@@ -252,7 +259,7 @@ export function Home(): React.JSX.Element {
         ) : (
           <div className="workspace-grid">
             {sorted.map((workspace) => (
-              <article key={workspace.id} className={`workspace-card ${workspace.id === current?.id ? 'is-current' : ''}`}>
+              <article key={workspace.id} className={`workspace-card ${workspace.id === activeWorkspace?.id ? 'is-current' : ''}`}>
                 <div className="workspace-card-top">
                   <span className="workspace-color" style={{ background: workspace.color }} />
                   <div className="workspace-name" title={workspace.name}>

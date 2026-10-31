@@ -52,6 +52,9 @@ export const IPC = {
   insightsReveal: 'insights:reveal',
 
   tabsActiveGuest: 'tabs:active-guest',
+  tabsOpenWorkspace: 'tabs:open-workspace',
+  tabsCancelWorkspace: 'tabs:cancel-workspace',
+  tabsWorkspaceChanged: 'tabs:workspace-changed',
 
   quickAskSubmit: 'quickask:submit',
   quickAskClose: 'quickask:close',
@@ -84,6 +87,8 @@ export const IPC = {
   guestPalette: 'guest:palette',
   guestTheme: 'guest:theme',
   guestShortcut: 'guest:shortcut',
+  guestSession: 'guest:session',
+  guestWorkspaceCheck: 'guest:workspace-check',
   guestNotice: 'guest:notice',
   guestConfirmSend: 'guest:confirm-send',
   guestReveal: 'guest:reveal'

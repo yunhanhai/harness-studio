@@ -60,7 +60,7 @@ v0.1.6 已在 GitHub 与 Gitee 发布，本地桌面版也已更新，不要重�
 
 ## 当前收尾状态（v0.1.6）
 
-**发布后的开发改动（未发布）**：已修复 `confirmSend` 开启、`confirmQueued` 关闭时，带队列发送绕过确认的问题；已去重 workspace preload 的主题监听，并在构建脚本中加入 IPC 通道契约检查。真实函数的 18 个发送确认场景、17 个隔离 preload fixture、`npm run typecheck` 与 `npm run build` 均通过。版本号仍为 0.1.6，已发布安装包与标签没有改动。工作区真正联动正在隔离环境中验证。
+**发布后的开发改动（未发布）**：维护修复已本地提交为 `a8b9508`：`confirmSend` 覆盖带队列的发送、去重主题监听、构建时检查 preload IPC 通道契约。真实函数的 18 个发送确认场景、17 个隔离 preload fixture 均通过。随后已实现当前标签页的工作区联动，详见下文；版本号仍为 0.1.6，已发布安装包与标签没有改动，也没有将这些开发改动安装到日常使用的桌面版。
 
 v0.1.6（会话标签页）的代码在 `0620838` 提交，发布文档提交为 `6ba8677`。2026-10-31 已完成本地原地安装、发布包构建、双平台 main 与 v0.1.6 标签推送及发行版发布。[GitHub Release](https://github.com/yunhanhai/harness-studio/releases/tag/v0.1.6) 包含 Setup / Portable / blockmap / latest.yml 四件附件，[Gitee 发行版](https://gitee.com/yunhanhai/harness-studio/releases) 包含 v0.1.6 Setup / Portable 两件附件（发行版 ID `1260636`）。[Release 工作流](https://github.com/yunhanhai/harness-studio/actions/runs/41158548249) 与 CI 均通过。
 
@@ -95,7 +95,7 @@ GitHub 发布标签指向 `d59c4b2`，Gitee 与本地标签指向 `6ba8677`，tr
 - 真实键盘焦点：`Ctrl+Tab` 切换后，Studio 一侧的 `document.activeElement` 已确认指向新标签的 webview，但测试窗口拿不到系统焦点，「接着打字是否落在新标签」需要手动试一次；
 - v0.1.5 遗留：开启「每次发送前确认」后，在输入框里真实按回车应弹出确认框（Lexical 忽略 CDP 合成事件，无法自动验证）。
 
-**发布已完成**：本地安装、构建、打标签、代码推送、两平台发行版与附件下载校验均已完成。不要重复打标签或发布；上面的两项真实键盘行为仍待人工确认，工作区切换的后续方向见「下一步建议」。
+**发布已完成**：本地安装、构建、打标签、代码推送、两平台发行版与附件下载校验均已完成。不要重复打标签或发布；上面的两项真实键盘行为仍待人工确认，工作区联动的未发布实现见「下一步建议」。
 
 本次 Gitee 发布包：Setup 为 103,977,982 bytes（约 99.2 MiB），Portable 为 103,708,449 bytes（约 98.9 MiB），均已上传成功。GitHub 使用 Actions 构建的附件，Setup 为 103,977,976 bytes、Portable 为 103,708,446 bytes；两平台来自相同源码，但构建产物字节略有差别，各自的下载校验分别通过。
 
@@ -169,7 +169,8 @@ src/
     channels.ts            IPC 频道常量（preload 里只能复制字面量，不能 import）
     defaults.ts            默认设置、内置提示词、仓库地址
 scripts/
-  check-preload.mjs        build 后校验 preload 无相对 require（沙箱硬约束）
+  check-preload.mjs        build 后校验 preload 自包含与 workspace IPC 通道契约
+  test-workspace-navigation.mjs 工作区导航与取消回归（npm run test:workspace-navigation，CI 自动执行）
 ```
 
 改代码时记住四条硬约束（前三条也写在 `CONTRIBUTING.md`）：
@@ -237,14 +238,19 @@ node scripts/app-shot.mjs .run-test/shot.png "@.run-test/expr.js"
 
 按我评估的性价比排序：
 
-### 1. 让「切换工作区」名副其实（先决定方向）
+### 1. 工作区联动（已实现，未发布）
 
-v0.1.6 真机验证时确认：Studio 的工作区切换（工具栏下拉、启动台「打开」）只改 Studio 自己的标签与 `HostStatus.workspaceId`，**内嵌界面既不重新加载，显示的工作区也不变**。内嵌界面的工作区列表由 Host 的注册表决定，Host 的启动目录不会被自动登记（隔离环境里只出现了「默认工作区」，看不到 Studio 的两个工作区目录）。v0.1.5 改成复用 Host 之后，切换连启动目录都不再改变。
+v0.1.6 的切换只改 Studio 自己的项目标签，内嵌会话不跟随。未发布改动已将目录登记与内嵌导航接起来：只打开捕获的当前 tab，核对会话实际 `cwd` 后确认项目；其他 tab 保留原会话和草稿，Host 不重启。标题栏、状态栏和工具栏都跟随前台 tab，在内嵌界面手动导航也会反向同步。未知项目保留实际路径、不自动添加 Studio 书签；删除书签不停止共享 Host。
 
-可选方向，需要先定：
+导航按 guest 串行，新目标、关 tab、刷新、重启和取消均使旧请求失效；实际点击时同步检查主进程令牌，取消会立即结算，不会被已经销毁的 guest Promise 卡住。快速提问只认明确前台，在聚焦或发送期间发生切换会中止对应步骤。实现与协议细节见 `docs/ARCHITECTURE.md`「当前标签页的工作区联动」。
 
-- 让 Studio 把目录登记进 Host 并打开它：内嵌界面没有 URL 路由，只能走私有 RPC（`workspace/create` 等）或模拟点击，二者都比 webview 本身脆弱；
-- 承认两套列表各管各的：Studio 的「工作区」只作为项目书签与默认启动目录，界面文案说清楚，在内嵌界面左侧选择真正要用的工作区。
+**仍有边界**：上游没有 URL 路由，登记/查询 RPC 与侧栏 DOM 可能随版本变化，失败时提示并保留最后确认的目录。返回旧项目时优先复用记住的可见会话；官方侧栏隐藏非当前空会话，只有草稿而无消息的旧会话可能被新的空会话替代显示，原草稿仍保留在原会话。没有通过空会话项目下拉复用，因为上游该入口会转移草稿和附件。
+
+验证已完成：`npm run typecheck`、`npm run build`（两个 preload 自包含、7 个 workspace IPC 调用）、`npm run test:workspace-navigation`（15 场景）均通过；独立只读复核的 8 个 QuickAsk 场景也通过。导航回归覆盖已排队点击取消、guest 销毁时 Promise 悬空、新请求不被旧请求阻塞、同端口重启、未知项目和输入目标失效。
+
+隔离 Electron 的 15 项检查全部通过：首次打开目录、只切前台、后台会话/草稿/文档保留、Host 复用、快速连续切换、内嵌导航反向同步、聚焦期间切前台阻止写入、文本插入后切前台阻止自动发送、关闭待切换标签立即结算取消，以及重启后收拢一个标签并恢复前台项目的真实 `cwd`。使用独立 `userData` + `DSH_HOME`，没有读取用户模型凭据或发送模型请求；自动发送按钮被验证脚本临时替换为计数动作。报告 `.qa-workspace-sync/integration-report.json` 无异常，截图为同目录 `integration-final.png`，隔离 Electron 与 Host 均已退出。首次验证暴露的 guest 绑定被资源加载清掉、销毁 guest 后 Promise 悬空问题均已修复。
+
+这些改动仅本地提交（用 `git log --oneline -2` 查看），尚未推送、安装、升版本或发布。不要将这项开发改动写入已发布的 v0.1.6 功能或移动 v0.1.6 标签。前述两项真实键盘检查仍需要人工验证，不能将 DOM/合成事件验证视作完成。
 
 ### 2. 对话界面内部的定制
 

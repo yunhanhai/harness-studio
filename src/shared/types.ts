@@ -254,6 +254,22 @@ export interface QuickAskResult {
   message?: string
 }
 
+/** Confirmed directory of one guest's current conversation. */
+export interface TabWorkspaceState {
+  guestId: number
+  sessionId: string
+  path: string
+  workspaceId?: string
+}
+
+export interface OpenTabWorkspaceResult {
+  status: 'opened' | 'cancelled' | 'failed'
+  workspaceId?: string
+  sessionId?: string
+  path?: string
+  message?: string
+}
+
 export interface TokenBuckets {
   uncachedInputTokens: number
   outputTokens: number
@@ -423,6 +439,10 @@ export interface StudioApi {
      * user is looking at. `null` when no tab has a ready guest.
      */
     setActiveGuest(webContentsId: number | null): void
+    /** Open a project in this exact guest without restarting the shared Host. */
+    openWorkspace(workspaceId: string, webContentsId: number, path?: string): Promise<OpenTabWorkspaceResult>
+    cancelWorkspace(webContentsId: number): void
+    onWorkspaceChanged(cb: (state: TabWorkspaceState) => void): () => void
   }
   quickAsk: {
     /** Submit a prompt from the Quick Ask window into the Harness composer. */

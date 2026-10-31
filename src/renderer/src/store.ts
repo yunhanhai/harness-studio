@@ -38,6 +38,13 @@ export interface WorkspaceTab {
   title: string
   /** webContents id of the guest, once its page is ready. */
   guestId?: number
+  /** The workspace actually open in this guest; never inferred from the Host. */
+  workspaceId?: string
+  path?: string
+  sessionId?: string
+  /** A requested workspace stays separate until the guest confirms it. */
+  pendingWorkspaceId?: string
+  pendingWorkspacePath?: string
 }
 
 interface AppState {
@@ -97,7 +104,7 @@ interface AppState {
   closeTab: (id?: string) => void
   activateTab: (id: string) => void
   cycleTab: (delta: 1 | -1) => void
-  updateTab: (id: string, patch: Partial<Pick<WorkspaceTab, 'title' | 'guestId'>>) => void
+  updateTab: (id: string, patch: Partial<Omit<WorkspaceTab, 'id' | 'seq'>>) => void
   handleAction: (action: StudioAction) => void
 }
 
@@ -108,6 +115,100 @@ let lastHostError = ''
 let tabIdSeq = 0
 /** Host URL the current tabs were opened against; '' until a ready host was seen. */
 let tabsHostUrl = ''
+let resetTabsOnReady = false
+let reopenWorkspaceId: string | undefined
+let reopenWorkspacePath: string | undefined
+let reopenTabId: string | undefined
+let hostEpoch = 0
+let hostStartRequest: Promise<unknown> | null = null
+const workspaceRequests = new Map<string, AbortController>()
+type WorkspaceObservation = { guestId: number; sessionId: string; path: string; workspaceId?: string }
+const workspaceObservations = new Map<number, WorkspaceObservation>()
+
+function cancelWorkspaceRequest(tabId: string): void {
+  const request = workspaceRequests.get(tabId)
+  if (!request) return
+  const guestId = useApp.getState().tabs.find((tab) => tab.id === tabId)?.guestId
+  request.abort()
+  workspaceRequests.delete(tabId)
+  if (guestId !== undefined) window.studio.tabs.cancelWorkspace(guestId)
+}
+
+/** Wait for this tab, never a fallback guest from another tab. */
+function waitForTabGuest(tabId: string, signal: AbortSignal): Promise<number | null> {
+  return new Promise((resolve, reject) => {
+    let unsubscribe = (): void => undefined
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let settled = false
+    const finish = (guestId: number | null, error?: string): void => {
+      if (settled) return
+      settled = true
+      unsubscribe()
+      clearTimeout(timer)
+      signal.removeEventListener('abort', onAbort)
+      if (error) reject(new Error(error))
+      else resolve(guestId)
+    }
+    const onAbort = (): void => finish(null)
+    const check = (): void => {
+      const { tabs, host } = useApp.getState()
+      const tab = tabs.find((item) => item.id === tabId)
+      if (signal.aborted || !tab) return finish(null)
+      if (host.state === 'ready' && host.url && tab.guestId !== undefined) return finish(tab.guestId)
+      if (host.state === 'error' || host.state === 'stopped' || host.state === 'stopping') {
+        finish(null, host.error ?? '运行时没有就绪，请重新打开工作区')
+      }
+    }
+    unsubscribe = useApp.subscribe(check)
+    signal.addEventListener('abort', onAbort, { once: true })
+    timer = setTimeout(() => finish(null, '会话界面没有加载完成，请稍后重试'), 90_000)
+    check()
+  })
+}
+
+async function openWorkspaceInTab(workspaceId: string, tabId: string, reveal = true, path?: string): Promise<void> {
+  const state = useApp.getState()
+  if (!state.tabs.some((tab) => tab.id === tabId)) return
+  if (workspaceId && !state.workspaces.some((workspace) => workspace.id === workspaceId)) return
+  if (!workspaceId && !path) return
+  cancelWorkspaceRequest(tabId)
+  const request = new AbortController()
+  const epoch = hostEpoch
+  workspaceRequests.set(tabId, request)
+  state.updateTab(tabId, { pendingWorkspaceId: workspaceId || undefined, pendingWorkspacePath: path })
+  if (reveal) state.setView('workspace')
+  const current = (): WorkspaceTab | undefined => {
+    if (request.signal.aborted || hostEpoch !== epoch || workspaceRequests.get(tabId) !== request) return undefined
+    return useApp.getState().tabs.find((tab) => tab.id === tabId)
+  }
+  try {
+    await state.startHost(workspaceId || undefined)
+    if (!current()) return
+    const guestId = await waitForTabGuest(tabId, request.signal)
+    if (guestId === null || current()?.guestId !== guestId) return
+    const result = await window.studio.tabs.openWorkspace(workspaceId, guestId, path)
+    if (current()?.guestId !== guestId) return
+    if (result.status === 'opened') {
+      const confirmedId = result.workspaceId || workspaceId
+      useApp.getState().updateTab(tabId, {
+        workspaceId: useApp.getState().workspaces.some((item) => item.id === confirmedId) ? confirmedId : undefined,
+        path: result.path,
+        sessionId: result.sessionId,
+        pendingWorkspaceId: undefined,
+        pendingWorkspacePath: undefined
+      })
+    } else if (result.status === 'failed') {
+      useApp.getState().toast(result.message ?? '工作区没有打开，请重试', 'error')
+    }
+  } catch (error) {
+    if (current()) useApp.getState().toast(error instanceof Error ? error.message : String(error), 'error')
+  } finally {
+    if (workspaceRequests.get(tabId) === request) {
+      workspaceRequests.delete(tabId)
+      useApp.getState().updateTab(tabId, { pendingWorkspaceId: undefined, pendingWorkspacePath: undefined })
+    }
+  }
+}
 
 function createTab(seq: number): WorkspaceTab {
   return { id: `tab-${++tabIdSeq}`, seq, title: '' }
@@ -186,22 +287,77 @@ export const useApp = create<AppState>((set, get) => ({
       set({ settings: next })
       refreshDocumentTheme(next)
     })
-    api.workspaces.onChange((next) => set({ workspaces: next }))
+    api.workspaces.onChange((next) => {
+      const ids = new Set(next.map((workspace) => workspace.id))
+      for (const tab of get().tabs) {
+        if (tab.pendingWorkspaceId && !ids.has(tab.pendingWorkspaceId)) cancelWorkspaceRequest(tab.id)
+      }
+      set((state) => ({
+        workspaces: next,
+        tabs: state.tabs.map((tab) => ({
+          ...tab,
+          workspaceId: tab.workspaceId && ids.has(tab.workspaceId) ? tab.workspaceId : undefined,
+          pendingWorkspaceId: tab.pendingWorkspaceId && ids.has(tab.pendingWorkspaceId) ? tab.pendingWorkspaceId : undefined
+        }))
+      }))
+    })
     api.prompts.onChange((next) => set({ prompts: next }))
+    api.tabs.onWorkspaceChanged((observation) => {
+      if (get().host.state !== 'ready') return
+      workspaceObservations.set(observation.guestId, observation)
+      const tab = get().tabs.find((item) => item.guestId === observation.guestId)
+      if (!tab) return
+      get().updateTab(tab.id, {
+        workspaceId: get().workspaces.some((item) => item.id === observation.workspaceId) ? observation.workspaceId : undefined,
+        path: observation.path,
+        sessionId: observation.sessionId
+      })
+    })
     api.host.onStatus((status) => {
-      // A ready host on a different URL is a new process: new port, new origin,
-      // so the old tabs have nothing to return to. Collapse them to one fresh tab
-      // in the same update that publishes the URL, so no render pairs the old
-      // webviews with the new host. Only a ready status counts: the URL seen
-      // while starting, stopping or failed never resets or overwrites the memory.
+      // A stop invalidates old guests even when the next process reuses its port.
+      const previous = get().host
       const nextUrl = status.state === 'ready' && status.url ? status.url : ''
-      const restarted = Boolean(nextUrl && tabsHostUrl && nextUrl !== tabsHostUrl)
+      const replaced = Boolean(nextUrl && tabsHostUrl && (
+        nextUrl !== tabsHostUrl ||
+        (previous.state === 'ready' && status.pid !== previous.pid) ||
+        (previous.state === 'ready' && status.startedAt !== previous.startedAt)
+      ))
+      if ((previous.state === 'ready' && status.state !== 'ready') || replaced) {
+        const active = get().tabs.find((tab) => tab.id === get().activeTabId)
+        reopenTabId = active?.id
+        reopenWorkspaceId = active?.pendingWorkspaceId ?? active?.workspaceId ?? get().settings?.lastWorkspaceId
+        reopenWorkspacePath = active?.pendingWorkspacePath ?? (!active?.workspaceId ? active?.path : undefined)
+        if (reopenWorkspacePath) reopenWorkspaceId = active?.pendingWorkspaceId
+        hostEpoch++
+        resetTabsOnReady = true
+        for (const id of workspaceRequests.keys()) cancelWorkspaceRequest(id)
+        workspaceObservations.clear()
+      }
+      const restarted = Boolean(nextUrl && resetTabsOnReady)
       if (nextUrl) tabsHostUrl = nextUrl
       if (restarted) {
+        const active = get().tabs.find((tab) => tab.id === get().activeTabId)
+        const restoreActive = active && (
+          active.id !== reopenTabId || active.pendingWorkspaceId || active.pendingWorkspacePath
+        )
+        const target = restoreActive ? active.pendingWorkspaceId ?? active.workspaceId : reopenWorkspaceId
+        const path = restoreActive
+          ? active.pendingWorkspacePath ?? (!target ? active.path : undefined)
+          : reopenWorkspacePath
         const tab = createTab(1)
+        resetTabsOnReady = false
+        reopenWorkspaceId = undefined
+        reopenWorkspacePath = undefined
+        reopenTabId = undefined
         set({ host: status, tabs: [tab], activeTabId: tab.id })
+        if (target || path) void openWorkspaceInTab(target ?? '', tab.id, false, path)
       } else {
-        set({ host: status })
+        set((state) => ({
+          host: status,
+          ...(status.state !== 'ready' && previous.state === 'ready'
+            ? { tabs: state.tabs.map((tab) => ({ ...tab, guestId: undefined, pendingWorkspaceId: undefined, pendingWorkspacePath: undefined })) }
+            : {})
+        }))
       }
       if (status.state === 'error' && status.error && status.error !== lastHostError) {
         lastHostError = status.error
@@ -311,51 +467,65 @@ export const useApp = create<AppState>((set, get) => ({
   },
 
   addWorkspace: async () => {
+    const tabId = get().activeTabId
+    cancelWorkspaceRequest(tabId)
+    const request = new AbortController()
+    workspaceRequests.set(tabId, request)
+    get().updateTab(tabId, { pendingWorkspaceId: undefined, pendingWorkspacePath: undefined })
     try {
       const workspace = await window.studio.workspaces.add()
       if (workspace) {
         get().toast(`已添加工作区「${workspace.name}」`, 'success')
-        await get().openWorkspace(workspace.id)
+        if (!request.signal.aborted && workspaceRequests.get(tabId) === request) {
+          await openWorkspaceInTab(workspace.id, tabId)
+        }
       }
       return workspace
     } catch (error) {
       get().toast(error instanceof Error ? error.message : String(error), 'error')
       return null
+    } finally {
+      if (workspaceRequests.get(tabId) === request) workspaceRequests.delete(tabId)
     }
   },
   removeWorkspace: async (id) => {
     await window.studio.workspaces.remove(id)
-    if (get().host.workspaceId === id) await window.studio.host.stop()
+    for (const tab of get().tabs) {
+      if (tab.pendingWorkspaceId === id) cancelWorkspaceRequest(tab.id)
+    }
+    set((state) => ({ tabs: state.tabs.map((tab) => ({
+      ...tab,
+      workspaceId: tab.workspaceId === id ? undefined : tab.workspaceId,
+      pendingWorkspaceId: tab.pendingWorkspaceId === id ? undefined : tab.pendingWorkspaceId
+    })) }))
   },
   updateWorkspace: async (id, patch) => {
     await window.studio.workspaces.update(id, patch)
   },
   openWorkspace: async (id) => {
-    set({ view: 'workspace' })
-    await get().startHost(id)
+    await openWorkspaceInTab(id, get().activeTabId)
   },
   startHost: async (workspaceId) => {
+    const current = get().host
+    if (current.state === 'ready' || current.state === 'starting') return
     const target = workspaceId ?? get().settings?.lastWorkspaceId ?? get().workspaces[0]?.id
     if (!target) {
-      set({ view: 'workspace' })
       get().toast('请先添加一个工作区', 'info')
       return
     }
-    const current = get().host
-    if (
-      (current.state === 'ready' || current.state === 'starting') &&
-      (!workspaceId || current.workspaceId === workspaceId)
-    ) {
-      set({ view: 'workspace' })
-      return
+    // Starting the shared process never opens or changes a guest page. Multiple
+    // selections during a cold start share one launch instead of restarting it.
+    if (!hostStartRequest) {
+      hostStartRequest = window.studio.host.start(target).finally(() => { hostStartRequest = null })
     }
-    await window.studio.host.start(target)
+    await hostStartRequest
   },
   stopHost: async () => {
     await window.studio.host.stop()
   },
   restartHost: async () => {
-    await window.studio.host.restart(get().host.workspaceId ?? get().settings?.lastWorkspaceId)
+    const active = get().tabs.find((tab) => tab.id === get().activeTabId)
+    await window.studio.host.restart(active?.pendingWorkspaceId ?? active?.workspaceId ?? get().settings?.lastWorkspaceId)
   },
 
   savePrompt: async (input) => {
@@ -419,9 +589,10 @@ export const useApp = create<AppState>((set, get) => ({
     const { initialized, tabs, settings, workspaces } = get()
     // Workspaces are unknown until init has loaded them.
     if (!initialized) return
+    const source = tabs.find((tab) => tab.id === get().activeTabId)
     // Without a workspace the view is onboarding and has no tab strip, so a
     // tab opened now would only appear later, unasked for.
-    if (workspaces.length === 0) {
+    if (workspaces.length === 0 && !source?.path) {
       set({ view: 'workspace' })
       get().toast('请先添加一个工作区', 'info')
       return
@@ -440,14 +611,27 @@ export const useApp = create<AppState>((set, get) => ({
       return
     }
     const seq = tabs.reduce((max, tab) => Math.max(max, tab.seq), 0) + 1
+    const target = source?.workspaceId ?? source?.pendingWorkspaceId
+    const path = source?.path ?? source?.pendingWorkspacePath
     const tab = createTab(seq)
     set({ tabs: [...tabs, tab], activeTabId: tab.id, view: 'workspace' })
+    if (target) {
+      void openWorkspaceInTab(target, tab.id, false)
+    } else if (path) {
+      void openWorkspaceInTab('', tab.id, false, path)
+    } else {
+      const fallback = settings?.lastWorkspaceId || workspaces[0]?.id
+      if (fallback) void openWorkspaceInTab(fallback, tab.id, false)
+    }
   },
   closeTab: (id) => {
     const { tabs, activeTabId } = get()
     const target = id ?? activeTabId
     const index = tabs.findIndex((tab) => tab.id === target)
     if (index === -1 || tabs.length <= 1) return
+    cancelWorkspaceRequest(target)
+    const guestId = tabs[index].guestId
+    if (guestId !== undefined) workspaceObservations.delete(guestId)
     const rest = tabs.filter((tab) => tab.id !== target)
     // Like a browser: the right neighbour takes over, or the left one at the end.
     const nextActive = target === activeTabId ? rest[Math.min(index, rest.length - 1)].id : activeTabId
@@ -466,6 +650,22 @@ export const useApp = create<AppState>((set, get) => ({
   updateTab: (id, patch) => {
     const current = get().tabs.find((tab) => tab.id === id)
     if (!current) return
+    if ('guestId' in patch && patch.guestId !== current.guestId && current.guestId !== undefined) {
+      cancelWorkspaceRequest(id)
+      workspaceObservations.delete(current.guestId)
+      patch = { ...patch, pendingWorkspaceId: undefined, pendingWorkspacePath: undefined }
+    }
+    if (patch.guestId !== undefined) {
+      const observed = workspaceObservations.get(patch.guestId)
+      if (observed) {
+        patch = {
+          ...patch,
+          workspaceId: get().workspaces.some((workspace) => workspace.id === observed.workspaceId) ? observed.workspaceId : undefined,
+          path: observed.path,
+          sessionId: observed.sessionId
+        }
+      }
+    }
     const keys = Object.keys(patch) as Array<keyof typeof patch>
     // Guests repeat dom-ready and title events; skip updates that change nothing.
     if (keys.every((key) => current[key] === patch[key])) return
@@ -478,11 +678,20 @@ export const useApp = create<AppState>((set, get) => ({
       case 'navigate':
         state.setView(action.view)
         break
-      case 'open-workspace':
+      case 'open-workspace': {
+        const active = state.tabs.find((tab) => tab.id === state.activeTabId)
         if (action.id) void state.openWorkspace(action.id)
-        else if (state.workspaces.length === 0) void state.addWorkspace()
-        else void state.openWorkspace(state.host.workspaceId ?? state.settings?.lastWorkspaceId ?? state.workspaces[0].id)
+        else if (active?.pendingWorkspaceId || active?.pendingWorkspacePath || (state.host.state === 'ready' && active?.guestId !== undefined)) {
+          state.setView('workspace')
+        } else if (active?.path && !active.workspaceId) {
+          state.setView('workspace')
+          void state.startHost()
+        } else if (state.workspaces.length === 0) void state.addWorkspace()
+        else {
+          void state.openWorkspace(active?.workspaceId ?? state.settings?.lastWorkspaceId ?? state.workspaces[0].id)
+        }
         break
+      }
       case 'start-host':
         void state.startHost()
         break

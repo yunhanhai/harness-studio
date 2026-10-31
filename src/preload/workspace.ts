@@ -12,6 +12,8 @@ const GUEST_NOTICE_CHANNEL = 'guest:notice'
 const GUEST_THEME_CHANNEL = 'guest:theme'
 const GUEST_CONFIRM_SEND_CHANNEL = 'guest:confirm-send'
 const GUEST_SHORTCUT_CHANNEL = 'guest:shortcut'
+const GUEST_SESSION_CHANNEL = 'guest:session'
+const GUEST_WORKSPACE_CHECK_CHANNEL = 'guest:workspace-check'
 
 interface ComposerGuard {
   confirmSend: boolean
@@ -349,11 +351,45 @@ function forwardTabShortcuts(): void {
   document.addEventListener('keydown', onKeyDown, true)
 }
 
+function watchSession(): void {
+  let last = ''
+  let scheduled = false
+  const report = (): void => {
+    scheduled = false
+    const roots = Array.from(document.querySelectorAll('[data-conversation-content][data-conversation-session]'))
+    const root = roots.find((element) => {
+      const rect = element.getBoundingClientRect()
+      return rect.width > 0 && rect.height > 0
+    })
+    const sessionId = root?.getAttribute('data-conversation-session') ?? ''
+    if (!sessionId || sessionId === last) return
+    last = sessionId
+    ipcRenderer.send(GUEST_SESSION_CHANNEL, sessionId)
+  }
+  const observer = new MutationObserver(() => {
+    if (scheduled) return
+    scheduled = true
+    window.setTimeout(report, 80)
+  })
+  observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-conversation-session'] })
+  report()
+}
+
 window.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('hs-workspace-check', (event) => {
+    const gate = event.target
+    if (!(gate instanceof HTMLElement) || !gate.dataset.hsRequest) return
+    try {
+      gate.dataset.hsAllowed = ipcRenderer.sendSync(GUEST_WORKSPACE_CHECK_CHANNEL, gate.dataset.hsRequest) === true ? 'true' : 'false'
+    } catch {
+      gate.dataset.hsAllowed = 'false'
+    }
+  }, true)
   document.documentElement.dataset.hsSurface = 'harness'
   watchToasts()
   guardComposer()
   forwardTabShortcuts()
+  watchSession()
   // Ask for the current settings; the theme push only arrives on change.
   try {
     applyGuard(ipcRenderer.sendSync(GUEST_CONFIRM_SEND_CHANNEL, { kind: 'settings' }) ?? {})

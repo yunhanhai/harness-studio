@@ -76,7 +76,13 @@ export const HarnessPane = memo(function HarnessPane({
     if (!element) return
     onFrame(id, element)
     const onStart = (): void => onState(id, { loading: true, failed: false })
+    const onStartNavigation = (event: Event): void => {
+      const detail = event as unknown as { isMainFrame?: boolean; isInPlace?: boolean }
+      // Subframe loads and in-page navigation keep the same guest document.
+      if (detail.isMainFrame && !detail.isInPlace) updateTab(id, { guestId: undefined })
+    }
     const onStop = (): void => {
+      onReady()
       onState(id, { loading: false, canBack: element.canGoBack(), canForward: element.canGoForward() })
       // Every tab shares one origin and so one zoom; only the tab in front reports it.
       if (useApp.getState().activeTabId !== id) return
@@ -99,6 +105,8 @@ export const HarnessPane = memo(function HarnessPane({
       if (typeof element.getWebContentsId !== 'function') return
       try {
         updateTab(id, { guestId: element.getWebContentsId() })
+        const state = useApp.getState()
+        if (state.view === 'workspace' && state.activeTabId === id) element.focus({ preventScroll: true })
       } catch {
         /* not attached yet */
       }
@@ -108,6 +116,7 @@ export const HarnessPane = memo(function HarnessPane({
       updateTab(id, { title: typeof title === 'string' ? sessionTitle(title) : '' })
     }
     element.addEventListener('did-start-loading', onStart)
+    element.addEventListener('did-start-navigation', onStartNavigation)
     element.addEventListener('did-stop-loading', onStop)
     element.addEventListener('did-fail-load', onFail)
     element.addEventListener('did-navigate', onNavigate)
@@ -116,6 +125,7 @@ export const HarnessPane = memo(function HarnessPane({
     element.addEventListener('page-title-updated', onTitle)
     return () => {
       element.removeEventListener('did-start-loading', onStart)
+      element.removeEventListener('did-start-navigation', onStartNavigation)
       element.removeEventListener('did-stop-loading', onStop)
       element.removeEventListener('did-fail-load', onFail)
       element.removeEventListener('did-navigate', onNavigate)

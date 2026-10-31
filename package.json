@@ -20,6 +20,7 @@
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "test:workspace-navigation": "node scripts/test-workspace-navigation.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "preview:ui": "node scripts/preview-server.mjs",
     "dist": "electron-vite build && node scripts/check-preload.mjs && electron-builder --win",

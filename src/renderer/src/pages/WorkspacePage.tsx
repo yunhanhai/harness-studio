@@ -31,6 +31,7 @@ export function WorkspacePage(): React.JSX.Element {
   const host = useApp((state) => state.host)
   const runtime = useApp((state) => state.runtime)
   const workspaces = useApp((state) => state.workspaces)
+  const lastWorkspaceId = useApp((state) => state.settings?.lastWorkspaceId)
   const focusMode = useApp((state) => state.focusMode)
   const onScreen = useApp((state) => state.view === 'workspace')
   const tabs = useApp((state) => state.tabs)
@@ -39,7 +40,6 @@ export function WorkspacePage(): React.JSX.Element {
   const setFocusMode = useApp((state) => state.setFocusMode)
   const addWorkspace = useApp((state) => state.addWorkspace)
   const openWorkspace = useApp((state) => state.openWorkspace)
-  const startHost = useApp((state) => state.startHost)
   const stopHost = useApp((state) => state.stopHost)
   const restartHost = useApp((state) => state.restartHost)
   const setView = useApp((state) => state.setView)
@@ -54,7 +54,13 @@ export function WorkspacePage(): React.JSX.Element {
   const [zoom, setZoom] = useState(1)
   const [elapsed, setElapsed] = useState(0)
 
-  const current = workspaces.find((item) => item.id === host.workspaceId) ?? workspaces[0]
+  const activeTab = tabs.find((tab) => tab.id === activeTabId)
+  const current = workspaces.find((item) => item.id === activeTab?.workspaceId)
+  const pending = workspaces.find((item) => item.id === activeTab?.pendingWorkspaceId)
+  const switching = Boolean(pending || activeTab?.pendingWorkspacePath)
+  const startup = pending ?? current ?? workspaces.find((item) => item.id === lastWorkspaceId) ?? workspaces[0]
+  const currentPath = activeTab?.path ?? ''
+  const currentName = current?.name ?? (currentPath ? '未关联工作区' : '选择工作区')
   const ready = host.state === 'ready' && Boolean(host.url)
   const starting = host.state === 'starting'
   const recovery = host.recovery
@@ -128,11 +134,11 @@ export function WorkspacePage(): React.JSX.Element {
   }
 
   const switchWorkspace = (id: string): void => {
-    if (!id || id === current?.id) return
+    if (!id || id === pending?.id || (id === current?.id && !switching)) return
     void openWorkspace(id)
   }
 
-  if (!current) {
+  if (workspaces.length === 0 && !ready && !currentPath) {
     return (
       <div className="page workspace-page">
         <div className="workspace-onboarding">
@@ -172,12 +178,13 @@ export function WorkspacePage(): React.JSX.Element {
       <div className="workspace-toolbar">
         <div className="toolbar-left">
           <div className="workspace-switcher">
-            <span className="workspace-color" style={{ background: current.color }} />
-            <span className="switcher-name" title={current.name}>
-              {current.name}
+            <span className="workspace-color" style={{ background: current?.color ?? 'var(--muted)' }} />
+            <span className="switcher-name" title={currentPath || currentName}>
+              {currentName}
             </span>
-            <ChevronDown size={13} />
-            <select value={current.id} onChange={(event) => switchWorkspace(event.target.value)} aria-label="切换工作区">
+            {switching ? <Loader2 size={13} className="spin" aria-label={pending ? `正在打开 ${pending.name}` : '正在打开工作区'} /> : <ChevronDown size={13} />}
+            <select value={pending?.id ?? current?.id ?? ''} onChange={(event) => switchWorkspace(event.target.value)} aria-label="切换工作区">
+              {!current ? <option value="" disabled>{currentName}</option> : null}
               {sorted.map((workspace) => (
                 <option key={workspace.id} value={workspace.id}>
                   {workspace.name}
@@ -185,7 +192,7 @@ export function WorkspacePage(): React.JSX.Element {
               ))}
             </select>
           </div>
-          <button className="icon-button" onClick={() => void window.studio.app.showItemInFolder(current.path)} title="在资源管理器中打开">
+          <button className="icon-button" disabled={!currentPath} onClick={() => void window.studio.app.showItemInFolder(currentPath)} title="在资源管理器中打开">
             <FolderOpen size={14} />
           </button>
           <span className={`toolbar-status host-${host.state}`}>
@@ -266,7 +273,7 @@ export function WorkspacePage(): React.JSX.Element {
                 </div>
                 <h2>正在启动 Harness 运行时</h2>
                 <p className="stage-sub">
-                  为 <strong>{current.name}</strong> 准备独立的本地服务
+                  为 <strong>{startup?.name ?? '当前工作区'}</strong> 启动本地服务
                   {elapsed > 0 ? ` · ${elapsed}s` : ''}
                 </p>
                 <div className="stage-steps">
@@ -316,7 +323,7 @@ export function WorkspacePage(): React.JSX.Element {
                   ))}
                 </div>
                 <div className="stage-actions">
-                  <button className="button button-primary" onClick={() => void startHost(current.id)}>
+                  <button className="button button-primary" disabled={!startup} onClick={() => { if (startup) void openWorkspace(startup.id) }}>
                     <Play size={15} />
                     启动运行时
                   </button>
@@ -369,9 +376,9 @@ export function WorkspacePage(): React.JSX.Element {
       </div>
 
       {ready ? (
-        <div className="workspace-footnote" title={current.path}>
-          <Loader2 size={11} className={activePane.loading ? 'spin' : 'hidden'} />
-          <span>{shortPath(current.path, 88)}</span>
+        <div className="workspace-footnote" title={currentPath}>
+          <Loader2 size={11} className={activePane.loading || switching ? 'spin' : 'hidden'} />
+          <span>{switching ? pending ? `正在打开「${pending.name}」…` : '正在打开工作区…' : currentPath ? shortPath(currentPath, 88) : '等待会话界面确认工作区'}</span>
         </div>
       ) : null}
     </div>

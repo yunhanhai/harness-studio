@@ -71,7 +71,10 @@ const api: StudioApi = {
     revealSession: (id) => invoke(IPC.insightsReveal, id)
   },
   tabs: {
-    setActiveGuest: (id) => ipcRenderer.send(IPC.tabsActiveGuest, id)
+    setActiveGuest: (id) => ipcRenderer.send(IPC.tabsActiveGuest, id),
+    openWorkspace: (workspaceId, id, path) => invoke(IPC.tabsOpenWorkspace, workspaceId, id, path),
+    cancelWorkspace: (id) => ipcRenderer.send(IPC.tabsCancelWorkspace, id),
+    onWorkspaceChanged: (cb) => subscribe(IPC.tabsWorkspaceChanged, cb)
   },
   quickAsk: {
     submit: (text, options) => invoke(IPC.quickAskSubmit, text, options),

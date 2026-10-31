@@ -26,7 +26,8 @@ const FOCUS_COMPOSER = `(() => {
   selection.addRange(range)
   return {
     ok: document.activeElement === editor || editor.contains(document.activeElement),
-    reason: 'focused'
+    reason: 'focused',
+    sessionId: editor.closest('[data-conversation-session]')?.getAttribute('data-conversation-session') || ''
   }
 })()`
 
@@ -44,7 +45,21 @@ const READ_COMPOSER = `(() => {
   }
 })()`
 
-const PRESS_SEND = `(() => {
+const PRESS_SEND = `((authorizationKey, sessionId) => {
+  if (sessionId) {
+    const roots = Array.from(document.querySelectorAll('[data-conversation-content][data-conversation-session]'))
+    const root = roots.find(el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 })
+    if (root?.getAttribute('data-conversation-session') !== sessionId) return { ok: false, reason: 'session-changed' }
+  }
+  if (authorizationKey) {
+    const gate = document.createElement('span')
+    gate.dataset.hsRequest = authorizationKey
+    document.documentElement.append(gate)
+    gate.dispatchEvent(new Event('hs-workspace-check', { bubbles: true }))
+    const allowed = gate.dataset.hsAllowed === 'true'
+    gate.remove()
+    if (!allowed) return { ok: false, reason: 'destination-changed' }
+  }
   const buttons = Array.from(document.querySelectorAll('button'))
   const send = buttons.find((button) => {
     const label = (button.getAttribute('aria-label') || button.textContent || '').trim()
@@ -57,7 +72,7 @@ const PRESS_SEND = `(() => {
   if (send.disabled) return { ok: false, reason: 'send-disabled' }
   send.click()
   return { ok: true, reason: 'clicked' }
-})()`
+})`
 
 const DISMISS_ONBOARDING = `(() => {
   // Buttons that only acknowledge information; safe to click for us.
@@ -85,11 +100,23 @@ const DISMISS_ONBOARDING = `(() => {
 })()`
 
 async function evaluate<T>(contents: WebContents, code: string): Promise<T | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  let destroyed: (() => void) | undefined
   try {
-    return (await contents.executeJavaScript(code, true)) as T
+    return await Promise.race([
+      contents.executeJavaScript(code, true) as Promise<T>,
+      new Promise<never>((_resolve, reject) => {
+        destroyed = (): void => reject(new Error('会话界面已关闭'))
+        contents.once('destroyed', destroyed)
+        timer = setTimeout(() => reject(new Error('会话界面响应超时')), 8_000)
+      })
+    ])
   } catch (error) {
     logError('quick-ask', error)
     return null
+  } finally {
+    clearTimeout(timer)
+    if (destroyed) contents.removeListener('destroyed', destroyed)
   }
 }
 
@@ -97,6 +124,9 @@ const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout
 
 export interface InjectOptions {
   autoSend: boolean
+  /** Stop if the destination tab or its project changes while focusing. */
+  isCurrent?: () => boolean
+  authorizationKey?: string
 }
 
 /**
@@ -117,9 +147,9 @@ export async function injectIntoComposer(contents: WebContents, text: string, op
   }
 
   // The SPA may still be mounting right after the webview attaches; poll briefly.
-  let focus: { ok: boolean; reason: string } | null = null
+  let focus: { ok: boolean; reason: string; sessionId?: string } | null = null
   for (let attempt = 0; attempt < 12; attempt += 1) {
-    focus = await evaluate<{ ok: boolean; reason: string }>(contents, FOCUS_COMPOSER)
+    focus = await evaluate<{ ok: boolean; reason: string; sessionId?: string }>(contents, FOCUS_COMPOSER)
     if (focus?.ok) break
     if (focus?.reason !== 'no-composer') break
     await sleep(500)
@@ -131,6 +161,9 @@ export async function injectIntoComposer(contents: WebContents, text: string, op
     }
   }
 
+  if (options.isCurrent && !options.isCurrent()) {
+    return { status: 'needs-host', message: '目标会话已切换，请就绪后再发送' }
+  }
   // Real input events; this is what Electron's own insertText uses underneath.
   contents.insertText(trimmed)
   await sleep(250)
@@ -144,7 +177,11 @@ export async function injectIntoComposer(contents: WebContents, text: string, op
     return { status: 'inserted' }
   }
 
-  const sent = await evaluate<{ ok: boolean; reason: string }>(contents, PRESS_SEND)
+  if (options.isCurrent && !options.isCurrent()) {
+    return { status: 'inserted', message: '已填入原会话，切换后请检查并手动发送' }
+  }
+  const sent = await evaluate<{ ok: boolean; reason: string }>(contents,
+    `${PRESS_SEND}(${JSON.stringify(options.authorizationKey ?? '')}, ${JSON.stringify(focus.sessionId ?? '')})`)
   if (!sent?.ok) {
     // Text is in the composer; the user can press Enter themselves.
     log('quick-ask', `send failed: ${sent?.reason ?? 'unknown'}`)

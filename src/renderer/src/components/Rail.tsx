@@ -38,6 +38,7 @@ export function Rail(): React.JSX.Element {
   const openWorkspace = useApp((state) => state.openWorkspace)
   const host = useApp((state) => state.host)
   const workspaces = useApp((state) => state.workspaces)
+  const activeTab = useApp((state) => state.tabs.find((tab) => tab.id === state.activeTabId))
 
   const theme = settings ? resolveTheme(settings.theme) : 'dark'
   const toggleTheme = (): void => {
@@ -46,7 +47,12 @@ export function Rail(): React.JSX.Element {
 
   const activate = (id: ViewId): void => {
     if (id === 'workspace') {
-      const target = host.workspaceId ?? settings?.lastWorkspaceId ?? workspaces[0]?.id
+      if ((host.state === 'ready' && (activeTab?.guestId !== undefined || activeTab?.path)) ||
+        activeTab?.pendingWorkspaceId || activeTab?.pendingWorkspacePath) {
+        setView('workspace')
+        return
+      }
+      const target = activeTab?.workspaceId ?? settings?.lastWorkspaceId ?? workspaces[0]?.id
       if (target) void openWorkspace(target)
       else setView('workspace')
       return
