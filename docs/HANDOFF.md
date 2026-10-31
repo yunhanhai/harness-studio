@@ -6,10 +6,10 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 版本 | `0.1.7`（本地已安装；两平台发布进行中） |
+| 版本 | `0.1.7`（本地已安装，GitHub 已发布；Gitee 已同步代码和标签，安装包待上传） |
 | 本地 HEAD | `git log --oneline -1` 确认 |
 | 工作区 | `git status` 确认 |
-| 已发布 | GitHub：v0.1.0～v0.1.6；Gitee：v0.1.0～v0.1.4、v0.1.6（v0.1.5 只有标签；v0.1.0 仅保留说明与源码包，旧安装包已移除并备份） |
+| 已发布 | GitHub：v0.1.0～v0.1.7；Gitee：v0.1.0～v0.1.4、v0.1.6（v0.1.5 / v0.1.7 只有标签；v0.1.0 仅保留说明与源码包，旧安装包已移除并备份） |
 | 远端 | `origin` → GitHub，`gitee` → Gitee |
 | 平台 | Windows 10/11 x64（主要目标） |
 
@@ -40,7 +40,7 @@
 
 从下面挑一个，或者提你自己的需求：
 
-- "改进工作区切换，先按 HANDOFF「下一步建议 → 1」决定方向"
+- "完成 v0.1.7 的 Gitee 安装包发布，先读当前收尾状态"
 - "做界面英文化，按 HANDOFF「下一步建议 → 其他」里的方向"
 - "给 xxx 页面加 yyy 功能"
 
@@ -53,7 +53,8 @@
 ```text
 在 D:\Program Files\develop\vscode\her 继续开发 Harness Studio。
 先读 docs/HANDOFF.md 和 docs/ARCHITECTURE.md。
-v0.1.6 已在 GitHub 与 Gitee 发布，本地桌面版也已更新，不要重复发布。
+v0.1.7 已在 GitHub 发布，本地桌面版已更新；Gitee 只有代码和标签，安装包还等旧附件清理确认。
+不要重复发布 GitHub 或移动已存在的标签，先读当前收尾状态。
 接下来做：<写清楚新需求>。
 ```
 
@@ -65,9 +66,13 @@ v0.1.6 已在 GitHub 与 Gitee 发布，本地桌面版也已更新，不要重�
 
 `npm run install:local` 已将桌面版原地更新为 0.1.7，exe ProductVersion 为 0.1.7.0，两份快捷方式复用同一安装路径并带 `--open-workspace`。安装版全部 6 个 out 文件与构建逐字节一致，app.asar SHA-256 为 `cb4b1d6e0f1f763c95d37438a17ed26148a78676bacd84188bdb3d5594fa0848`，与新 dist staging 一致。没有启动用户日常的 Host 或读取模型凭据。
 
-`npm run dist -- --publish never` 已完成：本地 Setup 为 103,983,344 bytes，Portable 为 103,713,805 bytes，另含 blockmap、latest.yml；公开 GitHub 产物将由 Actions 单独构建。latest.yml 的大小与两处 SHA-512 均匹配本地 Setup。验收记录位于已忽略的 `.tools/v0.1.7-artifacts.json` 与 `.tools/v0.1.7-installed-verification.json`。
+`npm run dist -- --publish never` 已完成：本地 Setup 为 103,983,344 bytes，Portable 为 103,713,805 bytes，另含 blockmap、latest.yml；公开 GitHub 产物已由 Actions 单独构建。latest.yml 的大小与两处 SHA-512 均匹配本地 Setup。验收记录位于已忽略的 `.tools/v0.1.7-artifacts.json` 与 `.tools/v0.1.7-installed-verification.json`。
 
-下一步推送 main / v0.1.7 标签，等待 GitHub Actions 并校验公开附件，发布 Gitee 安装包，再更新下载链接与最终状态。GitHub 不同历史通过 `.tools/github-bridge-v0.1.7.mjs` 桥接，保留 tree、提交元数据与原有标签。Gitee 总附件占用 1,038,316,166 bytes，新包需要更多空间：v0.1.1 两件旧安装包已完整备份并核对哈希，候选附件 ID 为 3455589 / 3455592，是否删除仍待用户本次确认；此前的授权只包含 v0.1.0。v0.1.6 标签和公开安装包保持原样。
+两平台 main / v0.1.7 标签均已推送。GitHub 不同历史通过 `.tools/github-bridge-v0.1.7.mjs` 桥接，保留 tree、提交元数据与原有标签：本地/Gitee 发布提交为 `817fef6`，GitHub 为 `8e3b753`，tree 同为 `9350addd6f0acef3ac802c2fbc8af84dc32477f8`。GitHub [v0.1.7 发行版](https://github.com/yunhanhai/harness-studio/releases/tag/v0.1.7)（ID 430015660）已公开发布，包含 Setup / Portable / blockmap / latest.yml；[Release 工作流](https://github.com/yunhanhai/harness-studio/actions/runs/41214542918) 与 [CI](https://github.com/yunhanhai/harness-studio/actions/runs/41214542733) 均成功，发行说明已按 CHANGELOG 更新。四件公开附件已完整下载，大小与 API SHA-256 digest 全部匹配；公开 Setup 为 103,983,338 bytes，Portable 为 103,713,803 bytes，Setup 的 SHA-512 与公开 latest.yml 两处值一致。验收记录为 `.tools/v0.1.7-github-download-verification.json`。两平台分别构建，下载哈希各自核对，不要求与另一平台构建逐字节相同。
+
+Gitee 安装包尚未上传：总附件占用 1,038,316,166 bytes，新包需要更多空间。v0.1.1 两件旧安装包已完整备份并核对哈希（`.tools/gitee-v0.1.1-backup/`），候选附件 ID 为 3455589 / 3455592，合计释放 207,651,144 bytes；是否删除仍待用户本次确认，此前的授权只包含 v0.1.0。GitHub 同版安装包、Gitee 标签/发行说明/源码包及其他版本均保留。收到确认后才运行 `.tools/gitee-prune-v0.1.1.mjs --execute`，再运行 `.tools/gitee-release-v0.1.7.mjs --publish` 并校验公开下载。README 的 Gitee 徽章和链接目前继续指向 v0.1.6；不要先改成尚无安装包的 v0.1.7。
+
+已清理约 619.5 MiB 测试环境、旧安装包与 staging。Electron 报告和截图已复制到 `.tools/v0.1.7-workspace-verification/`，`npm run status` 确认一个程序目录、两个快捷方式、安装版本 0.1.7.0，没有 staging 副本。旧 stash 和仓库外未获准删除的验证脚本仍保留。v0.1.6 标签和公开安装包保持原样。
 
 ## v0.1.6 发布记录
 
@@ -104,7 +109,7 @@ GitHub 发布标签指向 `d59c4b2`，Gitee 与本地标签指向 `6ba8677`，tr
 - 真实键盘焦点：`Ctrl+Tab` 切换后，Studio 一侧的 `document.activeElement` 已确认指向新标签的 webview，但测试窗口拿不到系统焦点，「接着打字是否落在新标签」需要手动试一次；
 - v0.1.5 遗留：开启「每次发送前确认」后，在输入框里真实按回车应弹出确认框（Lexical 忽略 CDP 合成事件，无法自动验证）。
 
-**发布已完成**：本地安装、构建、打标签、代码推送、两平台发行版与附件下载校验均已完成。不要重复打标签或发布；上面的两项真实键盘行为仍待人工确认，工作区联动的未发布实现见「下一步建议」。
+**v0.1.6 发布已完成**：本地安装、构建、打标签、代码推送、两平台发行版与附件下载校验均已完成。不要重复打标签或发布；上面的两项真实键盘行为仍待人工确认，v0.1.7 的工作区联动实现见「下一步建议」。
 
 本次 Gitee 发布包：Setup 为 103,977,982 bytes（约 99.2 MiB），Portable 为 103,708,449 bytes（约 98.9 MiB），均已上传成功。GitHub 使用 Actions 构建的附件，Setup 为 103,977,976 bytes、Portable 为 103,708,446 bytes；两平台来自相同源码，但构建产物字节略有差别，各自的下载校验分别通过。
 
@@ -257,7 +262,7 @@ v0.1.6 的切换只改 Studio 自己的项目标签，内嵌会话不跟随。v0
 
 验证已完成：`npm run typecheck`、`npm run build`（两个 preload 自包含、7 个 workspace IPC 调用）、`npm run test:workspace-navigation`（15 场景）均通过；独立只读复核的 8 个 QuickAsk 场景也通过。导航回归覆盖已排队点击取消、guest 销毁时 Promise 悬空、新请求不被旧请求阻塞、同端口重启、未知项目和输入目标失效。
 
-隔离 Electron 的 15 项检查全部通过：首次打开目录、只切前台、后台会话/草稿/文档保留、Host 复用、快速连续切换、内嵌导航反向同步、聚焦期间切前台阻止写入、文本插入后切前台阻止自动发送、关闭待切换标签立即结算取消，以及重启后收拢一个标签并恢复前台项目的真实 `cwd`。使用独立 `userData` + `DSH_HOME`，没有读取用户模型凭据或发送模型请求；自动发送按钮被验证脚本临时替换为计数动作。报告 `.qa-workspace-sync/integration-report.json` 无异常，截图为同目录 `integration-final.png`，隔离 Electron 与 Host 均已退出。首次验证暴露的 guest 绑定被资源加载清掉、销毁 guest 后 Promise 悬空问题均已修复。
+隔离 Electron 的 15 项检查全部通过：首次打开目录、只切前台、后台会话/草稿/文档保留、Host 复用、快速连续切换、内嵌导航反向同步、聚焦期间切前台阻止写入、文本插入后切前台阻止自动发送、关闭待切换标签立即结算取消，以及重启后收拢一个标签并恢复前台项目的真实 `cwd`。使用独立 `userData` + `DSH_HOME`，没有读取用户模型凭据或发送模型请求；自动发送按钮被验证脚本临时替换为计数动作。报告 `.tools/v0.1.7-workspace-verification/integration-report.json` 无异常，截图为同目录 `integration-final.png`，隔离 Electron 与 Host 均已退出。首次验证暴露的 guest 绑定被资源加载清掉、销毁 guest 后 Promise 悬空问题均已修复。
 
 这些改动属于 v0.1.7，发布状态见顶部「当前收尾状态」。不要将这项改动写入已发布的 v0.1.6 功能或移动 v0.1.6 标签。前述两项真实键盘检查仍需要人工验证，不能将 DOM/合成事件验证视作完成。
 

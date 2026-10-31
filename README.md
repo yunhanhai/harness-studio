@@ -200,7 +200,7 @@ Studio 让这条提示真正可操作：
 
 | 平台 | 安装版 | 便携版 |
 | --- | --- | --- |
-| **GitHub**（全球） | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.6/Harness-Studio-0.1.6-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.6/Harness-Studio-0.1.6-x64-Portable.exe) |
+| **GitHub**（全球） | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.7/Harness-Studio-0.1.7-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.7/Harness-Studio-0.1.7-x64-Portable.exe) |
 | **Gitee**（国内更快） | [Setup.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.6/Harness-Studio-0.1.6-x64-Setup.exe) | [Portable.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.6/Harness-Studio-0.1.6-x64-Portable.exe) |
 
 - **Setup.exe**（99 MB）— 安装版，创建开始菜单与桌面快捷方式，支持自动更新
