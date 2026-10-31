@@ -8,7 +8,7 @@
 ![status](https://img.shields.io/badge/status-beta-F59E0B?style=flat-square)
 
 [![GitHub release](https://img.shields.io/github/v/release/yunhanhai/harness-studio?style=flat-square&color=5B8CFF)](https://github.com/yunhanhai/harness-studio/releases)
-[![Gitee release](https://img.shields.io/badge/gitee-v0.1.5-C71D23?style=flat-square)](https://gitee.com/yunhanhai/harness-studio/releases)
+[![Gitee release](https://img.shields.io/badge/gitee-v0.1.4-C71D23?style=flat-square)](https://gitee.com/yunhanhai/harness-studio/releases)
 [![GitHub stars](https://img.shields.io/github/stars/yunhanhai/harness-studio?style=flat-square&color=F59E0B)](https://github.com/yunhanhai/harness-studio/stargazers)
 
 [English](README.en.md) · [下载](#下载) · [架构说明](docs/ARCHITECTURE.md) · [发布指南](docs/PUBLISHING.md) · [参与贡献](CONTRIBUTING.md) · [开发接手](docs/HANDOFF.md) · [本地安装](docs/LOCAL-INSTALL.md)
@@ -198,8 +198,8 @@ Studio 让这条提示真正可操作：
 
 | 平台 | 安装版 | 便携版 |
 | --- | --- | --- |
-| **GitHub**（全球） | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.5/Harness-Studio-0.1.5-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.5/Harness-Studio-0.1.5-x64-Portable.exe) |
-| **Gitee**（国内更快） | [Setup.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.5/Harness-Studio-0.1.5-x64-Setup.exe) | [Portable.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.5/Harness-Studio-0.1.5-x64-Portable.exe) |
+| **GitHub**（全球） | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.6/Harness-Studio-0.1.6-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.6/Harness-Studio-0.1.6-x64-Portable.exe) |
+| **Gitee**（国内更快，当前 v0.1.4） | [Setup.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.4/Harness-Studio-0.1.4-x64-Setup.exe) | [Portable.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.4/Harness-Studio-0.1.4-x64-Portable.exe) |
 
 - **Setup.exe**（99 MB）— 安装版，创建开始菜单与桌面快捷方式，支持自动更新
 - **Portable.exe**（99 MB）— 免安装，数据写在可执行文件旁的 `HarnessStudioData/`

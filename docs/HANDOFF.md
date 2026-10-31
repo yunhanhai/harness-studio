@@ -9,7 +9,7 @@
 | 版本 | `0.1.6`（本地已提交，**未发布、未推送**） |
 | 本地 HEAD | `git log --oneline -1` 确认 |
 | 工作区 | `git status` 确认 |
-| 已发布 | v0.1.0 / v0.1.1 / v0.1.2 / v0.1.3 / v0.1.4 / v0.1.5，GitHub 与 Gitee 双平台齐全 |
+| 已发布 | GitHub：v0.1.0～v0.1.5；Gitee：v0.1.0～v0.1.4（v0.1.5 只有标签，未建发行版） |
 | 远端 | `origin` → GitHub，`gitee` → Gitee |
 | 平台 | Windows 10/11 x64（主要目标） |
 
@@ -45,7 +45,7 @@
 
 **3. 需要时提供凭据**
 
-推送 GitHub 需要一个有 `repo` + `workflow` 权限的 PAT；推 Gitee 需要一个 `projects` 权限的私有令牌。这两个都不在仓库里（`.gitignore` 已屏蔽相关文件），需要你在新对话里重新提供。
+推送 GitHub 需要一个有 `repo` + `workflow` 权限的 PAT；推 Gitee 需要一个 `projects` 权限的私有令牌。先检查环境变量或 Git Credential Manager 中的认证是否有效；缺失或失效时，令牌可保存到已忽略的 `.tools/github-token.txt`、`.tools/gitee-token.txt`，无需粘贴进对话。不要提交令牌。
 
 ### 新对话的第一条消息可以直接复制
 
@@ -61,13 +61,15 @@ npm run status 确认无堆积，按 docs/PUBLISHING.md 打标签、构建并推
 
 ## 当前收尾状态（v0.1.6）
 
-v0.1.6（会话标签页）的代码与文档已完成并**在本地提交**，还**没有**推送、打标签、发布，也没有跑 `install:local`。验证结果：
+v0.1.6（会话标签页）的代码已在 `0620838` 提交；2026-10-31 已完成本地原地安装与发布包构建，还**没有**推送、打标签、发布。GitHub 的本机认证有效（`repo` + `workflow`），Gitee 的已存凭据返回 401，需要有效令牌。验证结果：
 
 | 项目 | 结果 |
 | --- | --- |
 | 代码检查 | `npm run typecheck` 与 `npm run build` 均通过；preload 自包含检查通过 |
 | 真机验证 | 用仓库内 Electron 跑 `out/`，独立 `userData` + 独立 `DSH_HOME`（不碰 `~/.dsh`），CDP 驱动，结果见下 |
-| 版本号 | `package.json` / `package-lock.json` 已是 `0.1.6`；README 下载链接与 Gitee 徽章仍指向已发布的 v0.1.5，发布时再改 |
+| 版本号 | `package.json` / `package-lock.json` 三个根字段均为 `0.1.6`；README GitHub 下载链接已改到 v0.1.6，Gitee 链接与徽章暂指向实际已发布的 v0.1.4，CHANGELOG 日期为 2026-10-31 |
+| 本地安装 | `npm run install:local` 完成；exe ProductVersion 为 `0.1.6.0`，app.asar 内版本为 `0.1.6`；`npm run status` 确认一个程序目录、两个快捷方式 |
+| 发布产物 | `npm run dist -- --publish never` 完成；Setup / Portable / blockmap / latest.yml 齐全；安装版与构建版 app.asar 完全一致，latest.yml 的 SHA-512 与文件大小均匹配 Setup |
 
 真机验证覆盖的行为（全部通过）：
 
@@ -87,7 +89,9 @@ v0.1.6（会话标签页）的代码与文档已完成并**在本地提交**，�
 - 真实键盘焦点：`Ctrl+Tab` 切换后，Studio 一侧的 `document.activeElement` 已确认指向新标签的 webview，但测试窗口拿不到系统焦点，「接着打字是否落在新标签」需要手动试一次；
 - v0.1.5 遗留：开启「每次发送前确认」后，在输入框里真实按回车应弹出确认框（Lexical 忽略 CDP 合成事件，无法自动验证）。
 
-**发布前还要做**：`npm run install:local` 原地更新桌面版、`npm run status` 确认无堆积、把 README 下载链接与徽章改到 v0.1.6，然后按 `docs/PUBLISHING.md` 打标签、构建、推送 GitHub 与 Gitee，并给 Gitee 发行版手动上传安装包。
+**发布还要做**：提交发布文档、打 v0.1.6 标签、按 `docs/PUBLISHING.md` 推送 GitHub 与 Gitee；GitHub Actions 生成发行版，Gitee 需创建发行版并上传安装包。完成后更新本页的双平台状态。本地安装与发布包构建已完成。
+
+本次本地发布包：Setup 为 103,977,982 bytes（约 99.2 MiB），Portable 为 103,708,449 bytes（约 98.9 MiB），均低于 100 MiB。Gitee 已接受大小相近的 v0.1.4 附件，但其公开文档没有明确说明「100 MB」采用哪种单位，最终以实际上传验收为准。
 
 ### 不需要重新做的事
 
@@ -310,4 +314,4 @@ git push gitee main; git push gitee v0.1.x
 # 6. Gitee 需要手动传安装包到发行版（Gitee 不跑 Actions）
 ```
 
-两个平台的 Release 都要有 `Setup.exe` 与 `Portable.exe`，且都小于 100 MB（Gitee 附件上限）。
+两个平台的 Release 都要有 `Setup.exe` 与 `Portable.exe`。Gitee 附件需实际上传验收；已发布的 v0.1.4 附件大于十进制 100 MB、低于 100 MiB，不要把平台文案的「100 MB」当作精确字节数。
