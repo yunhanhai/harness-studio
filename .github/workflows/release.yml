@@ -31,6 +31,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Workspace navigation regressions
+        run: npm run test:workspace-navigation
+
       - name: Build renderer and main
         run: npm run build
 

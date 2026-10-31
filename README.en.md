@@ -36,7 +36,7 @@ Harness Studio takes a different angle: **make one developer's daily loop feel f
 ## Features
 
 - **Studio dashboard** — host status, port, version, uptime, runtime diagnostics, recent workspaces.
-- **Multi-workspace host management** — each workspace binds a project directory; switching reuses the running `dsh web` host instead of restarting it.
+- **Workspace switching** — Studio registers the project directory and opens it in the active tab, then verifies the session's working directory. Other tabs keep their conversations and drafts, and all tabs reuse one `dsh web` host. Project names and paths also follow navigation inside Harness.
 - **Session tabs** — several Harness conversations side by side in one window (`Ctrl+T` new, `Ctrl+W` close, `Ctrl+Tab` / `Ctrl+Shift+Tab` switch). Tabs share one runtime and switch without reloading; each is its own renderer process, so the count is capped (4 by default, 1–8 in Settings → General).
 - **One-click runtime** — detect a local `dsh`, or download Node.js and install `@deepseek-ai/dsh` with live progress.
 - **Official conversation UI** — embedded in a locked-down `<webview>`; no fork of model or tool behavior.
@@ -45,6 +45,8 @@ Harness Studio takes a different angle: **make one developer's daily loop feel f
 - **Session insights** — reads `~/.dsh` locally: token usage, cache hit rate, cost estimate with configurable pricing, 14-day trend, per-model and per-workspace breakdown, sortable session table.
 - **Native shell** — tray, global shortcuts, close-to-tray, single instance, window-state restore.
 - **Theming** — dark/light/system, accent colors, UI zoom, reduced motion.
+
+When returning to a project with only an unsent draft, Harness may open a new blank session because the sidebar hides inactive blank sessions. Keep the original tab open when you need to preserve a draft. Removing a Studio workspace removes its bookmark and keeps the shared host running.
 
 <table>
   <tr>
