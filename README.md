@@ -8,7 +8,7 @@
 ![status](https://img.shields.io/badge/status-beta-F59E0B?style=flat-square)
 
 [![GitHub release](https://img.shields.io/github/v/release/yunhanhai/harness-studio?style=flat-square&color=5B8CFF)](https://github.com/yunhanhai/harness-studio/releases)
-[![Gitee release](https://img.shields.io/badge/gitee-v0.1.9-C71D23?style=flat-square)](https://gitee.com/yunhanhai/harness-studio/releases)
+[![Gitee release](https://img.shields.io/badge/gitee-v0.1.10-C71D23?style=flat-square)](https://gitee.com/yunhanhai/harness-studio/releases)
 [![GitHub stars](https://img.shields.io/github/stars/yunhanhai/harness-studio?style=flat-square&color=F59E0B)](https://github.com/yunhanhai/harness-studio/stargazers)
 
 [English](README.en.md) · [下载](#下载) · [架构说明](docs/ARCHITECTURE.md) · [发布指南](docs/PUBLISHING.md) · [参与贡献](CONTRIBUTING.md) · [开发接手](docs/HANDOFF.md) · [本地安装](docs/LOCAL-INSTALL.md)
@@ -89,13 +89,13 @@ Harness Studio 换了一个角度：**先让一个人每天用得顺手**。
 
 ### 会话输入焦点（v0.1.10）
 
-修复反向切标签后文字仍进入后台会话的问题。切标签统一交接 DOM 与原生输入焦点，离开工作区后输入交回 Studio；加载完成时保留正在使用的工具栏输入框。v0.1.10 已本地安装并完成产物校验，待发布；双向切换、跨页输入和发送确认的 Win32 自动验收已通过，人工键盘结果仍待确认。
+修复反向切标签后文字仍进入后台会话的问题。切标签统一交接 DOM 与原生输入焦点，离开工作区后输入交回 Studio；加载完成时保留正在使用的工具栏输入框。v0.1.10 已本地安装，并在 GitHub 与 Gitee 发布；产物及两平台公开安装包的整文件下载校验通过。双向切换、跨页输入和发送确认的 Win32 自动验收已通过，人工键盘结果仍待确认。
 
 ### 插件管理（v0.1.9）
 
 启动台快捷操作与命令面板中新增「插件管理」，会切回工作区，在当前标签页打开 Harness 自带的管理面板。运行时需要先就绪；找不到兼容入口时会提示。
 
-插件安装、启停、配置和来源由 Harness 管理，官方目前没有默认插件市场。参见 [Harness 插件管理说明](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/client/ui-plugin-manager/README.zh.md)。v0.1.9 已安装，并在 GitHub 与 Gitee 发布；两平台公开安装包完整下载校验通过。
+插件安装、启停、配置和来源由 Harness 管理，官方目前没有默认插件市场。参见 [Harness 插件管理说明](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/client/ui-plugin-manager/README.zh.md)。插件管理入口从 v0.1.9 起提供，该版已在 GitHub 与 Gitee 发布并完成公开安装包整文件下载校验。
 
 ### 发送确认
 
@@ -216,8 +216,8 @@ Studio 的页面、日期格式、托盘、菜单及确认框使用所选语言�
 
 | 平台 | 安装版 | 便携版 |
 | --- | --- | --- |
-| **GitHub**（全球） | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.9/Harness-Studio-0.1.9-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.9/Harness-Studio-0.1.9-x64-Portable.exe) |
-| **Gitee**（国内更快） | [Setup.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.9/Harness-Studio-0.1.9-x64-Setup.exe) | [Portable.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.9/Harness-Studio-0.1.9-x64-Portable.exe) |
+| **GitHub**（全球） | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.10/Harness-Studio-0.1.10-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.10/Harness-Studio-0.1.10-x64-Portable.exe) |
+| **Gitee**（国内更快） | [Setup.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.10/Harness-Studio-0.1.10-x64-Setup.exe) | [Portable.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.10/Harness-Studio-0.1.10-x64-Portable.exe) |
 
 - **Setup.exe**（99 MB）— 安装版，创建开始菜单与桌面快捷方式，支持自动更新
 - **Portable.exe**（99 MB）— 免安装，数据写在可执行文件旁的 `HarnessStudioData/`

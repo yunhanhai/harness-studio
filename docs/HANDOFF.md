@@ -6,11 +6,11 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 版本 | `0.1.10` 已本地安装、产物校验通过，待发布；当前公开版本为 v0.1.9 |
-| 开发分支 | `codex/session-tab-focus`（本地会话焦点维护修复；已发布代码在 `main`） |
+| 版本 | `0.1.10` 已本地安装、双平台发布，产物与公开安装包整文件下载校验通过；人工键盘结果仍待确认 |
+| 开发分支 | `main`（会话焦点维护修复已合入并发布） |
 | 本地 HEAD | `git log --oneline -1` 确认 |
 | 工作区 | `git status` 确认 |
-| 已发布 | GitHub：v0.1.0～v0.1.9；Gitee：v0.1.0～v0.1.4、v0.1.6～v0.1.9（v0.1.5 只有标签；v0.1.0 / v0.1.1 / v0.1.2 / v0.1.3 仅保留说明与源码包，旧安装包已移除并备份） |
+| 已发布 | GitHub：v0.1.0～v0.1.10；Gitee：v0.1.0～v0.1.4、v0.1.6～v0.1.10（v0.1.5 只有标签；v0.1.0 / v0.1.1 / v0.1.2 / v0.1.3 / v0.1.4 仅保留说明与源码包，旧安装包已移除并备份） |
 | 远端 | `origin` → GitHub，`gitee` → Gitee |
 | 平台 | Windows 10/11 x64（主要目标） |
 
@@ -30,25 +30,33 @@
 | v0.1.7 | 当前标签页工作区联动、切换期间快速提问保护、发送确认与 preload 校验修复 |
 | v0.1.8 | 中文、English 与跟随系统；跨窗口语言同步，保留会话与草稿 |
 | v0.1.9 | 启动台与命令面板打开当前标签页的官方插件管理 |
-| v0.1.10 | 会话标签切换的原生输入焦点修复（已安装、待发布） |
+| v0.1.10 | 会话标签切换的原生输入焦点修复（已安装、双平台发布） |
 
-## 当前收尾：v0.1.10 会话标签页键盘焦点
+## 当前收尾状态：v0.1.10 会话标签页键盘焦点
 
 用户在 v0.1.9 发布完成后授权按推荐继续键盘验收。Win32 原生鼠标先点击 A 输入框，并以系统字符输入确认 A 真正收到输入；接着 `Ctrl+Tab` 后 B 收到文字，但 `Ctrl+Shift+Tab` 后界面显示 A、文字仍进入 B。两步快捷键与文字的事件增量、完整旧事件前缀、会话/文档标识均已保存，证据 `.tools/v0.1.9-system-keyboard-native-focus-retest.json`。这确认了外层 webview DOM 焦点与 Electron guest 原生输入焦点脱节，不能仅凭 `document.activeElement` 验收。
 
-维护修复在 `codex/session-tab-focus`：`WorkspacePage` 集中完成旧 frame blur → 新 frame focus → 精确 guest 身份及焦点 IPC，不再由 `HarnessPane` 的兄弟 effect 各自争抢。主进程 `SessionTabFocus` 只对存活的当前 guest，在主窗口可见、未最小化、已聚焦且启用时调用 `WebContents.focus()`；切页、guest 替换/销毁撤销旧等待，恢复窗口时重新核对当前身份，不调用 `BrowserWindow.focus()` 激活其他窗口。同标签加载完成时保留正在使用的 Studio 输入框，插件导航的纯身份上报不请求焦点。外层 `document.hasFocus()` 在 guest 收键时可能为 false，因此不作为拒绝条件。
+维护修复从 `codex/session-tab-focus` 快进合入 `main`：`WorkspacePage` 集中完成旧 frame blur → 新 frame focus → 精确 guest 身份及焦点 IPC，不再由 `HarnessPane` 的兄弟 effect 各自争抢。主进程 `SessionTabFocus` 只对存活的当前 guest，在主窗口可见、未最小化、已聚焦且启用时调用 `WebContents.focus()`；切页、guest 替换/销毁撤销旧等待，恢复窗口时重新核对当前身份，不调用 `BrowserWindow.focus()` 激活其他窗口。同标签加载完成时保留正在使用的 Studio 输入框，插件导航的纯身份上报不请求焦点。外层 `document.hasFocus()` 在 guest 收键时可能为 false，因此不作为拒绝条件。
 
 `npm run typecheck`、`npm run build`、10 组焦点回归、34 组插件导航回归、15 组工作区回归和 11 组语言回归均通过，独立代码复核通过；CI 与发布工作流已加入 `npm run test:session-tab-focus`。本地候选最终构建 `index-mLQpSSmh.js` 在官方 DSH `0.2.1-rc.2` 的隔离环境通过 Win32 自动输入：原生点击 A 和输入探针建立基线后，双向切标签的文字仅进入新前台；切到提示词库后文字进入搜索框，后台草稿不变；返回工作区后文字回到当前会话。快捷键至首字符约 151 / 143 ms；会话、文档标识及 timeOrigin 均保留，6 个 out 文件哈希在验收前后匹配。
 
 已安装 v0.1.9 与本地候选分别通过独立系统 Enter 验收：精确同 PID 的原生 `#32770`「确认发送」框出现，取消后两个完整草稿保留，会话日志未增加提交事件；没有模型/账号凭据、模型请求或被保护机制拦截的发送。使用独立 `userData` / `DSH_HOME` / agents / Documents 等目录；本次创建的 GUI、Host、monitor 与原生观察进程均已退出。汇总报告 `.tools/session-tab-focus-verification.json`，安装版和候选证据分别归档。所有输入均为 **Win32 自动输入**，`physicalKeyboardTested=false`、`humanResultReceived=false`；用户尚未报告人工验收结果，不能把“继续”或 `isTrusted` 记为人工通过。
 
-功能提交为 `e68be70`。用户继续授权下一步后，已转入 v0.1.10 的版本整理、打包与发布校验；三个根版本字段为 `0.1.10`，`duplexer2` 保持 `0.1.4`，CHANGELOG 新增该版修复说明。人工测试窗口未收到用户操作或结果后已关闭并归档为 pending；“继续”仅用于推进工作，不用于确认人工通过。旧版安装包和双平台 v0.1.9 标签保持原样，下载链接在新版本公开附件验收完成前保留 v0.1.9。
+功能提交为 `e68be70`。用户继续授权下一步后，已转入 v0.1.10 的版本整理、打包与发布校验；三个根版本字段为 `0.1.10`，`duplexer2` 保持 `0.1.4`，CHANGELOG 新增该版修复说明。人工测试窗口未收到用户操作或结果后已关闭并归档为 pending；“继续”仅用于推进工作，不用于确认人工通过。双平台 v0.1.9 标签保持原样；新版本公开附件验收完成后，README 下载链接及 Gitee 徽章已升为 v0.1.10。旧附件清理仅执行下述已精准授权的 v0.1.4 两件 Gitee 安装包。
 
-构建使用独立 `.tools/v0.1.10-staging` 且 `--publish never`；安装沿用检查绝对路径并保留 staging 的方式，避免默认 `install:local` 清理此前被自动审查拒绝删除的 `dist/win-unpacked`。新安装/产物校验以 `.tools/session-tab-focus-verification.json` 的最终 6 个 out 文件为基线，不冒称旧插件 fixture / upstream 的 18 / 9 项结果已对新构建重跑。Gitee 发布前重新审计配额，任何其他旧附件删除都需要精确授权；既有 v0.1.3 删除授权不涵盖 v0.1.4。
+构建使用独立 `.tools/v0.1.10-staging` 且 `--publish never`；安装沿用检查绝对路径并保留 staging 的方式，避免默认 `install:local` 清理此前被自动审查拒绝删除的 `dist/win-unpacked`。新安装/产物校验以 `.tools/session-tab-focus-verification.json` 的最终 6 个 out 文件为基线，不冒称旧插件 fixture / upstream 的 18 / 9 项结果已对新构建重跑。Gitee 发布前重新审计配额；本次仅执行下述直接用户授权的 v0.1.4 两件附件删除，既有 v0.1.3 授权未用于本次删除。任何其他旧附件清理均需重新审查并精准授权。
 
 v0.1.10 的类型检查与全部 70 组回归通过，独立 staging 打包和原地安装已完成。安装版 ProductVersion 为 `0.1.10.0`；安装/staging/out 的完整 6 个文件与前述焦点自动验收逐字节匹配，渲染 bundle 为 `index-mLQpSSmh.js`。app.asar SHA-256 为 `84e6fab540d5ca1d2d8836cf6f5599fdb854fd1b964a0ea4a5e4b5bf2b609f85`，exe/asar 与两份语言资源匹配 staging，两个快捷方式仍使用同一路径并带 `--open-workspace`。Setup 为 104,000,339 bytes，Portable 为 103,730,806 bytes；latest.yml 的版本、文件名、大小及两处 SHA-512 一致，blockmap 完整覆盖 Setup。报告 `.tools/v0.1.10-installed-verification.json` / `.tools/v0.1.10-artifacts.json`。安装与校验没有启动日常 Host 或访问模型凭据，全部旧 staging 保留；人工结果仍为 pending。
 
-Gitee 最新只读审计总量为 1,038,495,500 bytes，剩余 35,246,324 bytes；新两包合计 207,731,145 bytes，缺口 172,484,821 bytes。可审查方案为仅移除 v0.1.4 发行版 `1229960` 的 Setup 附件 `3465634`（103,965,360 bytes）及 Portable 附件 `3465641`（103,695,823 bytes），共释放 207,661,183 bytes；上传新包后剩余 35,176,362 bytes。这两旧包已各完成两次匿名完整下载并核对 SHA-256/SHA-512，备份在 `.tools/gitee-v0.1.4-backup/`，下载进程均退出；GitHub 同版安装包仍公开，Gitee 标签、说明与源码包的保留快照已核对。当前 **尚未授权或执行删除**，也未公开发布 v0.1.10。审计 `.tools/v0.1.10-gitee-quota-preflight.json`，具体方案 `.tools/v0.1.10-gitee-deletion-plan.json`；收到对这两件附件的直接用户授权后再执行，不能使用旧 v0.1.3 授权代替。
+用户针对仅移除 Gitee v0.1.4 两件已备份安装附件并发布 v0.1.10 的具体方案回复「按照你的推荐继续下一步」，已仅删除发行版 `1229960` 的 Setup（ID `3465634`，103,965,360 bytes）及 Portable（ID `3465641`，103,695,823 bytes），共释放 207,661,183 bytes。两件删除前各完成两次匿名整文件下载并核对 SHA-256/SHA-512，备份在 `.tools/gitee-v0.1.4-backup/`；最终审计再次核对备份哈希。该版标签、说明、源码包、其他 Gitee 附件与 GitHub 同版安装包均保留。直接用户授权、删除核验与保留快照分别为 `.tools/v0.1.10-gitee-deletion-authorization.json` / `.tools/v0.1.10-gitee-prune-verification.json` / `.tools/v0.1.10-gitee-preservation-before.json`。新包发布后附件合计 1,038,565,462 bytes，按 1 GiB 上限剩余 **35,176,362 bytes**；下次发布需重新审计配额，本次授权不涵盖其他附件。
+
+Gitee [v0.1.10 发行版](https://gitee.com/yunhanhai/harness-studio/releases)（ID `1262785`）已公开，Setup（ID `3560101`）与 Portable（ID `3560102`）均完成匿名整文件下载，大小、SHA-256 和 SHA-512 与本地上传文件一致。发行标题、说明、所有旧标签、旧发行说明、源码包及其他附件保留审计通过；下载进程均已退出，进度 complete=true。报告 `.tools/v0.1.10-gitee-release-verification.json` / `.tools/v0.1.10-gitee-download-verification.json` / `.tools/v0.1.10-gitee-final-audit.json`。
+
+GitHub [v0.1.10 发行版](https://github.com/yunhanhai/harness-studio/releases/tag/v0.1.10)（ID `430454200`）已公开，包含 Setup / Portable / blockmap / latest.yml；[Release 工作流](https://github.com/yunhanhai/harness-studio/actions/runs/41289441083) 与[发布源 CI](https://github.com/yunhanhai/harness-studio/actions/runs/41289441115) 均成功，说明与 CHANGELOG 一致。四件附件均完整匿名下载，大小与整文件 API SHA-256 匹配；公开 Setup 为 104,000,338 bytes，Portable 为 103,730,802 bytes，Setup 完整 SHA-512 与公开 latest.yml 两处值一致。GitHub CI 与本地分别构建，安装包略有差异，各自完整哈希校验通过。下载 worker 均已退出，进度 complete=true，报告 `.tools/v0.1.10-github-release-verification.json` / `.tools/v0.1.10-github-download-verification.json`；更新清单与 blockmap 的独立核验 `.tools/v0.1.10-github-update-verification.json`。
+
+本地/Gitee v0.1.10 标签 commit 为 `1831efc43dca622f86830cd249cb99172251f50e`，注释标签 object 为 `1ec5f8c7449f586f74396d99b6542376a97ada87`；GitHub 标签 commit 为 `0ea299e00f87bc7bb035ad76affdd57817e2aa51`，注释标签 object 为 `91979373686b8e472a6616de9e7d85db165f84b1`。两边发布 tree 均为 `a31325487cc58728d7ef58cd1a9bc7d482a319f7`，原子推送且未强推，旧标签完整保留。本地安装、双平台发布与六件公开附件整文件验收已完成，汇总 `.tools/v0.1.10-publication-verification.json`，最终同步记录与状态 `.tools/v0.1.10-publication-status.json`。人工键盘结果仍为 pending，不能将 Win32 自动输入或用户“继续”记为人工通过。
+
+后续仅同步文档时，在干净 `main` 提交后运行 `node .tools/gitee-push-v0.1.10.mjs --sync-main --push` 和 `node .tools/github-bridge-v0.1.10.mjs --sync-main --base <上次成功同步的本地提交> --push`。基线以 `.tools/v0.1.10-publication-status.json` 的 `githubBridgeNextBaseline` 为准，成功同步后更新记录。本次收尾文档以发布准备提交 `1831efc43dca622f86830cd249cb99172251f50e` 为 bridge 基线，仅同步 main；v0.1.10 与旧版本标签保留发布内容。不要重复发布、重跑 release 模式或移动任何已有标签；下方 v0.1.9 及更旧 bridge 指令属于历史记录。
 
 ## v0.1.9 发布收尾状态：插件管理入口
 
@@ -70,7 +78,7 @@ Gitee [v0.1.9 发行版](https://gitee.com/yunhanhai/harness-studio/releases)（
 
 GitHub [v0.1.9 发行版](https://github.com/yunhanhai/harness-studio/releases/tag/v0.1.9)（ID `430416739`）已公开，包含 Setup / Portable / blockmap / latest.yml；[Release 工作流](https://github.com/yunhanhai/harness-studio/actions/runs/41283163481) 和 [CI](https://github.com/yunhanhai/harness-studio/actions/runs/41283163561) 均成功，说明与 CHANGELOG 一致。GitHub 标签 commit 为 `1653a8813a393e06b388c06d07a1258ed55f4c94`，本地/Gitee 为 `7ff97450ce26c8756996d6109b1e5660f5b9fd9e`，发布 tree 同为 `b2640794fb9b815f297b8524b4adebeee891cba9`。四件附件均完整匿名下载，大小与整文件 API SHA-256 匹配，公开 Setup 为 103,998,548 bytes、Portable 为 103,729,006 bytes；Setup 完整 SHA-512 与公开 latest.yml 两处值一致。下载 helper 和 curl 均已退出，报告 `.tools/v0.1.9-github-release-verification.json` / `.tools/v0.1.9-github-download-verification.json`，进度 complete=true，不需要续跑。GitHub 与本地分别构建，各自哈希匹配；README 两平台链接与 Gitee 徽章均已升为 v0.1.9。本地安装、双平台发布与完整公开下载验收已完成，发布记录见 `.tools/v0.1.9-publication-status.json`；不要重复打标签、发布或重跑 release 模式，也不要移动旧标签。两项既有真实键盘检查仍待人工确认。
 
-后续只同步文档时，先在干净的 `main` 提交，再运行 `node .tools/gitee-push-v0.1.9.mjs --sync-main` 和 `node .tools/github-bridge-v0.1.9.mjs --sync-main --base <上次成功同步的本地提交> --push`。基线以 `.tools/v0.1.9-publication-status.json` 的 `githubBridgeNextBaseline` 为准，成功同步后更新状态记录。本次双平台收尾文档从此前已成功同步的本地提交继续；不要复用 release 模式或旧版本基线。两个同步命令仅推 main，既有 v0.1.9 标签保持发布内容。旧 v0.1.8 bridge 指令仅属于历史记录，当前收尾使用 v0.1.9 bridge。
+v0.1.9 当时只同步文档时，先在干净的 `main` 提交，再运行 `node .tools/gitee-push-v0.1.9.mjs --sync-main --push` 和 `node .tools/github-bridge-v0.1.9.mjs --sync-main --base <上次成功同步的本地提交> --push`。基线以 `.tools/v0.1.9-publication-status.json` 的 `githubBridgeNextBaseline` 为准，成功同步后更新状态记录。本次双平台收尾文档从此前已成功同步的本地提交继续；不要复用 release 模式或旧版本基线。两个同步命令仅推 main，既有 v0.1.9 标签保持发布内容。该段及旧 v0.1.8 bridge 指令均属于历史记录；当前使用顶部 v0.1.10 收尾指令与状态记录。
 
 用户针对仅移除 Gitee v0.1.3 两件旧安装附件并发布 v0.1.9 的具体方案回复「按照你的推荐继续」，已仅删除 Setup（ID `3462777`）与 Portable（ID `3462787`），释放 207,658,948 bytes。删除前两件完整备份到 `.tools/gitee-v0.1.3-backup/` 并经独立二次公开下载核对 SHA-256/SHA-512；最终审计再次核对备份哈希。该版标签、发行说明、源码包、其他 Gitee 附件与 GitHub 同版安装包均保留。授权与清理记录为 `.tools/v0.1.9-gitee-deletion-authorization.json` / `.tools/v0.1.9-gitee-prune-verification.json`，保留快照为 `.tools/v0.1.9-gitee-preservation-before.json`。最终附件合计 1,038,495,500 bytes，按 1,073,741,824 bytes（1 GiB）上限剩 35,246,324 bytes；下次发布需重新审计配额，本次授权不涵盖其他版本附件。
 
@@ -87,7 +95,7 @@ GitHub [v0.1.9 发行版](https://github.com/yunhanhai/harness-studio/releases/t
 从下面挑一个，或者提你自己的需求：
 
 - "按 HANDOFF「下一步建议」选择后续功能"
-- "在已双平台发布的 v0.1.9 基础上继续开发，先读当前状态与下一步建议"
+- "在已双平台发布的 v0.1.10 基础上继续开发，先读当前状态与下一步建议"
 - "给 xxx 页面加 yyy 功能"
 
 **3. 需要时提供凭据**
@@ -99,8 +107,8 @@ GitHub [v0.1.9 发行版](https://github.com/yunhanhai/harness-studio/releases/t
 ```text
 在 D:\Program Files\develop\vscode\her 继续开发 Harness Studio。
 先读 docs/HANDOFF.md 和 docs/ARCHITECTURE.md。
-v0.1.9 插件管理入口已合入 main、本地安装并在 GitHub 与 Gitee 发布，两平台公开安装包完整下载校验通过。
-经具体授权仅删除 Gitee v0.1.3 两件旧安装附件并完整备份；该版标签、说明、源码及 GitHub 安装包保留。
+v0.1.10 会话输入焦点修复已合入 main、本地安装并在 GitHub 与 Gitee 发布，两平台公开安装包整文件下载校验通过。
+经具体授权仅删除 Gitee v0.1.4 两件旧安装附件 3465634 / 3465641 并完整备份；该版标签、说明、源码及 GitHub 安装包保留。
 发布收尾已完成，先读顶部「当前收尾状态」与验收记录；两项真实键盘检查仍待人工确认。
 不要重复发布或移动已存在的标签，先读当前收尾状态与发布记录。
 接下来做：<写清楚新需求>。
@@ -134,7 +142,7 @@ v0.1.8 的安装、构建、双平台发布与公开下载验收已完成，发�
 
 维护修复已本地提交为 `a8b9508`，工作区联动提交为 `5b3ce82`。版本号三个根字段均已升为 0.1.7，`duplexer2` 保持正确的 0.1.4。`npm run typecheck`、15 个导航回归、构建与 preload 校验全部通过；功能代码已通过前述 15 项隔离 Electron 检查，两项真实键盘检查仍待人工确认。
 
-`npm run install:local` 当时已将桌面版原地更新为 0.1.7，exe ProductVersion 为 0.1.7.0，两份快捷方式复用同一安装路径并带 `--open-workspace`。安装版全部 6 个 out 文件与当时构建逐字节一致，app.asar SHA-256 为 `cb4b1d6e0f1f763c95d37438a17ed26148a78676bacd84188bdb3d5594fa0848`，与该版 dist staging 一致。没有启动用户日常的 Host 或读取模型凭据。这是 v0.1.7 的历史核验记录；当前安装版已为 v0.1.9，见顶部收尾状态。
+`npm run install:local` 当时已将桌面版原地更新为 0.1.7，exe ProductVersion 为 0.1.7.0，两份快捷方式复用同一安装路径并带 `--open-workspace`。安装版全部 6 个 out 文件与当时构建逐字节一致，app.asar SHA-256 为 `cb4b1d6e0f1f763c95d37438a17ed26148a78676bacd84188bdb3d5594fa0848`，与该版 dist staging 一致。没有启动用户日常的 Host 或读取模型凭据。这是 v0.1.7 的历史核验记录；当前安装版已为 v0.1.10，见顶部收尾状态。
 
 `npm run dist -- --publish never` 已完成：本地 Setup 为 103,983,344 bytes，Portable 为 103,713,805 bytes，另含 blockmap、latest.yml；公开 GitHub 产物已由 Actions 单独构建。latest.yml 的大小与两处 SHA-512 均匹配本地 Setup。验收记录位于已忽略的 `.tools/v0.1.7-artifacts.json` 与 `.tools/v0.1.7-installed-verification.json`。
 
@@ -206,7 +214,7 @@ v0.1.6 发布后的 `npm run clean:dist` 已清掉测试目录、旧安装包和
 
 已验证：`dsh --profile studio|web --dump-config` 均 exit 0，配置可正常加载。
 
-**注意**：配置只在 Host 启动时读取，改完要重启运行时才生效。当前运行中的 Studio Host 是改动前启动的。
+**注意**：配置只在 Host 启动时读取，改完要重启运行时才生效。上面的修改与验证属于历史记录，当前配置以本机实际状态为准。
 
 ### 如果新对话里 `npm install` 报 EPERM
 
@@ -329,7 +337,7 @@ node scripts/app-shot.mjs .run-test/shot.png "@.run-test/expr.js"
 
 ## 下一步建议
 
-v0.1.9 双平台发布与公开下载验收已完成。后续焦点维护修复已纳入 v0.1.10，并完成本地安装和产物核验，详见顶部；两项人工键盘检查仍待用户实际操作并报告结果，可以与发布准备并行，但不能写为已通过。当前下一步是对已备份的 v0.1.4 两件 Gitee 附件取得精准删除授权，再完成 v0.1.10 双平台发布和公开下载核验。已完成能力及后续方向如下：
+v0.1.10 焦点维护版已完成本地安装、双平台发布与公开安装包整文件下载验收，详见顶部。下一步请在实际安装版完成两项人工键盘检查：双向切标签后直接打字，确认仅进入当前会话；开启「每次发送前确认」后在输入框真实按 Enter，确认弹出确认框。可取消发送以保留草稿。用户尚未实际操作并报告结果，状态保持 pending；不需重新发布或重复自动验收。完成后可选择下列新功能方向，任何下次发布前均需重新审计 Gitee 配额。已完成能力及后续方向如下：
 
 ### 已完成：工作区联动（v0.1.7）
 
