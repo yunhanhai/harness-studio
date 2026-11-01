@@ -7,7 +7,7 @@
 | 项目 | 值 |
 | --- | --- |
 | 版本 | `0.1.11` 已本地安装、双平台发布，产物与公开安装包完整下载校验通过；人工键盘结果仍待确认 |
-| 开发分支 | `codex/conversation-font-regressions`（字号回归维护；`main` 保持 v0.1.11 发布完成状态） |
+| 开发分支 | `main`（已快进合入 `codex/conversation-font-regressions` 的字号回归维护） |
 | 本地 HEAD | `git log --oneline -1` 确认 |
 | 工作区 | `git status` 确认 |
 | 已发布 | GitHub：v0.1.0～v0.1.11；Gitee：v0.1.0～v0.1.4、v0.1.6～v0.1.11（v0.1.5 只有标签；v0.1.0 / v0.1.1 / v0.1.2 / v0.1.3 / v0.1.4 / v0.1.6 仅保留说明与源码包，旧安装包已移除并备份） |
@@ -37,7 +37,7 @@
 
 v0.1.11 发布完成后，将原先只留在忽略目录 `.tools/` 的字号检查补入正式仓库。`npm run test:conversation-font` 运行 `scripts/test-conversation-font-settings.mjs` 与 `scripts/test-conversation-font-preload.mjs`；前者使用独立临时目录验证真实设置迁移、非法值、保存、重载和重置，后者用 DOM/IPC mock 执行真实 preload，检查字号样式更新与恢复默认。CI 和 Release 在构建前运行。Node mock 不验证浏览器计算字号、官方消息界面或人工按键。
 
-`npm run test:conversation-font` 的 16 组（6 组设置、10 组 preload）与 `npm run typecheck` 通过，独立复核未发现问题。这是测试与文档维护，应用版本保持 `0.1.11`。当前隔离键盘窗口和草稿保留，两项人工结果仍 pending。维护提交可合入并仅同步两端 main；不需要重新安装、打包、打标签或发布。
+`npm run test:conversation-font` 的 16 组（6 组设置、10 组 preload）与 `npm run typecheck` 通过，独立复核未发现问题。维护提交 `e11b18f` 已快进合入 `main`，此次仅同步两端 main，最新同步与精确提交 CI 结果见 `.tools/conversation-font-main-sync-status.json`。这是测试与文档维护，应用版本保持 `0.1.11`；不需要重新安装、打包、打标签或发布。当前隔离键盘窗口和草稿保留，两项人工结果仍 pending。
 
 ## 当前收尾状态：v0.1.11 会话阅读字号
 
