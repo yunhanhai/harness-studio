@@ -6,11 +6,11 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 版本 | `0.1.9`（已安装、GitHub 已发布并完整下载校验；Gitee 安装附件待配额清理确认） |
+| 版本 | `0.1.9`（已安装、GitHub 与 Gitee 已发布，两平台完整公开下载校验通过） |
 | 开发分支 | `main`（`codex/plugin-entry` 已快进合入） |
 | 本地 HEAD | `git log --oneline -1` 确认 |
 | 工作区 | `git status` 确认 |
-| 已发布 | GitHub：v0.1.0～v0.1.9；Gitee：v0.1.0～v0.1.4、v0.1.6～v0.1.8（v0.1.5 / v0.1.9 只有标签；v0.1.0 / v0.1.1 / v0.1.2 仅保留说明与源码包，旧安装包已移除并备份） |
+| 已发布 | GitHub：v0.1.0～v0.1.9；Gitee：v0.1.0～v0.1.4、v0.1.6～v0.1.9（v0.1.5 只有标签；v0.1.0 / v0.1.1 / v0.1.2 / v0.1.3 仅保留说明与源码包，旧安装包已移除并备份） |
 | 远端 | `origin` → GitHub，`gitee` → Gitee |
 | 平台 | Windows 10/11 x64（主要目标） |
 
@@ -47,13 +47,13 @@
 
 本地构建与原地安装已完成，安装 exe ProductVersion 为 `0.1.9.0`。安装、`.tools/v0.1.9-staging/win-unpacked` 与此前通过 18 项 fixture / 9 项官方 DSH 检查的 6 个 out 文件逐字节一致；exe、app.asar 与两份语言资源也与新 staging 一致，两个快捷方式复用安装路径并带 `--open-workspace`。app.asar SHA-256 为 `dc17360b006400b2f58da7b8236fc3e45c138883093d91d80508a9e33a428c59`。Setup 为 103,998,552 bytes，Portable 为 103,729,012 bytes，另含 blockmap 与 latest.yml；更新清单的文件名、版本、大小与两处 SHA-512 均匹配本地 Setup。报告 `.tools/v0.1.9-installed-verification.json` / `.tools/v0.1.9-artifacts.json`。安装脚本仅替换已核对路径的程序目录，没有启动日常 Host、读取模型凭据或改用户数据。此前被自动审批拒绝清理的 `dist/win-unpacked` 与本次新 staging 均保留，旧 exe/asar 哈希再次核对未变。
 
-GitHub v0.1.9 已发布并完成公开下载校验；Gitee v0.1.9 源码和标签已原子同步，安装附件尚未发布。Gitee 新预检与旧内容快照已保存到 `.tools/v0.1.9-gitee-preflight.json` / `.tools/v0.1.9-gitee-preservation-before.json`，现有附件 1,038,426,884 bytes，剩 35,314,940 bytes；本次两件新包共 207,727,564 bytes。具体方案为仅移除 v0.1.3 Setup（3462777）/ Portable（3462787），共 207,658,948 bytes，安装包已备份到 `.tools/gitee-v0.1.3-backup/` 并独立二次公开完整下载核对 SHA-256/SHA-512，GitHub 同版两件仍可匿名下载。移除并上传后剩 35,246,324 bytes。既有 v0.1.2 删除授权不涵盖 v0.1.3；本次具体确认问题已发出，尚未删除，不能按旧授权执行。
+Gitee [v0.1.9 发行版](https://gitee.com/yunhanhai/harness-studio/releases)（ID `1262592`）已发布，Setup（ID `3559527`，103,998,552 bytes）与 Portable（ID `3559535`，103,729,012 bytes）均完成公开无鉴权整文件下载，大小、SHA-256 和 SHA-512 与本地上传文件一致。发行标题与说明、所有旧标签、旧发行说明、源码包及其他附件保留审计通过；下载 curl/helper 进程均已退出，进度 complete=true，不需要续跑。报告为 `.tools/v0.1.9-gitee-release-verification.json` / `.tools/v0.1.9-gitee-final-audit.json` / `.tools/v0.1.9-gitee-download-verification.json`。GitHub 与 Gitee 使用各自构建的产物，各自下载哈希核对通过。
 
-GitHub [v0.1.9 发行版](https://github.com/yunhanhai/harness-studio/releases/tag/v0.1.9)（ID `430416739`）已公开，包含 Setup / Portable / blockmap / latest.yml；[Release 工作流](https://github.com/yunhanhai/harness-studio/actions/runs/41283163481) 和 [CI](https://github.com/yunhanhai/harness-studio/actions/runs/41283163561) 均成功，说明与 CHANGELOG 一致。GitHub 标签 commit 为 `1653a8813a393e06b388c06d07a1258ed55f4c94`，本地/Gitee 为 `7ff97450ce26c8756996d6109b1e5660f5b9fd9e`，发布 tree 同为 `b2640794fb9b815f297b8524b4adebeee891cba9`。四件附件均完整匿名下载，大小与整文件 API SHA-256 匹配，公开 Setup 为 103,998,548 bytes、Portable 为 103,729,006 bytes；Setup 完整 SHA-512 与公开 latest.yml 两处值一致。下载 helper 和 curl 均已退出，报告 `.tools/v0.1.9-github-release-verification.json` / `.tools/v0.1.9-github-download-verification.json`，进度 complete=true，不需要续跑。GitHub 与本地分别构建，各自哈希匹配；README 的 GitHub 链接已升为 v0.1.9，Gitee 链接仍为已验证的 v0.1.8。新发布进度见 `.tools/v0.1.9-publication-status.json`，待用户明确同意仅移除 Gitee v0.1.3 两件旧安装附件后，再完成 Gitee 发布；不要重复打标签或发布 GitHub，也不要移动旧标签。
+GitHub [v0.1.9 发行版](https://github.com/yunhanhai/harness-studio/releases/tag/v0.1.9)（ID `430416739`）已公开，包含 Setup / Portable / blockmap / latest.yml；[Release 工作流](https://github.com/yunhanhai/harness-studio/actions/runs/41283163481) 和 [CI](https://github.com/yunhanhai/harness-studio/actions/runs/41283163561) 均成功，说明与 CHANGELOG 一致。GitHub 标签 commit 为 `1653a8813a393e06b388c06d07a1258ed55f4c94`，本地/Gitee 为 `7ff97450ce26c8756996d6109b1e5660f5b9fd9e`，发布 tree 同为 `b2640794fb9b815f297b8524b4adebeee891cba9`。四件附件均完整匿名下载，大小与整文件 API SHA-256 匹配，公开 Setup 为 103,998,548 bytes、Portable 为 103,729,006 bytes；Setup 完整 SHA-512 与公开 latest.yml 两处值一致。下载 helper 和 curl 均已退出，报告 `.tools/v0.1.9-github-release-verification.json` / `.tools/v0.1.9-github-download-verification.json`，进度 complete=true，不需要续跑。GitHub 与本地分别构建，各自哈希匹配；README 两平台链接与 Gitee 徽章均已升为 v0.1.9。本地安装、双平台发布与完整公开下载验收已完成，发布记录见 `.tools/v0.1.9-publication-status.json`；不要重复打标签、发布或重跑 release 模式，也不要移动旧标签。两项既有真实键盘检查仍待人工确认。
 
-后续只同步文档时，先在干净的 `main` 提交，再运行 `node .tools/gitee-push-v0.1.9.mjs --sync-main` 和 `node .tools/github-bridge-v0.1.9.mjs --sync-main --base <上次成功同步的本地提交> --push`。基线以 `.tools/v0.1.9-publication-status.json` 的 `githubBridgeNextBaseline` 为准；本次首次收尾文档同步基线为 `7ff97450ce26c8756996d6109b1e5660f5b9fd9e`，成功后更新状态记录。两个同步命令仅推 main，既有 v0.1.9 标签保持发布内容。旧 v0.1.8 bridge 指令仅属于历史记录，当前收尾使用 v0.1.9 bridge。
+后续只同步文档时，先在干净的 `main` 提交，再运行 `node .tools/gitee-push-v0.1.9.mjs --sync-main` 和 `node .tools/github-bridge-v0.1.9.mjs --sync-main --base <上次成功同步的本地提交> --push`。基线以 `.tools/v0.1.9-publication-status.json` 的 `githubBridgeNextBaseline` 为准，成功同步后更新状态记录。本次双平台收尾文档从此前已成功同步的本地提交继续；不要复用 release 模式或旧版本基线。两个同步命令仅推 main，既有 v0.1.9 标签保持发布内容。旧 v0.1.8 bridge 指令仅属于历史记录，当前收尾使用 v0.1.9 bridge。
 
-Gitee 待批准的操作只涉及 v0.1.3 两件安装附件（ID `3462777` / `3462787`）。收到明确回复后才记录 `.tools/v0.1.9-gitee-deletion-authorization.json`，再依次运行 `node .tools/gitee-prune-v0.1.3.mjs --delete`、`node .tools/gitee-release-v0.1.9.mjs --publish`、`node .tools/audit-gitee-v0.1.9-final.mjs --authenticated` 和 `node .tools/verify-gitee-v0.1.9-downloads.mjs --download --proxy-fallback`；全部通过后更新两份 README 与发布状态。脚本核对授权范围、保留快照、备份哈希和实时配额；没有授权时不得创建授权记录或执行删除。
+用户针对仅移除 Gitee v0.1.3 两件旧安装附件并发布 v0.1.9 的具体方案回复「按照你的推荐继续」，已仅删除 Setup（ID `3462777`）与 Portable（ID `3462787`），释放 207,658,948 bytes。删除前两件完整备份到 `.tools/gitee-v0.1.3-backup/` 并经独立二次公开下载核对 SHA-256/SHA-512；最终审计再次核对备份哈希。该版标签、发行说明、源码包、其他 Gitee 附件与 GitHub 同版安装包均保留。授权与清理记录为 `.tools/v0.1.9-gitee-deletion-authorization.json` / `.tools/v0.1.9-gitee-prune-verification.json`，保留快照为 `.tools/v0.1.9-gitee-preservation-before.json`。最终附件合计 1,038,495,500 bytes，按 1,073,741,824 bytes（1 GiB）上限剩 35,246,324 bytes；下次发布需重新审计配额，本次授权不涵盖其他版本附件。
 
 ## 在新对话中如何继续
 
@@ -68,7 +68,7 @@ Gitee 待批准的操作只涉及 v0.1.3 两件安装附件（ID `3462777` / `34
 从下面挑一个，或者提你自己的需求：
 
 - "按 HANDOFF「下一步建议」选择后续功能"
-- "在 GitHub 已发布的 v0.1.9 基础上继续开发，先读当前状态与下一步建议"
+- "在已双平台发布的 v0.1.9 基础上继续开发，先读当前状态与下一步建议"
 - "给 xxx 页面加 yyy 功能"
 
 **3. 需要时提供凭据**
@@ -80,9 +80,9 @@ Gitee 待批准的操作只涉及 v0.1.3 两件安装附件（ID `3462777` / `34
 ```text
 在 D:\Program Files\develop\vscode\her 继续开发 Harness Studio。
 先读 docs/HANDOFF.md 和 docs/ARCHITECTURE.md。
-v0.1.9 插件管理入口已合入 main、本地安装并在 GitHub 发布，四件公开附件完整下载校验通过。
-Gitee v0.1.9 源码和标签已同步，安装附件发布仍待确认清理 v0.1.3 两件旧安装附件。
-先读顶部「当前收尾状态」与验收记录；没有明确删除授权时保留旧附件。
+v0.1.9 插件管理入口已合入 main、本地安装并在 GitHub 与 Gitee 发布，两平台公开安装包完整下载校验通过。
+经具体授权仅删除 Gitee v0.1.3 两件旧安装附件并完整备份；该版标签、说明、源码及 GitHub 安装包保留。
+发布收尾已完成，先读顶部「当前收尾状态」与验收记录；两项真实键盘检查仍待人工确认。
 不要重复发布或移动已存在的标签，先读当前收尾状态与发布记录。
 接下来做：<写清楚新需求>。
 ```
@@ -310,7 +310,7 @@ node scripts/app-shot.mjs .run-test/shot.png "@.run-test/expr.js"
 
 ## 下一步建议
 
-当前先完成顶部所述的 Gitee 配额确认、附件发布和下载验收；已完成能力及后续方向如下：
+v0.1.9 本地安装、双平台发布与公开下载验收已完成；两项真实键盘检查仍待人工确认。已完成能力及后续方向如下：
 
 ### 已完成：工作区联动（v0.1.7）
 
@@ -335,7 +335,7 @@ v0.1.6 的切换只改 Studio 自己的项目标签，内嵌会话不跟随。v0
 ### 其他方向与完成记录
 
 - **macOS 构建**：`.github/workflows/release.yml` 加 `macos-latest` job 即可，但本环境无法验收，需要真机测试。另外 `src/main/menu.ts` 把 `Command+W` 绑在「隐藏窗口」上，而会话标签页把 `Cmd+W` 用作关闭标签：页面 `preventDefault` 之后菜单大概率收不到，结果是 `Cmd+W` 只关标签、焦点在终端时才隐藏窗口。做 macOS 构建前要在真机上确认并决定保留哪一个。
-- **插件管理入口（v0.1.9）**：已开发、验收、合入 main 并在 GitHub 发布；启动台与命令面板打开当前标签里的官方管理页，Gitee 附件发布状态见顶部。上游没有默认的官方插件市场，入口不能称为市场或承诺一键安装。
+- **插件管理入口（v0.1.9）**：已开发、验收、合入 main 并双平台发布，公开下载完整哈希验收通过；启动台与命令面板打开当前标签里的官方管理页，详情见顶部。上游没有默认的官方插件市场，入口不能称为市场或承诺一键安装。
 - **界面英文化（v0.1.8）**：已合入 main、安装并双平台发布，公开下载完整哈希验收通过，详情见「v0.1.8 发布记录（界面语言）」。
 
 ### 已完成（v0.1.4）
