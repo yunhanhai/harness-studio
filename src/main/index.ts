@@ -44,6 +44,7 @@ import { applyTheme } from './windows'
 import { injectIntoComposer } from './quickask'
 import { WorkspaceNavigator } from './workspace-navigation'
 import { openPluginPanel } from './plugin-navigation'
+import { SessionTabFocus } from './session-tab-focus'
 import { registerGlobalShortcuts } from './shortcuts'
 import { installApplicationMenu } from './menu'
 import { createTray, updateTrayMenu } from './tray'
@@ -89,6 +90,8 @@ function liveGuest(id: number | null): Electron.WebContents | null {
 function activeGuest(): Electron.WebContents | null {
   return liveGuest(activeGuestId)
 }
+
+const sessionTabFocus = new SessionTabFocus(() => mainWindow, activeGuest)
 
 /** Wait for the embedded Harness webview to attach (after switching to the workspace view). */
 function waitForGuest(timeoutMs = 15_000): Promise<Electron.WebContents | null> {
@@ -486,6 +489,7 @@ function configureWebviewSecurity(window: BrowserWindow): void {
       pluginOpenRequests.get(id)?.controller.abort()
       pluginOpenRequests.delete(id)
       guests.delete(id)
+      sessionTabFocus.forget(id)
       workspaceOpenRequests.delete(id)
       if (activeGuestId === id) activeGuestId = null
     })
@@ -665,7 +669,7 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
    * conversation the user is looking at. Only the main window may say so, and
    * only about a guest it attached; anything else is dropped without an error.
    */
-  ipcMain.on(IPC.tabsActiveGuest, (event, id: unknown) => {
+  ipcMain.on(IPC.tabsActiveGuest, (event, id: unknown, options: unknown) => {
     if (!mainWindow || mainWindow.isDestroyed() || mainWindow.webContents !== event.sender) return
     if (id === null || (typeof id === 'number' && guests.has(id))) {
       if (activeGuestId !== id) {
@@ -674,6 +678,7 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
         }
       }
       activeGuestId = id
+      sessionTabFocus.update(options)
       const front = activeGuest()
       if (front) for (const resolve of guestWaiters.splice(0)) resolve(front)
     }
@@ -1059,6 +1064,7 @@ function createShellWindows(): void {
   mainWindow.on('closed', () => {
     mainWindow = null
   })
+  mainWindow.on('focus', () => sessionTabFocus.restore())
   mainWindow.webContents.on('before-input-event', (event, input) => handleShortcut(event, input))
   mainWindow.webContents.on('will-navigate', (event, url) => {
     const devUrl = process.env.ELECTRON_RENDERER_URL

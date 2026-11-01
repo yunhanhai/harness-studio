@@ -1,5 +1,5 @@
 import { useI18n } from '../lib/i18n'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { useApp } from '../store'
 import { hostStateLabel, shortPath } from '../lib/format'
+import { syncSessionTabFocus } from '../lib/session-tab-focus'
 import { BrandMark } from '../components/BrandMark'
 import { TabStrip } from '../components/TabStrip'
 import { HarnessPane } from './HarnessPane'
@@ -52,6 +53,8 @@ export function WorkspacePage(): React.JSX.Element {
 
   /** Webview elements by tab id, so the toolbar can drive the tab in front. */
   const framesRef = useRef(new Map<string, WebviewElement>())
+  const focusedFrameRef = useRef<WebviewElement | null>(null)
+  const focusTransitionRef = useRef({ tabId: activeTabId, visible: onScreen })
   const [panes, setPanes] = useState<Record<string, PaneState>>({})
   const [zoom, setZoom] = useState(1)
   const [elapsed, setElapsed] = useState(0)
@@ -107,10 +110,22 @@ export function WorkspacePage(): React.JSX.Element {
     else framesRef.current.delete(id)
   }, [])
 
-  // Quick Ask types into the guest the user is looking at.
-  useEffect(() => {
-    window.studio.tabs.setActiveGuest(ready ? (activeGuestId ?? null) : null)
-  }, [ready, activeTabId, activeGuestId])
+  // A single handoff avoids sibling effects blurring/focusing in tab-list order.
+  // Only real tab/page/guest transitions claim focus; toolbar edits do not.
+  useLayoutEffect(() => {
+    const previous = focusTransitionRef.current
+    const selectionChanged = previous.tabId !== activeTabId || (!previous.visible && onScreen)
+    const shellInputFocused = Boolean(document.activeElement?.closest('input, textarea, select, [contenteditable="true"]'))
+    focusedFrameRef.current = syncSessionTabFocus(
+      focusedFrameRef.current,
+      framesRef.current.get(activeTabId) ?? null,
+      ready ? (activeGuestId ?? null) : null,
+      onScreen,
+      window.studio.tabs.setActiveGuest,
+      selectionChanged || !shellInputFocused
+    ) as WebviewElement | null
+    focusTransitionRef.current = { tabId: activeTabId, visible: onScreen }
+  }, [ready, activeTabId, activeGuestId, onScreen])
 
   const activeFrame = (): WebviewElement | undefined => framesRef.current.get(activeTabId)
 
@@ -367,7 +382,6 @@ export function WorkspacePage(): React.JSX.Element {
               tab={tab}
               url={host.url ?? ''}
               active={tab.id === activeTabId}
-              focused={onScreen && tab.id === activeTabId}
               pane={panes[tab.id] ?? INITIAL_PANE}
               onState={updatePane}
               onFrame={registerFrame}

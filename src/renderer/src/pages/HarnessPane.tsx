@@ -43,8 +43,6 @@ interface HarnessPaneProps {
   url: string
   /** The tab in front of the strip. */
   active: boolean
-  /** Active and the workspace view is the visible page: typing should land here. */
-  focused: boolean
   pane: PaneState
   /** `null` forgets the tab's state, so a remount starts from loading again. */
   onState: (id: string, patch: Partial<PaneState> | null) => void
@@ -61,7 +59,6 @@ export const HarnessPane = memo(function HarnessPane({
   tab,
   url,
   active,
-  focused,
   pane,
   onState,
   onFrame,
@@ -107,8 +104,6 @@ export const HarnessPane = memo(function HarnessPane({
       if (typeof element.getWebContentsId !== 'function') return
       try {
         updateTab(id, { guestId: element.getWebContentsId() })
-        const state = useApp.getState()
-        if (state.view === 'workspace' && state.activeTabId === id) element.focus({ preventScroll: true })
       } catch {
         /* not attached yet */
       }
@@ -139,16 +134,6 @@ export const HarnessPane = memo(function HarnessPane({
       updateTab(id, { guestId: undefined })
     }
   }, [id, onState, onFrame, onZoom, updateTab])
-
-  // Typing follows the tab in front. A tab that goes to the back, or a workspace
-  // view that is parked behind another page, gives focus up so keys never land
-  // in a composer nobody can see.
-  useEffect(() => {
-    const element = frameRef.current
-    if (!element) return
-    if (focused) element.focus({ preventScroll: true })
-    else if (document.activeElement === element) element.blur()
-  }, [focused])
 
   return (
     <div className={`harness-pane ${active ? 'is-active' : 'is-parked'}`}>

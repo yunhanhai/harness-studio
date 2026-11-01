@@ -7,7 +7,7 @@
 | 项目 | 值 |
 | --- | --- |
 | 版本 | `0.1.9`（已安装、GitHub 与 Gitee 已发布，两平台完整公开下载校验通过） |
-| 开发分支 | `main`（`codex/plugin-entry` 已快进合入） |
+| 开发分支 | `codex/session-tab-focus`（本地会话焦点维护修复；已发布代码在 `main`） |
 | 本地 HEAD | `git log --oneline -1` 确认 |
 | 工作区 | `git status` 确认 |
 | 已发布 | GitHub：v0.1.0～v0.1.9；Gitee：v0.1.0～v0.1.4、v0.1.6～v0.1.9（v0.1.5 只有标签；v0.1.0 / v0.1.1 / v0.1.2 / v0.1.3 仅保留说明与源码包，旧安装包已移除并备份） |
@@ -31,7 +31,19 @@
 | v0.1.8 | 中文、English 与跟随系统；跨窗口语言同步，保留会话与草稿 |
 | v0.1.9 | 启动台与命令面板打开当前标签页的官方插件管理 |
 
-## 当前收尾状态：v0.1.9 插件管理入口
+## 当前本地维护：会话标签页键盘焦点（未发布）
+
+用户在 v0.1.9 发布完成后授权按推荐继续键盘验收。Win32 原生鼠标先点击 A 输入框，并以系统字符输入确认 A 真正收到输入；接着 `Ctrl+Tab` 后 B 收到文字，但 `Ctrl+Shift+Tab` 后界面显示 A、文字仍进入 B。两步快捷键与文字的事件增量、完整旧事件前缀、会话/文档标识均已保存，证据 `.tools/v0.1.9-system-keyboard-native-focus-retest.json`。这确认了外层 webview DOM 焦点与 Electron guest 原生输入焦点脱节，不能仅凭 `document.activeElement` 验收。
+
+维护修复在 `codex/session-tab-focus`：`WorkspacePage` 集中完成旧 frame blur → 新 frame focus → 精确 guest 身份及焦点 IPC，不再由 `HarnessPane` 的兄弟 effect 各自争抢。主进程 `SessionTabFocus` 只对存活的当前 guest，在主窗口可见、未最小化、已聚焦且启用时调用 `WebContents.focus()`；切页、guest 替换/销毁撤销旧等待，恢复窗口时重新核对当前身份，不调用 `BrowserWindow.focus()` 激活其他窗口。同标签加载完成时保留正在使用的 Studio 输入框，插件导航的纯身份上报不请求焦点。外层 `document.hasFocus()` 在 guest 收键时可能为 false，因此不作为拒绝条件。
+
+`npm run typecheck`、`npm run build`、10 组焦点回归、34 组插件导航回归、15 组工作区回归和 11 组语言回归均通过，独立代码复核通过；CI 与发布工作流已加入 `npm run test:session-tab-focus`。本地候选最终构建 `index-mLQpSSmh.js` 在官方 DSH `0.2.1-rc.2` 的隔离环境通过 Win32 自动输入：原生点击 A 和输入探针建立基线后，双向切标签的文字仅进入新前台；切到提示词库后文字进入搜索框，后台草稿不变；返回工作区后文字回到当前会话。快捷键至首字符约 151 / 143 ms；会话、文档标识及 timeOrigin 均保留，6 个 out 文件哈希在验收前后匹配。
+
+已安装 v0.1.9 与本地候选分别通过独立系统 Enter 验收：精确同 PID 的原生 `#32770`「确认发送」框出现，取消后两个完整草稿保留，会话日志未增加提交事件；没有模型/账号凭据、模型请求或被保护机制拦截的发送。使用独立 `userData` / `DSH_HOME` / agents / Documents 等目录；本次创建的 GUI、Host、monitor 与原生观察进程均已退出。汇总报告 `.tools/session-tab-focus-verification.json`，安装版和候选证据分别归档。所有输入均为 **Win32 自动输入**，`physicalKeyboardTested=false`、`humanResultReceived=false`；用户尚未报告人工验收结果，不能把“继续”或 `isTrusted` 记为人工通过。
+
+版本字段仍为 `0.1.9`，维护改动记录在 CHANGELOG「未发布」。当前安装版 app.asar SHA-256 仍为 `dc17360b006400b2f58da7b8236fc3e45c138883093d91d80508a9e33a428c59`，本次仅本地提交修复，没有重新安装、推送、打标签或发布；已有双平台 v0.1.9 发布状态如下。
+
+## v0.1.9 发布收尾状态：插件管理入口
 
 用户在 v0.1.8 发布完成后授权按推荐继续，启动台快捷操作与命令面板的「插件管理」已完成开发与验收，功能提交 `1712782` 已从 `codex/plugin-entry` 快进合入 `main`。`store.openPlugins()` 切回工作区，在明确的当前 tab 内打开官方 Harness 的 `plugins` 面板；不增加 Host，不改 URL，插件操作仍在上游管理界面中完成。上游没有默认的官方插件市场。
 
@@ -310,7 +322,7 @@ node scripts/app-shot.mjs .run-test/shot.png "@.run-test/expr.js"
 
 ## 下一步建议
 
-v0.1.9 本地安装、双平台发布与公开下载验收已完成；两项真实键盘检查仍待人工确认。已完成能力及后续方向如下：
+v0.1.9 本地安装、双平台发布与公开下载验收已完成。后续系统自动输入验收发现并修复反向切标签焦点问题，维护改动在本地分支，详见顶部；两项人工键盘检查仍待用户实际操作并报告结果。优先完成人工检查，再把维护修复纳入下一版本。已完成能力及后续方向如下：
 
 ### 已完成：工作区联动（v0.1.7）
 
@@ -363,7 +375,7 @@ Host 崩溃自动恢复已实现并验证：非主动退出后按 2s → 5s → 
 **遗留的小事**：
 
 - `win-unpacked` 里的 `Harness Studio.exe` 若还在运行，`npm run dist:dir` 会因 `EBUSY` 失败。打包前先结束进程。
-- 发送确认的**拦截逻辑**已自动化验证（状态机、选择器、按钮识别、隔离世界可见性），但「合成按键驱动 Lexical 输入」无法自动验证——Lexical 忽略 CDP 合成事件。**真实的键盘拦截需要人工确认一次**。
+- 发送确认的拦截逻辑及后续 Win32 系统自动 Enter / 取消验收已通过，详见顶部本地维护记录。CDP 合成按键不等同于系统输入，两种自动验收也不等同于用户人工键盘操作；人工结果仍待报告。
 
 ### 已完成（v0.1.6）
 

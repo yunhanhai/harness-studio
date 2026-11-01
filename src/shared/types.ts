@@ -385,6 +385,13 @@ export type StudioAction =
   | { type: 'show-about' }
   | { type: TabCommand }
 
+export interface ActiveGuestOptions {
+  /** The workspace page is currently on screen. */
+  visible: boolean
+  /** Request input focus as part of a tab/page/guest transition. */
+  focus: boolean
+}
+
 export interface StudioApi {
   app: {
     info(): Promise<AppInfo>
@@ -451,7 +458,7 @@ export interface StudioApi {
      * from `<webview>.getWebContentsId()`), so Quick Ask types into the tab the
      * user is looking at. `null` when no tab has a ready guest.
      */
-    setActiveGuest(webContentsId: number | null): void
+    setActiveGuest(webContentsId: number | null, options?: ActiveGuestOptions): void
     /** Open a project in this exact guest without restarting the shared Host. */
     openWorkspace(workspaceId: string, webContentsId: number, path?: string): Promise<OpenTabWorkspaceResult>
     openPlugins(webContentsId: number, requestId: string): Promise<OpenPluginPanelResult>

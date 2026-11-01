@@ -247,6 +247,10 @@ DSH 本身就是多工作区、多会话服务（见上文「启动耗时与工�
 - 主题与发送确认开关推给**所有** guest；`guest:confirm-send` 与 `guest:notice` 接受任一已登记的 guest；
 - `tabs:active-guest` 只接受主窗口发来的、已登记的 id。
 
+焦点交接由 `WorkspacePage` 集中管理：先释放旧 frame，再聚焦新 frame，并随 `tabs:active-guest` 报告工作区是否可见及本次是否需要输入焦点。`HarnessPane` 只报告 guest 就绪，避免兄弟 effect 顺序导致反向切标签时 DOM 指向新标签、原生输入仍留在旧标签。主进程 `SessionTabFocus` 在当前 guest 存活且主窗口可见、未最小化、已聚焦和启用时调用 `WebContents.focus()`；它不主动激活系统窗口。窗口失焦期间仅保留当前 guest 的待处理请求，切页/替换/销毁时撤销，恢复窗口时重新核对身份；成功后清掉请求，不在每次激活时重复抢焦点。
+
+离开工作区会释放 guest 并将原生输入交回 Studio；同标签加载完成时，正在使用的 shell 输入框保留焦点。插件导航仅上报 guest 身份，不请求输入焦点。Electron 内嵌 guest 收键时外层 `document.hasFocus()` 可能为 false，所以不能用它判断系统窗口是否聚焦，也不能仅凭 `document.activeElement` 验收切标签后的实际输入。回归脚本为 `npm run test:session-tab-focus`；维护修复另用官方 DSH 与 Win32 自动系统输入验证双向切换、跨页输入及原生发送确认，人工键盘验收仍单独记录。
+
 ### 快捷键与内嵌终端
 
 `Ctrl+T` / `Ctrl+W` / `Ctrl+Tab` / `Ctrl+Shift+Tab` 按焦点所在分三路：
