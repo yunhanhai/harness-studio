@@ -6,11 +6,11 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 版本 | `0.1.11` 发布准备中；当前安装/公开附件仍为 v0.1.10，人工键盘结果仍待确认 |
-| 开发分支 | `codex/conversation-reading-size`（v0.1.11 会话阅读字号发布准备；已发布代码在 `main`） |
+| 版本 | `0.1.11` 已本地安装、GitHub 发布并完成公开附件校验；Gitee 安装附件待授权清理 v0.1.6 旧包，人工键盘结果仍待确认 |
+| 开发分支 | `main`（已快进合入 `codex/conversation-reading-size`） |
 | 本地 HEAD | `git log --oneline -1` 确认 |
 | 工作区 | `git status` 确认 |
-| 已发布 | GitHub：v0.1.0～v0.1.10；Gitee：v0.1.0～v0.1.4、v0.1.6～v0.1.10（v0.1.5 只有标签；v0.1.0 / v0.1.1 / v0.1.2 / v0.1.3 / v0.1.4 仅保留说明与源码包，旧安装包已移除并备份） |
+| 已发布 | GitHub：v0.1.0～v0.1.11；Gitee：v0.1.0～v0.1.4、v0.1.6～v0.1.10（v0.1.11 目前仅标签）（v0.1.5 只有标签；v0.1.0 / v0.1.1 / v0.1.2 / v0.1.3 / v0.1.4 仅保留说明与源码包，旧安装包已移除并备份） |
 | 远端 | `origin` → GitHub，`gitee` → Gitee |
 | 平台 | Windows 10/11 x64（主要目标） |
 
@@ -31,16 +31,23 @@
 | v0.1.8 | 中文、English 与跟随系统；跨窗口语言同步，保留会话与草稿 |
 | v0.1.9 | 启动台与命令面板打开当前标签页的官方插件管理 |
 | v0.1.10 | 会话标签切换的原生输入焦点修复（已安装、双平台发布） |
+| v0.1.11 | 会话阅读字号：跟随 Harness、14、16、18 px（已安装，GitHub 已发布；Gitee 安装包待确认清理旧附件） |
 
 ## 当前收尾状态：v0.1.11 会话阅读字号
 
-用户按推荐继续后，已开始「设置 → 外观 → 会话阅读字号」，支持跟随 Harness、14、16、18 px，默认跟随，可恢复默认。设置即时保存并广播到所有标签，preload 只更新聊天文字样式，正文、列表、表格与标题跟随调整；composer、工具卡和终端维持原字号。真实官方 DSH `0.2.1-rc.2` 的文字节点和字体变量已通过程序文件只读核对，具体范围见 ARCHITECTURE「会话阅读字号」。
+「设置 → 外观 → 会话阅读字号」支持跟随 Harness、14、16、18 px，默认跟随，可恢复默认。保存后即时更新所有标签的用户与助手正文、列表、表格和标题，保留草稿与会话；上游自定义代码字号、composer、导航、工具卡和终端维持原字号。官方 DSH `0.2.1-rc.2` 的节点与字体变量已通过程序文件只读核对，范围见 ARCHITECTURE「会话阅读字号」。
 
-用户继续授权安装与发布后，三个项目根版本已升为 `0.1.11`，`duplexer2` 保持 `0.1.4`，CHANGELOG 与 README 功能说明已整理。公开下载链接和 Gitee 徽章暂保留 v0.1.10，待对应平台公开附件验收后更新。类型检查、构建、设置迁移/白名单/持久化/重置检查、11 项语言回归与 10 项焦点回归均通过，独立代码复核通过。
+功能提交 `8a5d5a6`，发布准备提交 `9004570`，已快进合入 `main`。三个项目根版本为 `0.1.11`，`duplexer2` 保持 `0.1.4`；类型检查、构建与 70 项现有回归通过，设置迁移/非法值/持久化/重置与独立代码复核通过。最终 `index-DGFPxVqw.js` 的 7 项隔离 Electron fixture 验收通过：四标签同步更新、非正文排除、草稿/selection/文档/timeOrigin/guest 保留且零重载、新标签初始化、真实设置 UI/保存/重置与重启持久化；1040px 中英文布局正常。这是 Studio Electron/preload/IPC 的本地 Host fixture，未冒称官方实际消息 UI 或人工键盘实测通过。报告 `.tools/reading-size-verification/report.json` 与 `.tools/reading-size-settings-verification.json`。
 
-最终构建 `index-DGFPxVqw.js` 的 7 项隔离 Electron fixture 验收通过：默认无字号覆盖，14/16/18 px 在四个标签即时更新正文/标题/行高，代码字号的上游自定义仍保留，composer/导航/终端/附件/compact 推理/工具内 Markdown 不变；草稿、光标、文档标识、timeOrigin 与 guest ID 保留且零加载，新标签初始化、真实设置选项/即时保存/重置与重启持久化通过。1040px 中英文设置页截图无横向溢出。验收前后全部 6 个 out 文件哈希一致，本轮自建 GUI/Host 均退出。报告 `.tools/reading-size-verification/report.json` 与截图同目录；该结果属于 fixture，未冒称官方会话 UI 的实际消息验收或人工按键通过。设置持久化独立报告 `.tools/reading-size-settings-verification.json`。本轮使用独立 `.tools/v0.1.11-staging/` 并指定 `--publish never` 打包，安装采用保留 staging 的绝对路径检查方式；不执行默认 `install:local` 的旧 staging 清理。产物与安装将以该阅读字号报告的全部 6 个 out 文件为基线核验，不借用旧版自动验收结论。GitHub bridge 基线为 `fd7ba1c978b21aafa009cba67d61a659b774cb86`，汇总状态仅记入 `.tools/v0.1.11-publication-status.json`。
+独立 `.tools/v0.1.11-staging`、`--publish never` 打包与原地安装已完成，ProductVersion 为 `0.1.11.0`。安装/staging/out 的全部 6 个文件与上述字号 fixture 逐字节一致；exe/asar/两语言包匹配 staging，两个快捷方式仍带 `--open-workspace`。app.asar SHA-256 为 `ba27456453597d2ae93e04a6d7324e374f6625a989cc60650fa42bf11516bb37`。Setup 为 104,000,645 bytes、Portable 为 103,731,107 bytes；latest.yml 两处 SHA-512/大小与 Setup 一致，blockmap 完整覆盖 Setup。报告 `.tools/v0.1.11-installed-verification.json` 与 `.tools/v0.1.11-artifacts.json`。保留默认 dist 与 v0.1.9/v0.1.10 staging，其 12 个关键文件哈希/大小不变；未重试此前被自动审查拒绝的旧 staging 清理，未读取用户 DSH/模型凭据或启动日常 Host。
 
-两项既有人工键盘检查仍为 pending。本次原地升级前已通过专用 CDP/IPC 正常关闭自建的 v0.1.10 隔离 GUI、Host 与 monitor，草稿及观察记录保留归档；未将“继续”记为按键结果。记录 `.tools/v0.1.10-keyboard-qa-session.json` 与 `.tools/v0.1.10-manual-keyboard-status.json`，两项人工结果仍 pending。Gitee fresh 配额审计剩余 35,176,362 bytes，正在备份 v0.1.6 两件旧安装附件；尚未获得这些附件的删除授权。先完成产物/安装与可独立进行的 GitHub 发布，给出具体备份及空间方案后再请求用户批准。
+GitHub [v0.1.11](https://github.com/yunhanhai/harness-studio/releases/tag/v0.1.11) 已公开，发行标题/说明与 CHANGELOG 一致。[Release](https://github.com/yunhanhai/harness-studio/actions/runs/41293996781) 与 [CI](https://github.com/yunhanhai/harness-studio/actions/runs/41293996506) 均成功，精确 bridge SHA `a7adafa59cb88cc60536bd3df301ab70157bf6ce`。四件附件已完整匿名下载并核对 API SHA-256；公开 Setup 的 SHA-512 与公开 latest.yml 两处值一致，blockmap 覆盖完整文件。CI 与本地分别构建，各自核验完整哈希，不要求二进制相同。报告 `.tools/v0.1.11-github-release-verification.json`、`.tools/v0.1.11-github-download-verification.json`、`.tools/v0.1.11-github-update-verification.json`。GitHub 下载链接已升为 v0.1.11。
+
+Gitee main 与新的注释 v0.1.11 标签已推送，安装附件尚未发布，下载链接/徽章继续保留 v0.1.10。fresh 附件总量 1,038,565,462 bytes，剩余 35,176,362 bytes；新两包需要 207,731,752 bytes。精准清理方案为仅移除 v0.1.6 Release `1260636` 的 Setup `3553808`（103,977,982 bytes）与 Portable `3553815`（103,708,449 bytes），共释放 207,686,431 bytes，上传新版后剩余 35,131,041 bytes。两件均各两次匿名完整下载核对 SHA-256/SHA-512，备份在 `.tools/gitee-v0.1.6-backup/`；GitHub 同版安装包仍公开，但二进制不同，精确保留依靠本地 Gitee 备份。`.tools/v0.1.11-gitee-deletion-plan.json` 已可审查；已向用户提出精确批准问题，尚未收到直接答复、未执行 DELETE。旧 v0.1.4 授权不覆盖本次；收到本次直接回复后才创建精确 authorization 记录并执行带保护的删除、发布及完整下载/保留审计。
+
+本地/Gitee 发布 tag commit `9004570e519fc8df42949c6adacd29bdc5f7c240`、tag object `95b9d1bec18c44d80b79032b430b3b3113f90ccd`；GitHub tag commit `a7adafa59cb88cc60536bd3df301ab70157bf6ce`、tag object `65d0ae0f5775efe70c4607b8662acaf3b2a854b0`。发布 tree 同为 `1ba0d35fe7ed8d5d7880bcb2141dfefdd7c6f80c`，原子推送且未强推，所有旧标签保留。总体状态 `.tools/v0.1.11-publication-status.json`，下次 GitHub 文档同步使用其 `githubBridgeNextBaseline`：`node .tools/run-v0.1.11-github-bridge.mjs --sync-main --base <该基线> --push`；Gitee 使用 `node .tools/gitee-push-v0.1.11.mjs --sync-main --push`。只同步 main，不重复发布、不重跑 release push，不移动已有标签。
+
+两项既有人工键盘结果仍 pending；“继续”不算人工验收。升级前通过专用 CDP/IPC 正常关闭自建 v0.1.10 隔离 GUI/Host/monitor，原草稿与观察证据保留归档，见 `.tools/v0.1.10-keyboard-qa-session.json` 与 `.tools/v0.1.10-manual-keyboard-status.json`。
 
 ## v0.1.10 发布收尾状态：会话标签页键盘焦点
 

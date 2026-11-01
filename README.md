@@ -89,7 +89,7 @@ Harness Studio 换了一个角度：**先让一个人每天用得顺手**。
 
 ### 会话输入焦点（v0.1.10）
 
-修复反向切标签后文字仍进入后台会话的问题。切标签统一交接 DOM 与原生输入焦点，离开工作区后输入交回 Studio；加载完成时保留正在使用的工具栏输入框。v0.1.10 已本地安装，并在 GitHub 与 Gitee 发布；产物及两平台公开安装包的整文件下载校验通过。双向切换、跨页输入和发送确认的 Win32 自动验收已通过，人工键盘结果仍待确认。
+修复反向切标签后文字仍进入后台会话的问题。切标签统一交接 DOM 与原生输入焦点，离开工作区后输入交回 Studio；加载完成时保留正在使用的工具栏输入框。该修复已包含在当前本地安装版；v0.1.10 已在 GitHub 与 Gitee 发布，产物及两平台公开安装包的整文件下载校验通过。双向切换、跨页输入和发送确认的 Win32 自动验收已通过，人工键盘结果仍待确认。
 
 ### 插件管理（v0.1.9）
 
@@ -217,7 +217,7 @@ Studio 的页面、日期格式、托盘、菜单及确认框使用所选语言�
 
 | 平台 | 安装版 | 便携版 |
 | --- | --- | --- |
-| **GitHub**（全球） | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.10/Harness-Studio-0.1.10-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.10/Harness-Studio-0.1.10-x64-Portable.exe) |
+| **GitHub**（全球） | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.11/Harness-Studio-0.1.11-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.11/Harness-Studio-0.1.11-x64-Portable.exe) |
 | **Gitee**（国内更快） | [Setup.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.10/Harness-Studio-0.1.10-x64-Setup.exe) | [Portable.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.10/Harness-Studio-0.1.10-x64-Portable.exe) |
 
 - **Setup.exe**（99 MB）— 安装版，创建开始菜单与桌面快捷方式，支持自动更新
