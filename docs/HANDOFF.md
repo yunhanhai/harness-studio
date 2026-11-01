@@ -6,8 +6,8 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 版本 | `0.1.10` 已本地安装、双平台发布，产物与公开安装包整文件下载校验通过；人工键盘结果仍待确认 |
-| 开发分支 | `codex/conversation-reading-size`（会话阅读字号开发版；已发布代码在 `main`） |
+| 版本 | `0.1.11` 发布准备中；当前安装/公开附件仍为 v0.1.10，人工键盘结果仍待确认 |
+| 开发分支 | `codex/conversation-reading-size`（v0.1.11 会话阅读字号发布准备；已发布代码在 `main`） |
 | 本地 HEAD | `git log --oneline -1` 确认 |
 | 工作区 | `git status` 确认 |
 | 已发布 | GitHub：v0.1.0～v0.1.10；Gitee：v0.1.0～v0.1.4、v0.1.6～v0.1.10（v0.1.5 只有标签；v0.1.0 / v0.1.1 / v0.1.2 / v0.1.3 / v0.1.4 仅保留说明与源码包，旧安装包已移除并备份） |
@@ -32,17 +32,17 @@
 | v0.1.9 | 启动台与命令面板打开当前标签页的官方插件管理 |
 | v0.1.10 | 会话标签切换的原生输入焦点修复（已安装、双平台发布） |
 
-## 当前开发：会话阅读字号
+## 当前收尾状态：v0.1.11 会话阅读字号
 
 用户按推荐继续后，已开始「设置 → 外观 → 会话阅读字号」，支持跟随 Harness、14、16、18 px，默认跟随，可恢复默认。设置即时保存并广播到所有标签，preload 只更新聊天文字样式，正文、列表、表格与标题跟随调整；composer、工具卡和终端维持原字号。真实官方 DSH `0.2.1-rc.2` 的文字节点和字体变量已通过程序文件只读核对，具体范围见 ARCHITECTURE「会话阅读字号」。
 
-当前是未发布开发版，版本字段仍为 `0.1.10`，安装版与双平台 v0.1.10 标签/附件保持发布内容。CHANGELOG 的新增项写在「未发布」，两份 README 标为开发版。类型检查、构建、设置迁移/白名单/持久化/重置检查、11 项语言回归与 10 项焦点回归均通过，独立代码复核通过。
+用户继续授权安装与发布后，三个项目根版本已升为 `0.1.11`，`duplexer2` 保持 `0.1.4`，CHANGELOG 与 README 功能说明已整理。公开下载链接和 Gitee 徽章暂保留 v0.1.10，待对应平台公开附件验收后更新。类型检查、构建、设置迁移/白名单/持久化/重置检查、11 项语言回归与 10 项焦点回归均通过，独立代码复核通过。
 
-最终构建 `index-DGFPxVqw.js` 的 7 项隔离 Electron fixture 验收通过：默认无字号覆盖，14/16/18 px 在四个标签即时更新正文/标题/行高，代码字号的上游自定义仍保留，composer/导航/终端/附件/compact 推理/工具内 Markdown 不变；草稿、光标、文档标识、timeOrigin 与 guest ID 保留且零加载，新标签初始化、真实设置选项/即时保存/重置与重启持久化通过。1040px 中英文设置页截图无横向溢出。验收前后全部 6 个 out 文件哈希一致，本轮自建 GUI/Host 均退出。报告 `.tools/reading-size-verification/report.json` 与截图同目录；该结果属于 fixture，未冒称官方会话 UI 的实际消息验收或人工按键通过。设置持久化独立报告 `.tools/reading-size-settings-verification.json`。下一步推荐整理 v0.1.11、独立 staging 打包与本地安装，再按发布指南准备双平台发布。
+最终构建 `index-DGFPxVqw.js` 的 7 项隔离 Electron fixture 验收通过：默认无字号覆盖，14/16/18 px 在四个标签即时更新正文/标题/行高，代码字号的上游自定义仍保留，composer/导航/终端/附件/compact 推理/工具内 Markdown 不变；草稿、光标、文档标识、timeOrigin 与 guest ID 保留且零加载，新标签初始化、真实设置选项/即时保存/重置与重启持久化通过。1040px 中英文设置页截图无横向溢出。验收前后全部 6 个 out 文件哈希一致，本轮自建 GUI/Host 均退出。报告 `.tools/reading-size-verification/report.json` 与截图同目录；该结果属于 fixture，未冒称官方会话 UI 的实际消息验收或人工按键通过。设置持久化独立报告 `.tools/reading-size-settings-verification.json`。本轮使用独立 `.tools/v0.1.11-staging/` 并指定 `--publish never` 打包，安装采用保留 staging 的绝对路径检查方式；不执行默认 `install:local` 的旧 staging 清理。产物与安装将以该阅读字号报告的全部 6 个 out 文件为基线核验，不借用旧版自动验收结论。GitHub bridge 基线为 `fd7ba1c978b21aafa009cba67d61a659b774cb86`，汇总状态仅记入 `.tools/v0.1.11-publication-status.json`。
 
-两项既有人工键盘检查仍为 pending。已打开实际安装版 v0.1.10 的隔离测试窗口供用户操作，记录 `.tools/v0.1.10-manual-keyboard-status.json`，未将“继续”记为按键结果。该窗口与本轮字体开发的 QA 独立；不要修改它的草稿或冒称人工通过。原生确认观察器有到期时间，用户操作前应核对；到期不关闭人工窗口。后续发布仍需重新审计 Gitee 配额，既有授权不覆盖其他附件删除。
+两项既有人工键盘检查仍为 pending。本次原地升级前已通过专用 CDP/IPC 正常关闭自建的 v0.1.10 隔离 GUI、Host 与 monitor，草稿及观察记录保留归档；未将“继续”记为按键结果。记录 `.tools/v0.1.10-keyboard-qa-session.json` 与 `.tools/v0.1.10-manual-keyboard-status.json`，两项人工结果仍 pending。Gitee fresh 配额审计剩余 35,176,362 bytes，正在备份 v0.1.6 两件旧安装附件；尚未获得这些附件的删除授权。先完成产物/安装与可独立进行的 GitHub 发布，给出具体备份及空间方案后再请求用户批准。
 
-## 当前收尾状态：v0.1.10 会话标签页键盘焦点
+## v0.1.10 发布收尾状态：会话标签页键盘焦点
 
 用户在 v0.1.9 发布完成后授权按推荐继续键盘验收。Win32 原生鼠标先点击 A 输入框，并以系统字符输入确认 A 真正收到输入；接着 `Ctrl+Tab` 后 B 收到文字，但 `Ctrl+Shift+Tab` 后界面显示 A、文字仍进入 B。两步快捷键与文字的事件增量、完整旧事件前缀、会话/文档标识均已保存，证据 `.tools/v0.1.9-system-keyboard-native-focus-retest.json`。这确认了外层 webview DOM 焦点与 Electron guest 原生输入焦点脱节，不能仅凭 `document.activeElement` 验收。
 
