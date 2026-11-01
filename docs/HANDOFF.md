@@ -6,11 +6,11 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 版本 | `0.1.11` 已本地安装、GitHub 发布并完成公开附件校验；Gitee 安装附件待授权清理 v0.1.6 旧包，人工键盘结果仍待确认 |
+| 版本 | `0.1.11` 已本地安装、双平台发布，产物与公开安装包完整下载校验通过；人工键盘结果仍待确认 |
 | 开发分支 | `main`（已快进合入 `codex/conversation-reading-size`） |
 | 本地 HEAD | `git log --oneline -1` 确认 |
 | 工作区 | `git status` 确认 |
-| 已发布 | GitHub：v0.1.0～v0.1.11；Gitee：v0.1.0～v0.1.4、v0.1.6～v0.1.10（v0.1.11 目前仅标签）（v0.1.5 只有标签；v0.1.0 / v0.1.1 / v0.1.2 / v0.1.3 / v0.1.4 仅保留说明与源码包，旧安装包已移除并备份） |
+| 已发布 | GitHub：v0.1.0～v0.1.11；Gitee：v0.1.0～v0.1.4、v0.1.6～v0.1.11（v0.1.5 只有标签；v0.1.0 / v0.1.1 / v0.1.2 / v0.1.3 / v0.1.4 / v0.1.6 仅保留说明与源码包，旧安装包已移除并备份） |
 | 远端 | `origin` → GitHub，`gitee` → Gitee |
 | 平台 | Windows 10/11 x64（主要目标） |
 
@@ -31,7 +31,7 @@
 | v0.1.8 | 中文、English 与跟随系统；跨窗口语言同步，保留会话与草稿 |
 | v0.1.9 | 启动台与命令面板打开当前标签页的官方插件管理 |
 | v0.1.10 | 会话标签切换的原生输入焦点修复（已安装、双平台发布） |
-| v0.1.11 | 会话阅读字号：跟随 Harness、14、16、18 px（已安装，GitHub 已发布；Gitee 安装包待确认清理旧附件） |
+| v0.1.11 | 会话阅读字号：跟随 Harness、14、16、18 px（已安装，双平台发布） |
 
 ## 当前收尾状态：v0.1.11 会话阅读字号
 
@@ -43,7 +43,9 @@
 
 GitHub [v0.1.11](https://github.com/yunhanhai/harness-studio/releases/tag/v0.1.11) 已公开，发行标题/说明与 CHANGELOG 一致。[Release](https://github.com/yunhanhai/harness-studio/actions/runs/41293996781) 与 [CI](https://github.com/yunhanhai/harness-studio/actions/runs/41293996506) 均成功，精确 bridge SHA `a7adafa59cb88cc60536bd3df301ab70157bf6ce`。四件附件已完整匿名下载并核对 API SHA-256；公开 Setup 的 SHA-512 与公开 latest.yml 两处值一致，blockmap 覆盖完整文件。CI 与本地分别构建，各自核验完整哈希，不要求二进制相同。报告 `.tools/v0.1.11-github-release-verification.json`、`.tools/v0.1.11-github-download-verification.json`、`.tools/v0.1.11-github-update-verification.json`。GitHub 下载链接已升为 v0.1.11。
 
-Gitee main 与新的注释 v0.1.11 标签已推送，安装附件尚未发布，下载链接/徽章继续保留 v0.1.10。fresh 附件总量 1,038,565,462 bytes，剩余 35,176,362 bytes；新两包需要 207,731,752 bytes。精准清理方案为仅移除 v0.1.6 Release `1260636` 的 Setup `3553808`（103,977,982 bytes）与 Portable `3553815`（103,708,449 bytes），共释放 207,686,431 bytes，上传新版后剩余 35,131,041 bytes。两件均各两次匿名完整下载核对 SHA-256/SHA-512，备份在 `.tools/gitee-v0.1.6-backup/`；GitHub 同版安装包仍公开，但二进制不同，精确保留依靠本地 Gitee 备份。`.tools/v0.1.11-gitee-deletion-plan.json` 已可审查；已向用户提出精确批准问题，尚未收到直接答复、未执行 DELETE。旧 v0.1.4 授权不覆盖本次；收到本次直接回复后才创建精确 authorization 记录并执行带保护的删除、发布及完整下载/保留审计。
+Gitee [v0.1.11](https://gitee.com/yunhanhai/harness-studio/releases)（Release `1263056`）已完成发布及匿名完整下载验收，Setup（`3560848`，104,000,645 bytes）与 Portable（`3560850`，103,731,107 bytes）的大小、SHA-256/SHA-512 均与本地上传文件一致，全部下载进程已退出。README 下载链接与徽章已升为 v0.1.11。报告 `.tools/v0.1.11-gitee-release-verification.json`、`.tools/v0.1.11-gitee-download-verification.json` 与 `.tools/v0.1.11-gitee-final-audit.json`。
+
+用户针对精确方案直接回复「按照你的推荐继续下一」，仅移除 v0.1.6 Release `1260636` 的 Setup `3553808` 与 Portable `3553815`，释放 207,686,431 bytes；两件各两次完整下载校验的备份在 `.tools/gitee-v0.1.6-backup/`，删除前再次核对哈希。该版标签、说明、源码包、其他附件及 GitHub 安装包均保留。本次授权与删除记录 `.tools/v0.1.11-gitee-deletion-authorization.json` / `.tools/v0.1.11-gitee-prune-verification.json`；发布后附件总量 1,038,610,783 bytes，剩余 35,131,041 bytes，下次发布需重新审计配额。本次授权不涵盖其他附件。
 
 本地/Gitee 发布 tag commit `9004570e519fc8df42949c6adacd29bdc5f7c240`、tag object `95b9d1bec18c44d80b79032b430b3b3113f90ccd`；GitHub tag commit `a7adafa59cb88cc60536bd3df301ab70157bf6ce`、tag object `65d0ae0f5775efe70c4607b8662acaf3b2a854b0`。发布 tree 同为 `1ba0d35fe7ed8d5d7880bcb2141dfefdd7c6f80c`，原子推送且未强推，所有旧标签保留。总体状态 `.tools/v0.1.11-publication-status.json`，下次 GitHub 文档同步使用其 `githubBridgeNextBaseline`：`node .tools/run-v0.1.11-github-bridge.mjs --sync-main --base <该基线> --push`；Gitee 使用 `node .tools/gitee-push-v0.1.11.mjs --sync-main --push`。只同步 main，不重复发布、不重跑 release push，不移动已有标签。
 
@@ -112,7 +114,7 @@ v0.1.9 当时只同步文档时，先在干净的 `main` 提交，再运行 `nod
 从下面挑一个，或者提你自己的需求：
 
 - "按 HANDOFF「下一步建议」选择后续功能"
-- "继续 v0.1.11 的 Gitee 发布收尾，先读当前状态与精确旧附件清理方案"
+- "在已双平台发布的 v0.1.11 基础上继续开发，先读当前状态与下一步建议"
 - "给 xxx 页面加 yyy 功能"
 
 **3. 需要时提供凭据**
@@ -124,11 +126,11 @@ v0.1.9 当时只同步文档时，先在干净的 `main` 提交，再运行 `nod
 ```text
 在 D:\Program Files\develop\vscode\her 继续开发 Harness Studio。
 先读 docs/HANDOFF.md 和 docs/ARCHITECTURE.md。
-v0.1.11 会话阅读字号已合入 main、本地安装并在 GitHub 发布；类型检查、70 项回归、隔离 Electron fixture、产物及 GitHub 四件完整公开下载校验通过。
+v0.1.11 会话阅读字号已合入 main、本地安装并在 GitHub 与 Gitee 发布；类型检查、70 项回归、隔离 Electron fixture、产物及两平台公开附件完整下载校验通过。
 两个平台的 main 与 v0.1.11 标签已推送，标签固定发布内容；同步基线以 .tools/v0.1.11-publication-status.json 为准。
-Gitee 新安装包尚未发布：剩余空间不足，v0.1.6 的 Setup 3553808 与 Portable 3553815 已各两次完整下载备份并核对双哈希。
-已向用户提出仅删除这两件旧附件的具体问题，尚未收到直接答复；先检查是否已获得针对这份方案的授权，未授权不得删除。
-先读顶部「当前收尾状态」、.tools/v0.1.11-publication-status.json 和 .tools/v0.1.11-gitee-deletion-plan.json，继续 Gitee 发布收尾。
+Gitee 新安装包已发布并校验；经本次直接用户批准，仅删除 v0.1.6 的 Setup 3553808 与 Portable 3553815，两件已各两次完整下载备份并核对双哈希。
+该版标签、说明、源码包、其他附件及 GitHub 安装包均保留；本次删除授权不覆盖其他附件。
+先读顶部「当前收尾状态」与 .tools/v0.1.11-publication-status.json；本次发布已完成，按新需求继续，不重复打包或发布。
 两项真实键盘检查仍待人工确认，用户“继续”不算人工通过。
 不要重复发布或移动已存在的标签，先读当前收尾状态与发布记录。
 接下来做：<写清楚新需求>。
@@ -357,7 +359,7 @@ node scripts/app-shot.mjs .run-test/shot.png "@.run-test/expr.js"
 
 ## 下一步建议
 
-v0.1.11 会话阅读字号已本地安装、GitHub 发布并完成公开附件验收，详见顶部「当前收尾状态」。下一步是取得针对 Gitee v0.1.6 两件附件 `3553808` / `3553815` 的直接批准，再执行精确清理、上传 v0.1.11 并完成完整下载与保留审计；备份、空间方案和新包已准备好。其他旧附件删除需另行精准授权，已有标签保持发布内容。两项人工键盘检查可继续并行：双向切标签后直接打字，确认仅进入当前会话；开启「每次发送前确认」后真实按 Enter，确认弹出确认框并取消以保留草稿。用户尚未报告实际结果，状态保持 pending。已完成能力及后续方向如下：
+v0.1.11 会话阅读字号已本地安装、双平台发布并完成公开附件验收，详见顶部「当前收尾状态」。下一步按新的产品需求继续；以后发布先重新审计 Gitee 配额，其他旧附件删除需另行精准授权，已有标签保持发布内容。两项人工键盘检查可继续并行：双向切标签后直接打字，确认仅进入当前会话；开启「每次发送前确认」后真实按 Enter，确认弹出确认框并取消以保留草稿。用户尚未报告实际结果，状态保持 pending。已完成能力及后续方向如下：
 
 ### 已完成：工作区联动（v0.1.7）
 
