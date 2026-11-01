@@ -45,9 +45,9 @@ Harness Studio takes a different angle: **make one developer's daily loop feel f
 - **Session insights** — reads `~/.dsh` locally: token usage, cache hit rate, cost estimate with configurable pricing, 14-day trend, per-model and per-workspace breakdown, sortable session table.
 - **Native shell** — tray, global shortcuts, close-to-tray, single instance, window-state restore.
 - **Theming** — dark/light/system, accent colors, UI zoom, reduced motion.
-- **Interface language (development branch)** — choose Chinese, English, or Follow system in Settings → General. The saved choice updates the main window, command palette, quick ask, dates, tray, menus, and confirmation dialogs without reloading sessions or clearing drafts.
+- **Interface language (v0.1.8)** — choose Chinese, English, or Follow system in Settings → General. The saved choice updates the main window, command palette, quick ask, dates, tray, menus, and confirmation dialogs without reloading sessions or clearing drafts.
 
-The language setting applies to the Studio shell. The official Harness interface, conversation content, saved prompts, and raw logs stay as they are. Existing errors and installation progress snapshots keep the language used when generated. This feature is not included in the published v0.1.7 installers yet.
+The language setting applies to the Studio shell. The official Harness interface, conversation content, saved prompts, and raw logs stay as they are. Existing errors and installation progress snapshots keep the language used when generated. Interface languages are available from v0.1.8; download links will be updated after the new release assets are verified.
 
 When returning to a project with only an unsent draft, Harness may open a new blank session because the sidebar hides inactive blank sessions. Keep the original tab open when you need to preserve a draft. Removing a Studio workspace removes its bookmark and keeps the shared host running.
 
