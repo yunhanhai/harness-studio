@@ -69,6 +69,8 @@ When returning to a project with only an unsent draft, Harness may open a new bl
 
 Get the installer or portable build from [GitHub Releases](https://github.com/yunhanhai/harness-studio/releases) or [Gitee Releases](https://gitee.com/yunhanhai/harness-studio/releases).
 
+Current downloads: GitHub provides v0.1.11; Gitee provides v0.1.10 while v0.1.11 awaits approval to remove two backed-up older installer assets for space.
+
 > Builds are unsigned for now, so Windows SmartScreen may warn about an unknown publisher. Choose **More info → Run anyway**, or build from source.
 
 ### First run

@@ -95,7 +95,7 @@ Gitee [v0.1.9 发行版](https://gitee.com/yunhanhai/harness-studio/releases)（
 
 GitHub [v0.1.9 发行版](https://github.com/yunhanhai/harness-studio/releases/tag/v0.1.9)（ID `430416739`）已公开，包含 Setup / Portable / blockmap / latest.yml；[Release 工作流](https://github.com/yunhanhai/harness-studio/actions/runs/41283163481) 和 [CI](https://github.com/yunhanhai/harness-studio/actions/runs/41283163561) 均成功，说明与 CHANGELOG 一致。GitHub 标签 commit 为 `1653a8813a393e06b388c06d07a1258ed55f4c94`，本地/Gitee 为 `7ff97450ce26c8756996d6109b1e5660f5b9fd9e`，发布 tree 同为 `b2640794fb9b815f297b8524b4adebeee891cba9`。四件附件均完整匿名下载，大小与整文件 API SHA-256 匹配，公开 Setup 为 103,998,548 bytes、Portable 为 103,729,006 bytes；Setup 完整 SHA-512 与公开 latest.yml 两处值一致。下载 helper 和 curl 均已退出，报告 `.tools/v0.1.9-github-release-verification.json` / `.tools/v0.1.9-github-download-verification.json`，进度 complete=true，不需要续跑。GitHub 与本地分别构建，各自哈希匹配；README 两平台链接与 Gitee 徽章均已升为 v0.1.9。本地安装、双平台发布与完整公开下载验收已完成，发布记录见 `.tools/v0.1.9-publication-status.json`；不要重复打标签、发布或重跑 release 模式，也不要移动旧标签。两项既有真实键盘检查仍待人工确认。
 
-v0.1.9 当时只同步文档时，先在干净的 `main` 提交，再运行 `node .tools/gitee-push-v0.1.9.mjs --sync-main --push` 和 `node .tools/github-bridge-v0.1.9.mjs --sync-main --base <上次成功同步的本地提交> --push`。基线以 `.tools/v0.1.9-publication-status.json` 的 `githubBridgeNextBaseline` 为准，成功同步后更新状态记录。本次双平台收尾文档从此前已成功同步的本地提交继续；不要复用 release 模式或旧版本基线。两个同步命令仅推 main，既有 v0.1.9 标签保持发布内容。该段及旧 v0.1.8 bridge 指令均属于历史记录；当前使用顶部 v0.1.10 收尾指令与状态记录。
+v0.1.9 当时只同步文档时，先在干净的 `main` 提交，再运行 `node .tools/gitee-push-v0.1.9.mjs --sync-main --push` 和 `node .tools/github-bridge-v0.1.9.mjs --sync-main --base <上次成功同步的本地提交> --push`。基线以 `.tools/v0.1.9-publication-status.json` 的 `githubBridgeNextBaseline` 为准，成功同步后更新状态记录。本次双平台收尾文档从此前已成功同步的本地提交继续；不要复用 release 模式或旧版本基线。两个同步命令仅推 main，既有 v0.1.9 标签保持发布内容。该段及旧 v0.1.8 bridge 指令均属于历史记录；当前使用顶部 v0.1.11 收尾指令与状态记录。
 
 用户针对仅移除 Gitee v0.1.3 两件旧安装附件并发布 v0.1.9 的具体方案回复「按照你的推荐继续」，已仅删除 Setup（ID `3462777`）与 Portable（ID `3462787`），释放 207,658,948 bytes。删除前两件完整备份到 `.tools/gitee-v0.1.3-backup/` 并经独立二次公开下载核对 SHA-256/SHA-512；最终审计再次核对备份哈希。该版标签、发行说明、源码包、其他 Gitee 附件与 GitHub 同版安装包均保留。授权与清理记录为 `.tools/v0.1.9-gitee-deletion-authorization.json` / `.tools/v0.1.9-gitee-prune-verification.json`，保留快照为 `.tools/v0.1.9-gitee-preservation-before.json`。最终附件合计 1,038,495,500 bytes，按 1,073,741,824 bytes（1 GiB）上限剩 35,246,324 bytes；下次发布需重新审计配额，本次授权不涵盖其他版本附件。
 
@@ -112,7 +112,7 @@ v0.1.9 当时只同步文档时，先在干净的 `main` 提交，再运行 `nod
 从下面挑一个，或者提你自己的需求：
 
 - "按 HANDOFF「下一步建议」选择后续功能"
-- "在已双平台发布的 v0.1.10 基础上继续开发，先读当前状态与下一步建议"
+- "继续 v0.1.11 的 Gitee 发布收尾，先读当前状态与精确旧附件清理方案"
 - "给 xxx 页面加 yyy 功能"
 
 **3. 需要时提供凭据**
@@ -124,11 +124,12 @@ v0.1.9 当时只同步文档时，先在干净的 `main` 提交，再运行 `nod
 ```text
 在 D:\Program Files\develop\vscode\her 继续开发 Harness Studio。
 先读 docs/HANDOFF.md 和 docs/ARCHITECTURE.md。
-v0.1.10 会话输入焦点修复已合入 main、本地安装并在 GitHub 与 Gitee 发布，两平台公开安装包整文件下载校验通过。
-会话阅读字号开发版已在 codex/conversation-reading-size 完成，类型检查、构建与隔离 Electron 验收通过，版本字段仍为 0.1.10，尚未安装或发布这项新功能。
-先读顶部「当前开发」和对应验收报告，下一步推荐准备 v0.1.11 的本地安装与发布。
-经具体授权仅删除 Gitee v0.1.4 两件旧安装附件 3465634 / 3465641 并完整备份；该版标签、说明、源码及 GitHub 安装包保留。
-发布收尾已完成，先读顶部「当前收尾状态」与验收记录；两项真实键盘检查仍待人工确认。
+v0.1.11 会话阅读字号已合入 main、本地安装并在 GitHub 发布；类型检查、70 项回归、隔离 Electron fixture、产物及 GitHub 四件完整公开下载校验通过。
+两个平台的 main 与 v0.1.11 标签已推送，标签固定发布内容；同步基线以 .tools/v0.1.11-publication-status.json 为准。
+Gitee 新安装包尚未发布：剩余空间不足，v0.1.6 的 Setup 3553808 与 Portable 3553815 已各两次完整下载备份并核对双哈希。
+已向用户提出仅删除这两件旧附件的具体问题，尚未收到直接答复；先检查是否已获得针对这份方案的授权，未授权不得删除。
+先读顶部「当前收尾状态」、.tools/v0.1.11-publication-status.json 和 .tools/v0.1.11-gitee-deletion-plan.json，继续 Gitee 发布收尾。
+两项真实键盘检查仍待人工确认，用户“继续”不算人工通过。
 不要重复发布或移动已存在的标签，先读当前收尾状态与发布记录。
 接下来做：<写清楚新需求>。
 ```
@@ -356,7 +357,7 @@ node scripts/app-shot.mjs .run-test/shot.png "@.run-test/expr.js"
 
 ## 下一步建议
 
-会话阅读字号开发版已完成并通过验收，详见顶部「当前开发」。下一步推荐整理 v0.1.11、独立 staging 打包与本地安装，再准备双平台发布；Gitee 配额需要重新审计，任何其他旧附件删除均需精准授权。v0.1.10 的安装、发布与公开下载校验已完成，已有标签保留发布内容。两项人工键盘检查可继续并行：双向切标签后直接打字，确认仅进入当前会话；开启「每次发送前确认」后真实按 Enter，确认弹出确认框并取消以保留草稿。用户尚未报告实际结果，状态保持 pending。已完成能力及后续方向如下：
+v0.1.11 会话阅读字号已本地安装、GitHub 发布并完成公开附件验收，详见顶部「当前收尾状态」。下一步是取得针对 Gitee v0.1.6 两件附件 `3553808` / `3553815` 的直接批准，再执行精确清理、上传 v0.1.11 并完成完整下载与保留审计；备份、空间方案和新包已准备好。其他旧附件删除需另行精准授权，已有标签保持发布内容。两项人工键盘检查可继续并行：双向切标签后直接打字，确认仅进入当前会话；开启「每次发送前确认」后真实按 Enter，确认弹出确认框并取消以保留草稿。用户尚未报告实际结果，状态保持 pending。已完成能力及后续方向如下：
 
 ### 已完成：工作区联动（v0.1.7）
 
