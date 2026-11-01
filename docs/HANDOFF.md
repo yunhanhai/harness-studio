@@ -6,7 +6,7 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 版本 | `0.1.8`（已安装并双平台发布，公开安装包完整下载校验通过） |
+| 版本 | `0.1.9`（已本地安装，正在发布；已完成公开下载校验的版本为 v0.1.8） |
 | 开发分支 | `codex/plugin-entry`（从 v0.1.8 发布后的 `main` 开发插件管理入口） |
 | 本地 HEAD | `git log --oneline -1` 确认 |
 | 工作区 | `git status` 确认 |
@@ -29,8 +29,9 @@
 | v0.1.6 | 会话标签页：一个 Host 上并排打开多个会话；工作区页面常驻，切页不再重新加载 |
 | v0.1.7 | 当前标签页工作区联动、切换期间快速提问保护、发送确认与 preload 校验修复 |
 | v0.1.8 | 中文、English 与跟随系统；跨窗口语言同步，保留会话与草稿 |
+| v0.1.9 | 启动台与命令面板打开当前标签页的官方插件管理 |
 
-## 当前开发：插件管理入口（未发布）
+## 当前收尾状态：v0.1.9 插件管理入口
 
 用户在 v0.1.8 发布完成后授权按推荐继续，启动台快捷操作与命令面板的「插件管理」已完成本地开发并提交到 `codex/plugin-entry`。`store.openPlugins()` 切回工作区，在明确的当前 tab 内打开官方 Harness 的 `plugins` 面板；不增加 Host，不改 URL，插件操作仍在上游管理界面中完成。上游没有默认的官方插件市场。
 
@@ -42,7 +43,11 @@
 
 官方 DSH `0.2.1-rc.2` 的 9 项实际 Electron 检查也通过，报告与截图为 `.tools/plugin-entry-upstream-verification/`，与上述 fixture 的全部 6 个 out 文件哈希一致。首次 Home 冷挂载打开真实 Plugins；Home/Palette 与切 tab 后的入口只导航前台；两个独立 Session 的草稿、文档标识与 timeOrigin 保留，Host PID 不变，重复打开不重载。按既有设计，新标签可能打开上次会话位置，验收在第二标签通过官方「新建会话」建立独立会话；首次纯说明/开始使用介绍仅在隔离环境关闭或跳过。A 草稿使用 CDP `Input.insertText`，B 因自动化焦点限制改用实际 QuickAsk IPC → Electron `WebContents.insertText`（`autoSend: false`），返回 `inserted`，没有发送。使用独立 `userData` / `DSH_HOME` / `DSH_AGENTS_HOME` / Documents 覆盖；仅允许官方生成的本地浏览器认证 grant，没有模型/账号凭据，未访问用户凭据，未提交模型请求或修改插件。所有自建 Electron、Host、后代与 helper 进程均已退出。两项既有系统键盘行为仍需人工确认，不能用这轮输入验证替代。
 
-版本字段、日常安装与公开包仍是 v0.1.8；本轮尚未安装、推送、打标签或发布。下一版本需要另行准备发布记录和 bridge；不得重跑 v0.1.8 发布或移动已有标签。
+用户在本地功能提交 `1712782` 后授权按推荐继续 v0.1.9 的安装与双平台发布。三个根版本字段为 `0.1.9`，`duplexer2` 保持 `0.1.4`；新版本 bridge 已通过隔离 fixture 验证，保留不同提交历史并核对 tree，不强推、不改既有标签。
+
+本地构建与原地安装已完成，安装 exe ProductVersion 为 `0.1.9.0`。安装、`.tools/v0.1.9-staging/win-unpacked` 与此前通过 18 项 fixture / 9 项官方 DSH 检查的 6 个 out 文件逐字节一致；exe、app.asar 与两份语言资源也与新 staging 一致，两个快捷方式复用安装路径并带 `--open-workspace`。app.asar SHA-256 为 `dc17360b006400b2f58da7b8236fc3e45c138883093d91d80508a9e33a428c59`。Setup 为 103,998,552 bytes，Portable 为 103,729,012 bytes，另含 blockmap 与 latest.yml；更新清单的文件名、版本、大小与两处 SHA-512 均匹配本地 Setup。报告 `.tools/v0.1.9-installed-verification.json` / `.tools/v0.1.9-artifacts.json`。安装脚本仅替换已核对路径的程序目录，没有启动日常 Host、读取模型凭据或改用户数据。此前被自动审批拒绝清理的 `dist/win-unpacked` 与本次新 staging 均保留，旧 exe/asar 哈希再次核对未变。
+
+公开包目前仍为 v0.1.8，v0.1.9 正在发布。Gitee 新预检与旧内容快照已保存到 `.tools/v0.1.9-gitee-preflight.json` / `.tools/v0.1.9-gitee-preservation-before.json`，现有附件 1,038,426,884 bytes，剩 35,314,940 bytes；本次两件新包共 207,727,564 bytes。具体方案为仅移除 v0.1.3 Setup（3462777）/ Portable（3462787），共 207,658,948 bytes，安装包已备份到 `.tools/gitee-v0.1.3-backup/` 并独立二次公开完整下载核对 SHA-256/SHA-512，GitHub 同版两件仍可匿名下载。移除并上传后剩 35,246,324 bytes。既有 v0.1.2 删除授权不涵盖 v0.1.3；本次具体确认问题已发出，尚未删除，不能按旧授权执行。
 
 ## 在新对话中如何继续
 

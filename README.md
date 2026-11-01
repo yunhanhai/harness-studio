@@ -87,11 +87,11 @@ Harness Studio 换了一个角度：**先让一个人每天用得顺手**。
 - 新标签打开在内嵌界面上次所在的位置，在左侧会话列表里选择即可；重启运行时后会收拢成一个标签；
 - 快速提问发到你正在看的那个标签；焦点在内嵌终端里时，`Ctrl+W` / `Ctrl+T` 交给终端，不会被拦截。
 
-### 插件管理（未发布）
+### 插件管理（v0.1.9）
 
-开发分支 `codex/plugin-entry` 在启动台快捷操作与命令面板中新增「插件管理」，会切回工作区，在当前标签页打开 Harness 自带的管理面板。运行时需要先就绪；找不到兼容入口时会提示。
+启动台快捷操作与命令面板中新增「插件管理」，会切回工作区，在当前标签页打开 Harness 自带的管理面板。运行时需要先就绪；找不到兼容入口时会提示。
 
-插件安装、启停、配置和来源由 Harness 管理，官方目前没有默认插件市场。参见 [Harness 插件管理说明](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/client/ui-plugin-manager/README.zh.md)。此入口尚未进入日常安装版或公开安装包，当前发布版本仍为 v0.1.8。
+插件安装、启停、配置和来源由 Harness 管理，官方目前没有默认插件市场。参见 [Harness 插件管理说明](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/client/ui-plugin-manager/README.zh.md)。v0.1.9 正在安装与发布验证，已完成验证的公开版本仍为 v0.1.8。
 
 ### 发送确认
 
