@@ -6,11 +6,11 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 版本 | `0.1.8`（已安装并在 GitHub 发布；Gitee 标签已推，附件待配额清理授权） |
+| 版本 | `0.1.8`（已安装并双平台发布；Gitee 下载验收通过，GitHub 大包完整哈希验收进行中） |
 | 开发分支 | `main`（`codex/interface-language` 已快进合入） |
 | 本地 HEAD | `git log --oneline -1` 确认 |
 | 工作区 | `git status` 确认 |
-| 已发布 | GitHub：v0.1.0～v0.1.8；Gitee：v0.1.0～v0.1.4、v0.1.6～v0.1.7（v0.1.5 / v0.1.8 只有标签；v0.1.0 / v0.1.1 仅保留说明与源码包，旧安装包已移除并备份） |
+| 已发布 | GitHub：v0.1.0～v0.1.8；Gitee：v0.1.0～v0.1.4、v0.1.6～v0.1.8（v0.1.5 只有标签；v0.1.0 / v0.1.1 / v0.1.2 仅保留说明与源码包，旧安装包已移除并备份） |
 | 远端 | `origin` → GitHub，`gitee` → Gitee |
 | 平台 | Windows 10/11 x64（主要目标） |
 
@@ -43,7 +43,7 @@
 从下面挑一个，或者提你自己的需求：
 
 - "按 HANDOFF「下一步建议」选择后续功能"
-- "继续 v0.1.8 的 Gitee 发布，先读当前收尾状态"
+- "核对 v0.1.8 最终下载验收状态，先读当前收尾状态"
 - "给 xxx 页面加 yyy 功能"
 
 **3. 需要时提供凭据**
@@ -55,8 +55,8 @@
 ```text
 在 D:\Program Files\develop\vscode\her 继续开发 Harness Studio。
 先读 docs/HANDOFF.md 和 docs/ARCHITECTURE.md。
-v0.1.8 界面语言已合入 main、本地安装并在 GitHub 发布。
-Gitee v0.1.8 标签已推送，附件待配额清理授权；先读当前收尾状态和用户最新回复。
+v0.1.8 界面语言已合入 main、本地安装并在 GitHub 与 Gitee 发布。
+Gitee 安装包完整下载验收通过；GitHub 大包分段下载验收仍在推进，先读当前收尾状态及最新报告。
 不要重复发布或移动已存在的标签，先读当前开发状态与发布记录。
 接下来做：<写清楚新需求>。
 ```
@@ -75,11 +75,13 @@ Gitee v0.1.8 标签已推送，附件待配额清理授权；先读当前收尾�
 
 两平台 main / v0.1.8 标签已原子推送，未强推，既有标签均保持不变。本地/Gitee 标签指向 `ab68f00`，GitHub 标签指向 `e41b332f5ad24e8b619dbc7bd6060ed1735800b0`，发布 tree 同为 `e8797b40a6e1a012306ec63e173a93a7aa63e8d9`。GitHub [v0.1.8 发行版](https://github.com/yunhanhai/harness-studio/releases/tag/v0.1.8)（ID `430383391`）已公开，包含 Setup / Portable / blockmap / latest.yml；[Release 工作流](https://github.com/yunhanhai/harness-studio/actions/runs/41277112720) 与 [CI](https://github.com/yunhanhai/harness-studio/actions/runs/41277112679) 均成功，发行说明已按 CHANGELOG 更新。元数据记录为 `.tools/v0.1.8-github-release-verification.json`。
 
-GitHub 公开更新清单与 blockmap 已完整下载，大小与 API SHA-256 digest 均匹配。公开 Setup 为 103,996,351 bytes，Portable 为 103,726,818 bytes；两件 URL 已通过无鉴权 API → CDN → 206 范围请求核对，但 CDN 完整下载速度很低，**尚未完成两个公开大安装包的完整哈希验收**，不能将其记为通过。验收 agent 正保存并校验分段；`.tools/v0.1.8-github-downloads/` 保留 prefix 和已完成片段，后续可用 `.tools/verify-github-v0.1.8-downloads-chunked.mjs` 续跑，最终整文件 SHA-256 必须匹配 API digest，Setup SHA-512 必须匹配公开 latest.yml。进度见 `.tools/v0.1.8-github-download-progress.json`（生成中），成功后生成 `.tools/v0.1.8-github-download-verification.json`。GitHub 与本地分别构建，不能要求两平台产物逐字节相同。README 已将 GitHub 下载入口指向 v0.1.8，Gitee 仍为 v0.1.7。
+GitHub 公开更新清单与 blockmap 已完整下载，大小与 API SHA-256 digest 均匹配。公开 Setup 为 103,996,351 bytes，Portable 为 103,726,818 bytes；两件 URL 已通过无鉴权 API → CDN → 206 范围请求核对，但 CDN 完整下载速度很低，**尚未完成两个公开大安装包的完整哈希验收**，不能将其记为通过。验收 agent 正保存并校验分段；`.tools/v0.1.8-github-downloads/` 保留 prefix 和已完成片段，后续可用 `.tools/verify-github-v0.1.8-downloads-chunked.mjs` 续跑，最终整文件 SHA-256 必须匹配 API digest，Setup SHA-512 必须匹配公开 latest.yml。进度见 `.tools/v0.1.8-github-download-progress.json`，成功后生成 `.tools/v0.1.8-github-download-verification.json`。GitHub 与本地分别构建，不能要求两平台产物逐字节相同。README 两平台下载入口均指向 v0.1.8。
 
-Gitee v0.1.8 发行版和附件尚未创建，公开安装包仍为 v0.1.7。当前附件合计 1,038,362,171 bytes，按 1 GiB 上限剩余 35,379,653 bytes，新版两件需要 207,723,173 bytes。已具体询问是否仅删除 v0.1.2 Setup（ID `3457439`，103,964,000 bytes）与 Portable（ID `3457440`，103,694,460 bytes），释放 207,658,460 bytes。用户尚未回答，不能执行删除。两件已备份到 `.tools/gitee-v0.1.2-backup/`，本地哈希与第二次公开完整下载一致；GitHub 同版安装包保持可用。预检记录 `.tools/v0.1.8-gitee-preflight.json`，旧说明/标签/附件快照 `.tools/v0.1.8-gitee-preservation-before.json`。
+Gitee [v0.1.8 发行版](https://gitee.com/yunhanhai/harness-studio/releases)（ID `1262285`）已发布，Setup（ID `3558749`，103,996,357 bytes）与 Portable（ID `3558750`，103,726,816 bytes）已完整公开直连下载，大小、SHA-256 和 SHA-512 均与本地上传文件一致，报告 `.tools/v0.1.8-gitee-download-verification.json`。发行标题与说明、所有旧标签、旧发行说明及其他附件保留情况审计通过，记录 `.tools/v0.1.8-gitee-final-audit.json`。
 
-收到这两件的具体删除授权后，执行 `.tools/gitee-prune-v0.1.2.mjs --execute`，再用 `.tools/gitee-release-v0.1.8.mjs --publish` 创建发行版并上传。用返回的实际 release / attachment IDs 调用 `.tools/audit-gitee-v0.1.8-final.mjs`，再执行 `.tools/verify-gitee-v0.1.8-downloads.mjs`，验收后更新下载链接与本节。发布后文档同步使用 `.tools/github-bridge-v0.1.8.mjs --sync-main --base <上次成功同步的本地提交> --push`，基线从 `.tools/v0.1.8-publication-status.json` 的 `githubBridgeNextBaseline` 读取（首次文档同步使用 `ab68f00`，后续不能继续复用旧基线）。禁止重跑 release 模式或移动现有标签。
+用户针对具体方案回复「按照你的推荐继续下一步」，已仅删除 Gitee v0.1.2 Setup（ID `3457439`，103,964,000 bytes）与 Portable（ID `3457440`，103,694,460 bytes），释放 207,658,460 bytes。两件删除前备份到 `.tools/gitee-v0.1.2-backup/` 并二次完整下载校验，最终审计再次核对备份哈希；该版发行说明、标签、源码包与 GitHub 安装包保留。授权记录 `.tools/v0.1.8-gitee-deletion-authorization.json`。最终附件合计 1,038,426,884 bytes，按 1 GiB 上限剩余 35,314,940 bytes；下次发布需重新审计配额，现有授权不涵盖其他版本附件。预检与旧说明快照分别为 `.tools/v0.1.8-gitee-preflight.json` / `.tools/v0.1.8-gitee-preservation-before.json`。
+
+v0.1.8 已有两平台发行版，禁止重复发布、重跑 bridge 的 release 模式或移动现有标签。当前剩余工作是 GitHub 大包完整哈希验收及最终文档记录；发布后文档同步使用 `.tools/github-bridge-v0.1.8.mjs --sync-main --base <上次成功同步的本地提交> --push`，基线从 `.tools/v0.1.8-publication-status.json` 的 `githubBridgeNextBaseline` 读取（首次文档同步使用 `ab68f00`，后续不能继续复用旧基线）。
 
 自动审批拒绝 `dist/win-unpacked` 清理，原因仅为 `blocked by policy`，打包副本约 325 MiB 暂时保留。仓库外旧验证脚本和 stash 也保留，不重试此前被拒绝的清理操作。
 
@@ -301,7 +303,7 @@ v0.1.6 的切换只改 Studio 自己的项目标签，内嵌会话不跟随。v0
 
 - **macOS 构建**：`.github/workflows/release.yml` 加 `macos-latest` job 即可，但本环境无法验收，需要真机测试。另外 `src/main/menu.ts` 把 `Command+W` 绑在「隐藏窗口」上，而会话标签页把 `Cmd+W` 用作关闭标签：页面 `preventDefault` 之后菜单大概率收不到，结果是 `Cmd+W` 只关标签、焦点在终端时才隐藏窗口。做 macOS 构建前要在真机上确认并决定保留哪一个。
 - **插件市场入口**：只需在 UI 里做一个跳转入口，工作量最小但价值也有限。
-- **界面英文化（v0.1.8）**：已合入 main、安装并在 GitHub 发布，详情见顶部「当前收尾状态」；Gitee 附件仍待具体配额清理授权。
+- **界面英文化（v0.1.8）**：已合入 main、安装并双平台发布，详情见顶部「当前收尾状态」；当前只剩 GitHub 大包完整下载哈希验收。
 
 ### 已完成（v0.1.4）
 
