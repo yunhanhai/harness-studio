@@ -1,4 +1,5 @@
 export type ThemeMode = 'system' | 'light' | 'dark'
+export type ConversationFontSize = 0 | 14 | 16 | 18
 export type LanguageSetting = 'system' | 'zh-CN' | 'en-US'
 export type ViewId = 'home' | 'workspace' | 'insights' | 'prompts' | 'logs' | 'settings'
 
@@ -103,6 +104,8 @@ export interface Settings {
   accent: string
   reduceMotion: boolean
   zoomFactor: number
+  /** Conversation text size in CSS pixels; 0 keeps Harness' own size. */
+  conversationFontSize: ConversationFontSize
   closeToTray: boolean
   minimizeToTray: boolean
   launchAtLogin: boolean

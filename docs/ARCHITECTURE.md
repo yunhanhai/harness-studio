@@ -41,6 +41,14 @@ Harness Studio 是一个 Electron 外壳，不重写模型能力，也不复制 
 
 `npm run test:i18n` 检查系统语言、旧设置兼容、词条占位符、原生菜单与确认、订阅通知、日期格式和初始化竞态；CI 与导航回归、类型检查和构建一同运行。
 
+## 会话阅读字号
+
+`Settings.conversationFontSize` 保存 `0 / 14 / 16 / 18`；`0` 跟随 Harness，旧配置缺字段或含非白名单值时回到默认。设置页在「外观 → 会话阅读」即时保存，主进程通过现有 `guest:theme` 广播通知所有存活标签，并在新 guest 的 `dom-ready` 发送当前值。
+
+工作区 preload 使用独立的 `style[data-hs-injected="conversation-font"]`。只在已核对的官方 DSH `0.2.1-rc.2` 聊天文字节点上覆盖字号：用户与插话的 `.Sixlwa_bubble`，以及助手步骤 `.hWmORq_body` 的直属普通 Markdown。工具卡内的 Markdown 和 compact 推理内容不进入该范围。选择跟随 Harness 时移除整个字号样式，恢复上游设置；样式更新不重载页面、不替换输入框或移动焦点。
+
+正文和标题的 `--dsw-font-markdown-*` 别名原本在 `body` 计算，因此在助手文字根节点局部重声明六个正文/标题别名，沿用上游字号差值与行高层级。用户气泡使用局部 `--dsh-content-font-size` 与 delta。代码块保留独立的代码字体别名，行内代码继续使用上游的相对字号。没有在整个会话容器或 `body` 改变量，避免影响 composer、导航与终端。模块类随上游版本可能变化，升级 DSH 后需重新核对；不匹配时该节点继续使用上游字号。
+
 ## Host 生命周期
 
 1. 渲染进程请求 `host:start(workspaceId)`；

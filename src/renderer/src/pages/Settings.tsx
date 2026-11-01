@@ -23,8 +23,8 @@ import {
   Wrench,
   Zap
 } from 'lucide-react'
-import type { InsightsSettings, LanguageSetting, RuntimeSettings, UpdateResult } from '@shared/types'
-import { ACCENTS, DOCS_URL, GITEE_URL, GITHUB_URL, RELEASES_URL } from '@shared/defaults'
+import type { ConversationFontSize, InsightsSettings, LanguageSetting, RuntimeSettings, UpdateResult } from '@shared/types'
+import { ACCENTS, CONVERSATION_FONT_SIZES, DOCS_URL, GITEE_URL, GITHUB_URL, RELEASES_URL } from '@shared/defaults'
 import { useApp } from '../store'
 import { t as translateNow, useI18n } from '../lib/i18n'
 import { sourceLabel } from '../lib/format'
@@ -461,6 +461,32 @@ export function SettingsPage(): React.JSX.Element {
                     <span>{t('pages.settings.custom')}</span>
                   </label>
                 </div>
+              </Card>
+
+              <Card title={t('pages.settings.conversationReading')} desc={t('pages.settings.conversationReadingDesc')}>
+                <Row title={t('pages.settings.conversationFontSize')} stacked>
+                  <div className="slider-row">
+                    <select
+                      className="input"
+                      aria-label={t('pages.settings.conversationFontSize')}
+                      value={settings.conversationFontSize}
+                      onChange={(event) => void saveSettings({ conversationFontSize: Number(event.target.value) as ConversationFontSize })}
+                    >
+                      {CONVERSATION_FONT_SIZES.map((size) => (
+                        <option key={size} value={size}>
+                          {size === 0 ? t('pages.settings.followHarness') : `${size} px`}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      className="button button-ghost button-small"
+                      onClick={() => void saveSettings({ conversationFontSize: 0 })}
+                      disabled={settings.conversationFontSize === 0}
+                    >
+                      {t('pages.settings.reset')}
+                    </button>
+                  </div>
+                </Row>
               </Card>
 
               <Card title={t('pages.settings.motionZoom')} desc={t('pages.settings.motionZoomDesc')}>

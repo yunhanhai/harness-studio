@@ -5,6 +5,7 @@ const SETTINGS = {
   accent: '#5B8CFF',
   reduceMotion: false,
   zoomFactor: 1,
+  conversationFontSize: 0,
   closeToTray: true,
   minimizeToTray: false,
   launchAtLogin: false,

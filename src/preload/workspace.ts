@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron'
-import type { GuestNotice, TabCommand } from '@shared/types'
+import type { ConversationFontSize, GuestNotice, TabCommand } from '@shared/types'
 
 /**
  * Channel names are duplicated here on purpose: this preload runs with
@@ -26,6 +26,7 @@ interface ThemePayload {
   theme: 'system' | 'light' | 'dark'
   accent: string
   reduceMotion: boolean
+  conversationFontSize?: ConversationFontSize
 }
 
 function resolvedTheme(theme: ThemePayload['theme']): 'light' | 'dark' {
@@ -36,6 +37,46 @@ function resolvedTheme(theme: ThemePayload['theme']): 'light' | 'dark' {
 }
 
 let styleElement: HTMLStyleElement | null = null
+let conversationStyleElement: HTMLStyleElement | null = null
+
+function applyConversationFont(size: ThemePayload['conversationFontSize']): void {
+  // Leave Harness' own preferences in control when following its default.
+  if (size !== 14 && size !== 16 && size !== 18) {
+    conversationStyleElement?.remove()
+    conversationStyleElement = null
+    return
+  }
+
+  if (!conversationStyleElement) {
+    conversationStyleElement = document.createElement('style')
+    conversationStyleElement.dataset.hsInjected = 'conversation-font'
+    document.head.append(conversationStyleElement)
+  }
+
+  // Official DSH 0.2.1-rc.2: AssistantMarkdown's body directly owns its text
+  // Markdown. The narrower module class excludes Markdown inside tool cards;
+  // compact reasoning is separate. Never set these variables on the whole
+  // conversation, because its composer uses the same content font variables.
+  const userText = '[data-conversation-content] :is([data-chat-flow-kind="user"], [data-chat-flow-kind="steering"]) .Sixlwa_bubble'
+  const assistantText = '[data-conversation-content] [data-chat-flow-kind="assistant-step"] .hWmORq_body > [class*="_markdown_"]:not([data-markdown-variant="compact"])'
+  conversationStyleElement.textContent = `
+    ${userText} {
+      --dsh-content-font-size: ${size}px;
+      --dsh-content-font-delta: ${size - 14}px;
+    }
+    ${assistantText} {
+      /* These aliases are normally computed on body. Recompute only the text
+         aliases here so descendants keep Harness' heading hierarchy. */
+      --dsw-font-markdown-base: ${size}px/${size + 10}px var(--dsw-font-family);
+      --dsw-font-markdown-base-strong: 600 ${size}px/${size + 10}px var(--dsw-font-family);
+      --dsw-font-markdown-h1: 700 ${size + 7}px/${size + 16}px var(--dsw-font-family);
+      --dsw-font-markdown-h2: 700 ${size + 5}px/${size + 14}px var(--dsw-font-family);
+      --dsw-font-markdown-h3: 700 ${size + 4}px/${size + 12}px var(--dsw-font-family);
+      --dsw-font-markdown-h4: 600 ${size}px/${size + 10}px var(--dsw-font-family);
+    }
+    ${assistantText} li::marker { line-height: inherit; }
+  `
+}
 
 function apply(payload: ThemePayload): void {
   const theme = resolvedTheme(payload.theme)
@@ -77,6 +118,7 @@ function apply(payload: ThemePayload): void {
     `
     document.head.append(styleElement)
   }
+  applyConversationFont(payload.conversationFontSize)
 }
 
 /**

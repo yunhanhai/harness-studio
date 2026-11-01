@@ -392,6 +392,7 @@ function applySettings(next: Settings): void {
     theme: next.theme,
     accent: next.accent,
     reduceMotion: next.reduceMotion,
+    conversationFontSize: next.conversationFontSize,
     confirmSend: next.composer.confirmSend,
     confirmQueued: next.composer.confirmQueued
   }
@@ -548,6 +549,7 @@ function configureWebviewSecurity(window: BrowserWindow): void {
         theme: current.theme,
         accent: current.accent,
         reduceMotion: current.reduceMotion,
+        conversationFontSize: current.conversationFontSize,
         confirmSend: current.composer.confirmSend,
         confirmQueued: current.composer.confirmQueued
       })

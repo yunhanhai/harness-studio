@@ -10,6 +10,7 @@ export const RELEASES_URL = `${GITHUB_URL}/releases`
 export const DOCS_URL = `${GITHUB_URL}#readme`
 
 export const ACCENTS = ['#5B8CFF', '#22D3EE', '#8B5CF6', '#F472B6', '#34D399', '#F59E0B'] as const
+export const CONVERSATION_FONT_SIZES = [0, 14, 16, 18] as const
 
 export const DEFAULT_SETTINGS: Settings = {
   version: 1,
@@ -18,6 +19,7 @@ export const DEFAULT_SETTINGS: Settings = {
   accent: '#5B8CFF',
   reduceMotion: false,
   zoomFactor: 1,
+  conversationFontSize: 0,
   closeToTray: true,
   minimizeToTray: false,
   launchAtLogin: false,
