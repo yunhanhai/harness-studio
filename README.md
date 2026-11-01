@@ -91,7 +91,7 @@ Harness Studio 换了一个角度：**先让一个人每天用得顺手**。
 
 启动台快捷操作与命令面板中新增「插件管理」，会切回工作区，在当前标签页打开 Harness 自带的管理面板。运行时需要先就绪；找不到兼容入口时会提示。
 
-插件安装、启停、配置和来源由 Harness 管理，官方目前没有默认插件市场。参见 [Harness 插件管理说明](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/client/ui-plugin-manager/README.zh.md)。v0.1.9 正在安装与发布验证，已完成验证的公开版本仍为 v0.1.8。
+插件安装、启停、配置和来源由 Harness 管理，官方目前没有默认插件市场。参见 [Harness 插件管理说明](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/client/ui-plugin-manager/README.zh.md)。v0.1.9 已安装并在 GitHub 发布，公开安装包完整下载校验通过。Gitee 安装附件仍为 v0.1.8；v0.1.9 源码与标签已同步，附件发布待配额清理确认。
 
 ### 发送确认
 
@@ -212,7 +212,7 @@ Studio 的页面、日期格式、托盘、菜单及确认框使用所选语言�
 
 | 平台 | 安装版 | 便携版 |
 | --- | --- | --- |
-| **GitHub**（全球） | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.8/Harness-Studio-0.1.8-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.8/Harness-Studio-0.1.8-x64-Portable.exe) |
+| **GitHub**（全球） | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.9/Harness-Studio-0.1.9-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.9/Harness-Studio-0.1.9-x64-Portable.exe) |
 | **Gitee**（国内更快） | [Setup.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.8/Harness-Studio-0.1.8-x64-Setup.exe) | [Portable.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.8/Harness-Studio-0.1.8-x64-Portable.exe) |
 
 - **Setup.exe**（99 MB）— 安装版，创建开始菜单与桌面快捷方式，支持自动更新
@@ -389,7 +389,7 @@ docs/         架构、发布指南、截图
 - [x] 全局快速提问：`Ctrl+Alt+Space` 呼出输入框，直接发到当前会话
 - [x] Host 崩溃自动恢复：指数退避重启 + 界面倒计时
 - [x] 会话标签页：一个运行时上并排打开多个会话（原计划是每个标签一个 Host，改为共用一个，原因见[架构说明](docs/ARCHITECTURE.md#会话标签页)）
-- [ ] 插件市场入口与一键安装
+- [x] 官方插件管理入口（v0.1.9）
 - [ ] macOS 构建与签名
 - [x] 界面英文化（v0.1.8）
 
