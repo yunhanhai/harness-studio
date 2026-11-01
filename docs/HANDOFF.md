@@ -79,7 +79,7 @@ GitHub 公开更新清单与 blockmap 已完整下载，大小与 API SHA-256 di
 
 Gitee v0.1.8 发行版和附件尚未创建，公开安装包仍为 v0.1.7。当前附件合计 1,038,362,171 bytes，按 1 GiB 上限剩余 35,379,653 bytes，新版两件需要 207,723,173 bytes。已具体询问是否仅删除 v0.1.2 Setup（ID `3457439`，103,964,000 bytes）与 Portable（ID `3457440`，103,694,460 bytes），释放 207,658,460 bytes。用户尚未回答，不能执行删除。两件已备份到 `.tools/gitee-v0.1.2-backup/`，本地哈希与第二次公开完整下载一致；GitHub 同版安装包保持可用。预检记录 `.tools/v0.1.8-gitee-preflight.json`，旧说明/标签/附件快照 `.tools/v0.1.8-gitee-preservation-before.json`。
 
-收到这两件的具体删除授权后，执行 `.tools/gitee-prune-v0.1.2.mjs --execute`，再用 `.tools/gitee-release-v0.1.8.mjs --publish` 创建发行版并上传。用返回的实际 release / attachment IDs 调用 `.tools/audit-gitee-v0.1.8-final.mjs`，再执行 `.tools/verify-gitee-v0.1.8-downloads.mjs`，验收后更新下载链接与本节。发布后文档同步使用 `.tools/github-bridge-v0.1.8.mjs --sync-main --base ab68f0013ba441045190568a76da5d8e0afbfa22 --push`；禁止重跑 release 模式或移动现有标签。
+收到这两件的具体删除授权后，执行 `.tools/gitee-prune-v0.1.2.mjs --execute`，再用 `.tools/gitee-release-v0.1.8.mjs --publish` 创建发行版并上传。用返回的实际 release / attachment IDs 调用 `.tools/audit-gitee-v0.1.8-final.mjs`，再执行 `.tools/verify-gitee-v0.1.8-downloads.mjs`，验收后更新下载链接与本节。发布后文档同步使用 `.tools/github-bridge-v0.1.8.mjs --sync-main --base <上次成功同步的本地提交> --push`，基线从 `.tools/v0.1.8-publication-status.json` 的 `githubBridgeNextBaseline` 读取（首次文档同步使用 `ab68f00`，后续不能继续复用旧基线）。禁止重跑 release 模式或移动现有标签。
 
 自动审批拒绝 `dist/win-unpacked` 清理，原因仅为 `blocked by policy`，打包副本约 325 MiB 暂时保留。仓库外旧验证脚本和 stash 也保留，不重试此前被拒绝的清理操作。
 
