@@ -23,6 +23,7 @@
     "test:workspace-navigation": "node scripts/test-workspace-navigation.mjs",
     "test:plugin-navigation": "node scripts/test-plugin-navigation.mjs",
     "test:session-tab-focus": "node scripts/test-session-tab-focus.mjs",
+    "test:conversation-font": "node scripts/test-conversation-font-settings.mjs && node scripts/test-conversation-font-preload.mjs",
     "test:i18n": "node scripts/test-i18n.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "preview:ui": "node scripts/preview-server.mjs",

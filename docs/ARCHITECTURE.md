@@ -49,6 +49,8 @@ Harness Studio 是一个 Electron 外壳，不重写模型能力，也不复制 
 
 正文和标题的 `--dsw-font-markdown-*` 别名原本在 `body` 计算，因此在助手文字根节点局部重声明六个正文/标题别名，沿用上游字号差值与行高层级。用户气泡使用局部 `--dsh-content-font-size` 与 delta。代码块保留独立的代码字体别名，行内代码继续使用上游的相对字号。没有在整个会话容器或 `body` 改变量，避免影响 composer、导航与终端。模块类随上游版本可能变化，升级 DSH 后需重新核对；不匹配时该节点继续使用上游字号。
 
+`npm run test:conversation-font` 在独立临时目录执行真实设置存储，检查旧文件迁移、数值白名单、重启持久化和恢复默认；另外通过 DOM/IPC mock 执行真实工作区 preload，检查 `guest:theme` 更新与独立字号样式的生命周期。CI 和发布工作流在构建前运行；这组 Node 回归不执行浏览器排版，不能替代 Electron 字号渲染或人工键盘验收。
+
 ## Host 生命周期
 
 1. 渲染进程请求 `host:start(workspaceId)`；

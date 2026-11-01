@@ -2,6 +2,12 @@
 
 所有值得记录的变更都会写在这里。版本号遵循 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## Unreleased
+
+### 维护
+
+- 将会话阅读字号的设置迁移、非法值、持久化、重置及 preload 样式生命周期检查纳入仓库，新增 `npm run test:conversation-font`；CI 与发布工作流在构建前运行这些回归
+
 ## 0.1.11 — 2026-11-01
 
 ### 新增

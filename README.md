@@ -348,6 +348,7 @@ npm run dev
 ```powershell
 npm run dev          # Electron + HMR
 npm run typecheck    # 主进程 + 渲染进程
+npm run test:conversation-font # 阅读字号设置与 preload 回归
 npm run build        # 构建 out/
 npm run preview:ui   # 无需 Electron 的浏览器 UI 预览
 npm run icons        # 从 resources/brand.svg 重新生成图标
@@ -373,7 +374,7 @@ docs/         架构、发布指南、截图
 
 仓库已经准备好：
 
-- `.github/workflows/ci.yml`：类型检查 + 构建
+- `.github/workflows/ci.yml`：类型检查、工作区/插件导航、语言、标签焦点、阅读字号回归与构建
 - `.github/workflows/release.yml`：打 `v*` 标签自动构建并发布 Release
 - `.github/workflows/mirror-gitee.yml`：手动把仓库镜像到 Gitee
 - `docs/PUBLISHING.md`：从替换占位符到双平台发布的完整步骤

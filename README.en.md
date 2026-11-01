@@ -145,6 +145,7 @@ The portable build keeps its data next to the executable in `HarnessStudioData/`
 ```powershell
 npm run dev          # Electron + HMR
 npm run typecheck    # main + renderer
+npm run test:conversation-font # reading size settings and preload regressions
 npm run build        # build out/
 npm run preview:ui   # browser-only UI preview with mocked IPC
 npm run icons        # regenerate icons from resources/brand.svg

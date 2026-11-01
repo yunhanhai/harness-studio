@@ -38,5 +38,8 @@ jobs:
       - name: Session tab focus regressions
         run: npm run test:session-tab-focus
 
+      - name: Conversation font regressions
+        run: npm run test:conversation-font
+
       - name: Build
         run: npm run build
