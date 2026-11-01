@@ -196,7 +196,7 @@ Studio 让这条提示真正可操作：
 
 在「设置 → 通用 → 界面语言」选择中文、English 或跟随系统，选择会保存并同步到主窗口、命令面板和快速提问。切换语言不会重新加载会话，也不会清掉输入和设置草稿。
 
-Studio 的页面、日期格式、托盘、菜单及确认框使用所选语言；Harness 内嵌界面、用户会话、已保存提示词与原始日志保持原样。已有错误和安装进度快照保留生成时的语言。界面语言从 v0.1.8 起提供，下载链接在新版附件验收后更新。
+Studio 的页面、日期格式、托盘、菜单及确认框使用所选语言；Harness 内嵌界面、用户会话、已保存提示词与原始日志保持原样。已有错误和安装进度快照保留生成时的语言。界面语言从 v0.1.8 起提供；GitHub 已提供新版，Gitee 下载暂为 v0.1.7。
 
 ---
 
@@ -206,7 +206,7 @@ Studio 的页面、日期格式、托盘、菜单及确认框使用所选语言�
 
 | 平台 | 安装版 | 便携版 |
 | --- | --- | --- |
-| **GitHub**（全球） | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.7/Harness-Studio-0.1.7-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.7/Harness-Studio-0.1.7-x64-Portable.exe) |
+| **GitHub**（全球） | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.8/Harness-Studio-0.1.8-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.8/Harness-Studio-0.1.8-x64-Portable.exe) |
 | **Gitee**（国内更快） | [Setup.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.7/Harness-Studio-0.1.7-x64-Setup.exe) | [Portable.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.7/Harness-Studio-0.1.7-x64-Portable.exe) |
 
 - **Setup.exe**（99 MB）— 安装版，创建开始菜单与桌面快捷方式，支持自动更新

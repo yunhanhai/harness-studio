@@ -47,7 +47,7 @@ Harness Studio takes a different angle: **make one developer's daily loop feel f
 - **Theming** — dark/light/system, accent colors, UI zoom, reduced motion.
 - **Interface language (v0.1.8)** — choose Chinese, English, or Follow system in Settings → General. The saved choice updates the main window, command palette, quick ask, dates, tray, menus, and confirmation dialogs without reloading sessions or clearing drafts.
 
-The language setting applies to the Studio shell. The official Harness interface, conversation content, saved prompts, and raw logs stay as they are. Existing errors and installation progress snapshots keep the language used when generated. Interface languages are available from v0.1.8; download links will be updated after the new release assets are verified.
+The language setting applies to the Studio shell. The official Harness interface, conversation content, saved prompts, and raw logs stay as they are. Existing errors and installation progress snapshots keep the language used when generated. Interface languages are available from v0.1.8 on GitHub; the Gitee installers currently remain at v0.1.7.
 
 When returning to a project with only an unsent draft, Harness may open a new blank session because the sidebar hides inactive blank sessions. Keep the original tab open when you need to preserve a draft. Removing a Studio workspace removes its bookmark and keeps the shared host running.
 
