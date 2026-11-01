@@ -51,6 +51,8 @@ The language setting applies to the Studio shell. The official Harness interface
 
 **Plugin manager (v0.1.9)** is available in Home quick actions and the command palette. It returns to the workspace and opens the built-in Harness manager in the active tab once the runtime is ready. An unavailable entry shows a message. Harness handles installation, enabling, configuration, and sources; there is no default official plugin marketplace. See the [Harness plugin manager guide](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/client/ui-plugin-manager/README.md). v0.1.9 is installed locally and published on GitHub and Gitee, with full public installer download verification complete on both platforms.
 
+**Session input focus (v0.1.10)** fixes typing that stayed in a background conversation after switching to the previous tab. Tab changes coordinate DOM and native input focus, leaving the workspace returns input to Studio, and loading preserves an active toolbar input. v0.1.10 is installed locally with package verification complete and publication pending. Automated Win32 checks passed for both tab directions, cross-page input, and send confirmation; physical keyboard results remain pending.
+
 When returning to a project with only an unsent draft, Harness may open a new blank session because the sidebar hides inactive blank sessions. Keep the original tab open when you need to preserve a draft. Removing a Studio workspace removes its bookmark and keeps the shared host running.
 
 <table>

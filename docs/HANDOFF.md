@@ -6,7 +6,7 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 版本 | `0.1.9`（已安装、GitHub 与 Gitee 已发布，两平台完整公开下载校验通过） |
+| 版本 | `0.1.10` 已本地安装、产物校验通过，待发布；当前公开版本为 v0.1.9 |
 | 开发分支 | `codex/session-tab-focus`（本地会话焦点维护修复；已发布代码在 `main`） |
 | 本地 HEAD | `git log --oneline -1` 确认 |
 | 工作区 | `git status` 确认 |
@@ -30,8 +30,9 @@
 | v0.1.7 | 当前标签页工作区联动、切换期间快速提问保护、发送确认与 preload 校验修复 |
 | v0.1.8 | 中文、English 与跟随系统；跨窗口语言同步，保留会话与草稿 |
 | v0.1.9 | 启动台与命令面板打开当前标签页的官方插件管理 |
+| v0.1.10 | 会话标签切换的原生输入焦点修复（已安装、待发布） |
 
-## 当前本地维护：会话标签页键盘焦点（未发布）
+## 当前收尾：v0.1.10 会话标签页键盘焦点
 
 用户在 v0.1.9 发布完成后授权按推荐继续键盘验收。Win32 原生鼠标先点击 A 输入框，并以系统字符输入确认 A 真正收到输入；接着 `Ctrl+Tab` 后 B 收到文字，但 `Ctrl+Shift+Tab` 后界面显示 A、文字仍进入 B。两步快捷键与文字的事件增量、完整旧事件前缀、会话/文档标识均已保存，证据 `.tools/v0.1.9-system-keyboard-native-focus-retest.json`。这确认了外层 webview DOM 焦点与 Electron guest 原生输入焦点脱节，不能仅凭 `document.activeElement` 验收。
 
@@ -41,7 +42,13 @@
 
 已安装 v0.1.9 与本地候选分别通过独立系统 Enter 验收：精确同 PID 的原生 `#32770`「确认发送」框出现，取消后两个完整草稿保留，会话日志未增加提交事件；没有模型/账号凭据、模型请求或被保护机制拦截的发送。使用独立 `userData` / `DSH_HOME` / agents / Documents 等目录；本次创建的 GUI、Host、monitor 与原生观察进程均已退出。汇总报告 `.tools/session-tab-focus-verification.json`，安装版和候选证据分别归档。所有输入均为 **Win32 自动输入**，`physicalKeyboardTested=false`、`humanResultReceived=false`；用户尚未报告人工验收结果，不能把“继续”或 `isTrusted` 记为人工通过。
 
-版本字段仍为 `0.1.9`，维护改动记录在 CHANGELOG「未发布」。当前安装版 app.asar SHA-256 仍为 `dc17360b006400b2f58da7b8236fc3e45c138883093d91d80508a9e33a428c59`，本次仅本地提交修复，没有重新安装、推送、打标签或发布；已有双平台 v0.1.9 发布状态如下。
+功能提交为 `e68be70`。用户继续授权下一步后，已转入 v0.1.10 的版本整理、打包与发布校验；三个根版本字段为 `0.1.10`，`duplexer2` 保持 `0.1.4`，CHANGELOG 新增该版修复说明。人工测试窗口未收到用户操作或结果后已关闭并归档为 pending；“继续”仅用于推进工作，不用于确认人工通过。旧版安装包和双平台 v0.1.9 标签保持原样，下载链接在新版本公开附件验收完成前保留 v0.1.9。
+
+构建使用独立 `.tools/v0.1.10-staging` 且 `--publish never`；安装沿用检查绝对路径并保留 staging 的方式，避免默认 `install:local` 清理此前被自动审查拒绝删除的 `dist/win-unpacked`。新安装/产物校验以 `.tools/session-tab-focus-verification.json` 的最终 6 个 out 文件为基线，不冒称旧插件 fixture / upstream 的 18 / 9 项结果已对新构建重跑。Gitee 发布前重新审计配额，任何其他旧附件删除都需要精确授权；既有 v0.1.3 删除授权不涵盖 v0.1.4。
+
+v0.1.10 的类型检查与全部 70 组回归通过，独立 staging 打包和原地安装已完成。安装版 ProductVersion 为 `0.1.10.0`；安装/staging/out 的完整 6 个文件与前述焦点自动验收逐字节匹配，渲染 bundle 为 `index-mLQpSSmh.js`。app.asar SHA-256 为 `84e6fab540d5ca1d2d8836cf6f5599fdb854fd1b964a0ea4a5e4b5bf2b609f85`，exe/asar 与两份语言资源匹配 staging，两个快捷方式仍使用同一路径并带 `--open-workspace`。Setup 为 104,000,339 bytes，Portable 为 103,730,806 bytes；latest.yml 的版本、文件名、大小及两处 SHA-512 一致，blockmap 完整覆盖 Setup。报告 `.tools/v0.1.10-installed-verification.json` / `.tools/v0.1.10-artifacts.json`。安装与校验没有启动日常 Host 或访问模型凭据，全部旧 staging 保留；人工结果仍为 pending。
+
+Gitee 最新只读审计总量为 1,038,495,500 bytes，剩余 35,246,324 bytes；新两包合计 207,731,145 bytes，缺口 172,484,821 bytes。可审查方案为仅移除 v0.1.4 发行版 `1229960` 的 Setup 附件 `3465634`（103,965,360 bytes）及 Portable 附件 `3465641`（103,695,823 bytes），共释放 207,661,183 bytes；上传新包后剩余 35,176,362 bytes。这两旧包已各完成两次匿名完整下载并核对 SHA-256/SHA-512，备份在 `.tools/gitee-v0.1.4-backup/`，下载进程均退出；GitHub 同版安装包仍公开，Gitee 标签、说明与源码包的保留快照已核对。当前 **尚未授权或执行删除**，也未公开发布 v0.1.10。审计 `.tools/v0.1.10-gitee-quota-preflight.json`，具体方案 `.tools/v0.1.10-gitee-deletion-plan.json`；收到对这两件附件的直接用户授权后再执行，不能使用旧 v0.1.3 授权代替。
 
 ## v0.1.9 发布收尾状态：插件管理入口
 
@@ -322,7 +329,7 @@ node scripts/app-shot.mjs .run-test/shot.png "@.run-test/expr.js"
 
 ## 下一步建议
 
-v0.1.9 本地安装、双平台发布与公开下载验收已完成。后续系统自动输入验收发现并修复反向切标签焦点问题，维护改动在本地分支，详见顶部；两项人工键盘检查仍待用户实际操作并报告结果。优先完成人工检查，再把维护修复纳入下一版本。已完成能力及后续方向如下：
+v0.1.9 双平台发布与公开下载验收已完成。后续焦点维护修复已纳入 v0.1.10，并完成本地安装和产物核验，详见顶部；两项人工键盘检查仍待用户实际操作并报告结果，可以与发布准备并行，但不能写为已通过。当前下一步是对已备份的 v0.1.4 两件 Gitee 附件取得精准删除授权，再完成 v0.1.10 双平台发布和公开下载核验。已完成能力及后续方向如下：
 
 ### 已完成：工作区联动（v0.1.7）
 
