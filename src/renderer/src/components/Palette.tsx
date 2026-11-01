@@ -12,6 +12,7 @@ import {
   MessagesSquare,
   Moon,
   Play,
+  Puzzle,
   RefreshCw,
   ScrollText,
   Search,
@@ -186,6 +187,15 @@ export default function Palette(): React.JSX.Element {
         icon: RefreshCw,
         keywords: 'restart host runtime 重启 运行时',
         run: () => window.studio.studio.runAction({ type: 'restart-host' })
+      },
+      {
+        id: 'action-plugins',
+        group: t('shell.runtime'),
+        title: t('shell.openPluginManager'),
+        subtitle: t('shell.openPluginManagerDesc'),
+        icon: Puzzle,
+        keywords: 'plugins plugin manager extensions 插件 管理 扩展',
+        run: () => window.studio.studio.runAction({ type: 'open-plugins' })
       },
       {
         id: 'action-stop',

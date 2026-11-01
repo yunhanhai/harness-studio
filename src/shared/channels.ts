@@ -53,6 +53,8 @@ export const IPC = {
 
   tabsActiveGuest: 'tabs:active-guest',
   tabsOpenWorkspace: 'tabs:open-workspace',
+  tabsOpenPlugins: 'tabs:open-plugins',
+  tabsCancelPlugins: 'tabs:cancel-plugins',
   tabsCancelWorkspace: 'tabs:cancel-workspace',
   tabsWorkspaceChanged: 'tabs:workspace-changed',
 

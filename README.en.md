@@ -49,6 +49,8 @@ Harness Studio takes a different angle: **make one developer's daily loop feel f
 
 The language setting applies to the Studio shell. The official Harness interface, conversation content, saved prompts, and raw logs stay as they are. Existing errors and installation progress snapshots keep the language used when generated. Interface languages are available from v0.1.8 on both GitHub and Gitee.
 
+The unreleased `codex/plugin-entry` branch adds **Plugin manager** to Home quick actions and the command palette. It returns to the workspace and opens the built-in Harness manager in the active tab once the runtime is ready. An unavailable entry shows a message. Harness handles installation, enabling, configuration, and sources; there is no default official plugin marketplace. See the [Harness plugin manager guide](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/client/ui-plugin-manager/README.md). Installed and public builds remain at v0.1.8.
+
 When returning to a project with only an unsent draft, Harness may open a new blank session because the sidebar hides inactive blank sessions. Keep the original tab open when you need to preserve a draft. Removing a Studio workspace removes its bookmark and keeps the shared host running.
 
 <table>

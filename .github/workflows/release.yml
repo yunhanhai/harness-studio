@@ -37,6 +37,9 @@ jobs:
       - name: Localization regressions
         run: npm run test:i18n
 
+      - name: Plugin navigation regressions
+        run: npm run test:plugin-navigation
+
       - name: Build renderer and main
         run: npm run build
 

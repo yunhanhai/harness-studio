@@ -1207,6 +1207,26 @@ kbd {
   display: flex;
   gap: 3px;
 }
+.shortcut-row.plugin-entry {
+  width: 100%;
+  background: transparent;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
+  text-align: left;
+}
+.shortcut-row.plugin-entry:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.shortcut-row.plugin-entry:disabled:hover {
+  color: var(--text-soft);
+}
+.shortcut-row.plugin-entry:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
 
 /* ---------- workspace ---------- */
 /* The workspace page stays mounted once opened, so its session webviews survive

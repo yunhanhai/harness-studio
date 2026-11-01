@@ -24,6 +24,7 @@ import type {
   HostStatus,
   InstallProgress,
   LogLine,
+  OpenPluginPanelResult,
   PromptItem,
   RuntimeInfo,
   Settings,
@@ -42,6 +43,7 @@ import { createMainWindow, createPaletteWindow, createQuickAskWindow, preloadPat
 import { applyTheme } from './windows'
 import { injectIntoComposer } from './quickask'
 import { WorkspaceNavigator } from './workspace-navigation'
+import { openPluginPanel } from './plugin-navigation'
 import { registerGlobalShortcuts } from './shortcuts'
 import { installApplicationMenu } from './menu'
 import { createTray, updateTrayMenu } from './tray'
@@ -74,6 +76,7 @@ let refreshIntegrationLanguage: (() => void) | null = null
  */
 const guests = new Map<number, Electron.WebContents>()
 const workspaceOpenRequests = new Map<number, number>()
+const pluginOpenRequests = new Map<number, { requestId: string; controller: AbortController }>()
 let activeGuestId: number | null = null
 const guestWaiters: Array<(contents: Electron.WebContents) => void> = []
 
@@ -480,9 +483,14 @@ function configureWebviewSecurity(window: BrowserWindow): void {
     guests.set(id, contents)
     workspaceNavigator.track(contents)
     contents.once('destroyed', () => {
+      pluginOpenRequests.get(id)?.controller.abort()
+      pluginOpenRequests.delete(id)
       guests.delete(id)
       workspaceOpenRequests.delete(id)
       if (activeGuestId === id) activeGuestId = null
+    })
+    contents.on('did-start-navigation', (_event, _url, inPlace, mainFrame) => {
+      if (mainFrame && !inPlace) pluginOpenRequests.get(id)?.controller.abort()
     })
     contents.setWindowOpenHandler(({ url }) => {
       if (isHttp(url)) void shell.openExternal(url)
@@ -660,6 +668,11 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
   ipcMain.on(IPC.tabsActiveGuest, (event, id: unknown) => {
     if (!mainWindow || mainWindow.isDestroyed() || mainWindow.webContents !== event.sender) return
     if (id === null || (typeof id === 'number' && guests.has(id))) {
+      if (activeGuestId !== id) {
+        for (const [guestId, request] of pluginOpenRequests) {
+          if (guestId !== id) request.controller.abort()
+        }
+      }
       activeGuestId = id
       const front = activeGuest()
       if (front) for (const resolve of guestWaiters.splice(0)) resolve(front)
@@ -669,6 +682,7 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
     if (!mainWindow || mainWindow.webContents !== event.sender) throw new Error('IPC request from an untrusted renderer')
     const guest = typeof guestId === 'number' ? liveGuest(guestId) : null
     if (!guest) return { status: 'cancelled' }
+    pluginOpenRequests.get(guest.id)?.controller.abort()
     const startingStatus = host.getStatus()
     const request = (workspaceOpenRequests.get(guest.id) ?? 0) + 1
     workspaceOpenRequests.set(guest.id, request)
@@ -699,6 +713,30 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
     if (!guest) return
     workspaceOpenRequests.set(guest.id, (workspaceOpenRequests.get(guest.id) ?? 0) + 1)
     workspaceNavigator.cancel(guest)
+  })
+  ipcMain.handle(IPC.tabsOpenPlugins, async (event, guestId: unknown, requestId: unknown): Promise<OpenPluginPanelResult> => {
+    if (!mainWindow || mainWindow.webContents !== event.sender) throw new Error('IPC request from an untrusted renderer')
+    const guest = typeof guestId === 'number' ? liveGuest(guestId) : null
+    if (!guest || activeGuest() !== guest || typeof requestId !== 'string' || !requestId || requestId.length > 128) {
+      return { status: 'cancelled' }
+    }
+    if (host.getStatus().state !== 'ready') return { status: 'failed', message: t('main.pluginsNotReady') }
+    pluginOpenRequests.get(guest.id)?.controller.abort()
+    const request = { requestId, controller: new AbortController() }
+    pluginOpenRequests.set(guest.id, request)
+    const authorization = workspaceNavigator.authorizeInput(guest, () =>
+      pluginOpenRequests.get(guest.id) === request && !request.controller.signal.aborted && activeGuest() === guest
+    )
+    try {
+      return await openPluginPanel(guest, authorization, { signal: request.controller.signal })
+    } finally {
+      if (pluginOpenRequests.get(guest.id) === request) pluginOpenRequests.delete(guest.id)
+    }
+  })
+  ipcMain.on(IPC.tabsCancelPlugins, (event, guestId: unknown, requestId: unknown) => {
+    if (!mainWindow || mainWindow.webContents !== event.sender || typeof guestId !== 'number' || typeof requestId !== 'string') return
+    const request = pluginOpenRequests.get(guestId)
+    if (request?.requestId === requestId) request.controller.abort()
   })
   ipcMain.on(IPC.guestWorkspaceCheck, (event, key: unknown) => {
     event.returnValue = guests.get(event.sender.id) === event.sender && typeof key === 'string'
@@ -1105,7 +1143,10 @@ async function bootstrap(): Promise<void> {
   installer = new RuntimeInstaller()
 
   host.onStatus((status) => {
-    if (status.state !== 'ready') workspaceNavigator.cancelAll(guests.values())
+    if (status.state !== 'ready') {
+      workspaceNavigator.cancelAll(guests.values())
+      for (const request of pluginOpenRequests.values()) request.controller.abort()
+    }
     broadcast(IPC.hostStatusChanged, status)
   })
   host.onLog((line) => sendMain(IPC.hostLogLine, line))

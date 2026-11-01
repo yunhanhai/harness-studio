@@ -364,6 +364,12 @@ export interface WindowState {
  */
 export type TabCommand = 'new-tab' | 'close-tab' | 'next-tab' | 'prev-tab'
 
+/** Opening a built-in Harness panel does not install or change plugins. */
+export interface OpenPluginPanelResult {
+  status: 'opened' | 'missing' | 'cancelled' | 'failed'
+  message?: string
+}
+
 export type StudioAction =
   | { type: 'navigate'; view: ViewId }
   | { type: 'open-workspace'; id?: string; path?: string }
@@ -373,6 +379,7 @@ export type StudioAction =
   | { type: 'open-settings'; section?: string }
   | { type: 'open-logs' }
   | { type: 'open-insights' }
+  | { type: 'open-plugins' }
   | { type: 'toggle-theme' }
   | { type: 'check-updates' }
   | { type: 'show-about' }
@@ -447,6 +454,8 @@ export interface StudioApi {
     setActiveGuest(webContentsId: number | null): void
     /** Open a project in this exact guest without restarting the shared Host. */
     openWorkspace(workspaceId: string, webContentsId: number, path?: string): Promise<OpenTabWorkspaceResult>
+    openPlugins(webContentsId: number, requestId: string): Promise<OpenPluginPanelResult>
+    cancelPlugins(webContentsId: number, requestId: string): void
     cancelWorkspace(webContentsId: number): void
     onWorkspaceChanged(cb: (state: TabWorkspaceState) => void): () => void
   }

@@ -73,6 +73,8 @@ const api: StudioApi = {
   tabs: {
     setActiveGuest: (id) => ipcRenderer.send(IPC.tabsActiveGuest, id),
     openWorkspace: (workspaceId, id, path) => invoke(IPC.tabsOpenWorkspace, workspaceId, id, path),
+    openPlugins: (id, requestId) => invoke(IPC.tabsOpenPlugins, id, requestId),
+    cancelPlugins: (id, requestId) => ipcRenderer.send(IPC.tabsCancelPlugins, id, requestId),
     cancelWorkspace: (id) => ipcRenderer.send(IPC.tabsCancelWorkspace, id),
     onWorkspaceChanged: (cb) => subscribe(IPC.tabsWorkspaceChanged, cb)
   },

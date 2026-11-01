@@ -1,4 +1,6 @@
 export const shellMessages = {
+  'shell.openPluginManager': ['打开插件管理', 'Open plugin manager'],
+  'shell.openPluginManagerDesc': ['在当前会话标签页打开 Harness 插件管理', 'Open Harness plugin management in the current session tab'],
   'shell.logLineCount': ['{shown} / {total} 行', '{shown} / {total} lines'],
   'shell.promptsCount': ['{count} 条提示词', '{count} prompts'],
   'shell.promptsUsageTotal': ['累计使用 {count} 次', 'Used {count} times'],

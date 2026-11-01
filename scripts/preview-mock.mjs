@@ -365,6 +365,11 @@ window.studio = {
   tabs: {
     setActiveGuest: () => {},
     cancelWorkspace: () => {},
+    // Browser previews have no Harness panel; keep the API contract available.
+    openPlugins: async () => ({ status: 'missing', message: MOCK.settings.language === 'en-US'
+      ? 'Plugin management requires the desktop app (preview).'
+      : '插件管理需要在桌面版中打开（演示）。' }),
+    cancelPlugins: () => {},
     openWorkspace: async (workspaceId, webContentsId, path) => {
       const workspace = MOCK.workspaces.find((item) => workspaceId
         ? item.id === workspaceId

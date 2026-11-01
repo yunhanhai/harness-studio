@@ -6,6 +6,7 @@ import type {
   InsightsData,
   InstallProgress,
   LogLine,
+  OpenPluginPanelResult,
   PromptItem,
   RuntimeInfo,
   Settings,
@@ -91,6 +92,7 @@ interface AppState {
   removeWorkspace: (id: string) => Promise<void>
   updateWorkspace: (id: string, patch: Partial<Pick<Workspace, 'name' | 'pinned' | 'color'>>) => Promise<void>
   openWorkspace: (id: string) => Promise<void>
+  openPlugins: () => Promise<void>
   startHost: (workspaceId?: string) => Promise<void>
   stopHost: () => Promise<void>
   restartHost: () => Promise<void>
@@ -124,6 +126,8 @@ let reopenTabId: string | undefined
 let hostEpoch = 0
 let hostStartRequest: Promise<unknown> | null = null
 const workspaceRequests = new Map<string, AbortController>()
+let cancelPluginOpen: (() => void) | undefined
+let pluginRequestSequence = 0
 type WorkspaceObservation = { guestId: number; sessionId: string; path: string; workspaceId?: string }
 const workspaceObservations = new Map<number, WorkspaceObservation>()
 
@@ -165,6 +169,25 @@ function waitForTabGuest(tabId: string, signal: AbortSignal): Promise<number | n
     signal.addEventListener('abort', onAbort, { once: true })
     timer = setTimeout(() => finish(null, t('core.guestTimeout')), 90_000)
     check()
+  })
+}
+
+/** Cancel our wait even when an IPC reply is delayed or never arrives. */
+function waitForPluginOpen(reply: Promise<OpenPluginPanelResult>, signal: AbortSignal): Promise<OpenPluginPanelResult | null> {
+  return new Promise((resolve, reject) => {
+    let settled = false
+    const finish = (result: OpenPluginPanelResult | null, error?: unknown): void => {
+      if (settled) return
+      settled = true
+      signal.removeEventListener('abort', abort)
+      if (error !== undefined) reject(error)
+      else resolve(result)
+    }
+    const abort = (): void => finish(null)
+    signal.addEventListener('abort', abort, { once: true })
+    // Observe late rejections even after cancellation has settled our wait.
+    reply.then((result) => finish(result), (error: unknown) => finish(null, error))
+    if (signal.aborted) abort()
   })
 }
 
@@ -510,6 +533,56 @@ export const useApp = create<AppState>((set, get) => ({
   updateWorkspace: async (id, patch) => {
     await window.studio.workspaces.update(id, patch)
   },
+  openPlugins: async () => {
+    const state = get()
+    if (state.host.state !== 'ready') {
+      state.toast(t('core.pluginsNotReady'), 'info')
+      return
+    }
+    cancelPluginOpen?.()
+    const tabId = state.activeTabId
+    const epoch = hostEpoch
+    const requestId = `plugin-panel-${++pluginRequestSequence}`
+    const controller = new AbortController()
+    let guestId: number | undefined
+    let timedOut = false
+    const cancel = (): void => {
+      if (controller.signal.aborted) return
+      controller.abort()
+      if (guestId !== undefined) window.studio.tabs.cancelPlugins(guestId, requestId)
+    }
+    cancelPluginOpen = cancel
+    state.setView('workspace')
+    const contextCurrent = (): boolean => {
+      const latest = get()
+      return latest.view === 'workspace' && latest.activeTabId === tabId
+        && hostEpoch === epoch && latest.host.state === 'ready'
+        && latest.tabs.some((tab) => tab.id === tabId && (guestId === undefined || tab.guestId === guestId))
+    }
+    const current = (): boolean => !controller.signal.aborted && contextCurrent()
+    const unsubscribe = useApp.subscribe(() => { if (!current()) cancel() })
+    const timeout = setTimeout(() => { timedOut = true; cancel() }, 15_000)
+    try {
+      const id = await waitForTabGuest(tabId, controller.signal)
+      if (id === null) return
+      guestId = id
+      if (!current()) return
+      // A newly mounted guest can be reported before the React effect sends its
+      // foreground update. Preserve the IPC order before requesting navigation.
+      window.studio.tabs.setActiveGuest(id)
+      const result = await waitForPluginOpen(window.studio.tabs.openPlugins(id, requestId), controller.signal)
+      if (!result || !current() || result.status === 'opened' || result.status === 'cancelled') return
+      get().toast(result.message ?? t('core.pluginsOpenFailed'), 'error')
+    } catch {
+      if (current()) get().toast(t('core.pluginsOpenFailed'), 'error')
+    } finally {
+      clearTimeout(timeout)
+      unsubscribe()
+      if (timedOut && contextCurrent() && cancelPluginOpen === cancel) get().toast(t('core.pluginsTimeout'), 'error')
+      if (cancelPluginOpen === cancel) cancelPluginOpen = undefined
+    }
+  },
+
   openWorkspace: async (id) => {
     await openWorkspaceInTab(id, get().activeTabId)
   },
@@ -719,6 +792,9 @@ export const useApp = create<AppState>((set, get) => ({
       case 'open-insights':
         state.setView('insights')
         void state.loadInsights()
+        break
+      case 'open-plugins':
+        void state.openPlugins()
         break
       case 'check-updates':
         void window.studio.studio.checkUpdates().then((result) => {

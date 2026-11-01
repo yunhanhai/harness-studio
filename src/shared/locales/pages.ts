@@ -1,4 +1,7 @@
 export const pageMessages = {
+  'pages.home.pluginManager': ['插件管理', 'Plugin manager'],
+  'pages.home.pluginManagerHint': ['在当前标签页打开 Harness 插件管理', 'Open Harness plugin management in the current tab'],
+  'pages.home.pluginManagerNotReady': ['启动 Harness 后可打开插件管理', 'Start Harness to open the plugin manager'],
   "pages.insights.unrecorded": ["未记录", "Not recorded"],
   "pages.insights.unknownDirectory": ["未知目录", "Unknown directory"],
   "pages.settings.general": ["通用","General"],

@@ -21,6 +21,7 @@
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "test:workspace-navigation": "node scripts/test-workspace-navigation.mjs",
+    "test:plugin-navigation": "node scripts/test-plugin-navigation.mjs",
     "test:i18n": "node scripts/test-i18n.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "preview:ui": "node scripts/preview-server.mjs",

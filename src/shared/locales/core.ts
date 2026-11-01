@@ -1,4 +1,7 @@
 export const coreMessages = {
+  'core.pluginsNotReady': ['运行时尚未就绪，请先启动 Harness。', 'Start Harness before opening the plugin manager.'],
+  'core.pluginsOpenFailed': ['插件管理页未能打开，请重试。', 'The plugin manager could not be opened. Please try again.'],
+  'core.pluginsTimeout': ['插件管理页打开超时，请稍后重试。', 'Opening the plugin manager timed out. Please try again shortly.'],
   'core.hostNotReady': ['运行时没有就绪，请重新打开工作区', 'The runtime is not ready. Open the workspace again.'],
   'core.guestTimeout': ['会话界面没有加载完成，请稍后重试', 'The session has not finished loading. Try again shortly.'],
   'core.workspaceFailed': ['工作区没有打开，请重试', 'The workspace did not open. Try again.'],

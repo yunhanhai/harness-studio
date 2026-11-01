@@ -32,6 +32,7 @@ $env:ELECTRON_MIRROR = "https://github.com/electron/electron/releases/download/"
 | `npm run clean:dist` | 清理预览副本、旧安装包与 `win-unpacked` |
 | `npm run status` | 查看磁盘占用、检查是否有重复安装 |
 | `npm run typecheck` | 主进程 + 渲染进程类型检查 |
+| `npm run test:plugin-navigation` | 插件管理入口、取消与前端等待回归 |
 | `npm run build` | 构建 `out/` |
 | `npm run preview:ui` | 无需 Electron 的浏览器 UI 预览 |
 | `npm run icons` | 从 `resources/brand.svg` 重新生成图标 |

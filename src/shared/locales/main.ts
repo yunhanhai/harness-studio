@@ -1,4 +1,7 @@
 export const mainMessages = {
+  'main.pluginsNotReady': ['运行时尚未就绪，请先打开工作区并启动 Harness。', 'The runtime is not ready. Open a workspace and start Harness first.'],
+  'main.pluginsUnavailable': ['当前 Harness 的插件管理入口不可用，请检查运行时版本后重试。', 'Plugin management is unavailable in this Harness interface. Check the runtime version and try again.'],
+  'main.pluginsFailed': ['插件管理页未能打开，请重试。', 'The plugin manager could not be opened. Please try again.'],
   "main.quickAskUnavailable": [
     "运行时尚未就绪，无法快速提问",
     "The runtime is not ready for Quick Ask"

@@ -83,6 +83,14 @@ Host 冷启动约 **10 秒**。实测结论（避免后人重复排查）：
 
 **边界**：登记/查询使用上游 RPC，打开使用上游 DOM，二者都没有长期兼容承诺；入口不可用时显示失败，保留最后确认的实际目录。官方侧栏隐藏非当前空会话，因此返回只有草稿、尚无消息的项目时可能新建空会话；旧草稿仍属于原会话，不会自动搬到新项目。没有使用空会话的项目下拉来复用，因为上游该入口会转移草稿和附件。删除 Studio 书签只解除映射，不删除 Host 工作区或停止共享进程。
 
+### 插件管理入口（未发布）
+
+启动台与命令面板调用 `store.openPlugins()`，先显示工作区，捕获当前 tab 与 Host epoch，等待该 tab 的 guest，并通过 `tabs:open-plugins` 请求主进程。切页、切 tab、关闭 tab、guest 重载、Host 重启或新请求会取消旧操作；请求编号保证迟到的取消不会影响新请求。
+
+`src/main/plugin-navigation.ts` 查找唯一可见、可用且含 `[data-slot="sidebar.panellist"]` 的 `nav button[aria-label="插件"]` 或 `nav button[aria-label="Plugins"]`。真正点击前复用工作区 preload 的 `hs-workspace-check` 同步授权，随后只读确认 `aria-current="page"`，已经选中时直接完成。授权只约束点击，切面板带来的会话 DOM 变化不应否定已确认的成功。主进程总期限为 8 秒，renderer 含冷挂载总等待为 15 秒；销毁或悬挂的 guest 求值也会结束并释放授权。
+
+此入口不调用安装、启停或配置 RPC，也不增加 Host 或改变 URL。它依赖上游侧栏 DOM，兼容入口缺失时提示失败。管理面板本身由 Harness 提供，没有默认的官方插件市场。`npm run test:plugin-navigation` 检查按钮身份、幂等、选中态、超时、迟到点击与监听清理，CI 和发布工作流均运行该回归。
+
 ### 发送确认
 
 内嵌界面按下回车就立即提交，误触无法撤回，且队列里的待发消息会被一并提交。Studio 在 webview preload 里拦下这两个入口：

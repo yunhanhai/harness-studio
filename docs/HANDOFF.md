@@ -7,7 +7,7 @@
 | 项目 | 值 |
 | --- | --- |
 | 版本 | `0.1.8`（已安装并双平台发布，公开安装包完整下载校验通过） |
-| 开发分支 | `main`（`codex/interface-language` 已快进合入） |
+| 开发分支 | `codex/plugin-entry`（从 v0.1.8 发布后的 `main` 开发插件管理入口） |
 | 本地 HEAD | `git log --oneline -1` 确认 |
 | 工作区 | `git status` 确认 |
 | 已发布 | GitHub：v0.1.0～v0.1.8；Gitee：v0.1.0～v0.1.4、v0.1.6～v0.1.8（v0.1.5 只有标签；v0.1.0 / v0.1.1 / v0.1.2 仅保留说明与源码包，旧安装包已移除并备份） |
@@ -29,6 +29,20 @@
 | v0.1.6 | 会话标签页：一个 Host 上并排打开多个会话；工作区页面常驻，切页不再重新加载 |
 | v0.1.7 | 当前标签页工作区联动、切换期间快速提问保护、发送确认与 preload 校验修复 |
 | v0.1.8 | 中文、English 与跟随系统；跨窗口语言同步，保留会话与草稿 |
+
+## 当前开发：插件管理入口（未发布）
+
+用户在 v0.1.8 发布完成后授权按推荐继续，启动台快捷操作与命令面板的「插件管理」已完成本地开发并提交到 `codex/plugin-entry`。`store.openPlugins()` 切回工作区，在明确的当前 tab 内打开官方 Harness 的 `plugins` 面板；不增加 Host，不改 URL，插件操作仍在上游管理界面中完成。上游没有默认的官方插件市场。
+
+实现覆盖冷挂载等待、前台 guest 核验、唯一可用中英文侧栏按钮、选中态确认、编号匹配取消、切页/切 tab/关闭/刷新/Host 重启取消与悬挂求值超时。通过现有工作区 preload 同步核验点击授权，迟到脚本不能继续点击。回归脚本为 `npm run test:plugin-navigation`，已接入 CI 与发布工作流。
+
+`npm run typecheck`、`npm run build`、34 项插件入口回归、15 项工作区回归、11 项语言回归与独立代码审查全部通过。插件回归保留 26 项主进程场景，另有 8 项实际 store 检查，覆盖冷挂载期间 guest 连续替换、永不返回的 IPC、超时、迟到结果、订阅/监听清理与双语提示；连续绑定旧 guest 的竞态经修复前失败、修复后通过验证。
+
+最终构建 `index-DOSvQfq1.js` 的 18 项隔离 Electron fixture 检查通过，报告与截图为 `.tools/plugin-entry-verification/`。包括中英 Home/Palette 在 1040px 下可用、前台定位、幂等、草稿与文档保留、缺失/禁用/重复/不匹配入口、未确认点击、切页/切 tab/关闭/Host 重启取消，以及 18 秒冷加载在约 15 秒提示超时，迟到文档不点击，手动重试成功。fixture 验证不等同于正式上游 UI 验证。
+
+官方 DSH `0.2.1-rc.2` 的 9 项实际 Electron 检查也通过，报告与截图为 `.tools/plugin-entry-upstream-verification/`，与上述 fixture 的全部 6 个 out 文件哈希一致。首次 Home 冷挂载打开真实 Plugins；Home/Palette 与切 tab 后的入口只导航前台；两个独立 Session 的草稿、文档标识与 timeOrigin 保留，Host PID 不变，重复打开不重载。按既有设计，新标签可能打开上次会话位置，验收在第二标签通过官方「新建会话」建立独立会话；首次纯说明/开始使用介绍仅在隔离环境关闭或跳过。A 草稿使用 CDP `Input.insertText`，B 因自动化焦点限制改用实际 QuickAsk IPC → Electron `WebContents.insertText`（`autoSend: false`），返回 `inserted`，没有发送。使用独立 `userData` / `DSH_HOME` / `DSH_AGENTS_HOME` / Documents 覆盖；仅允许官方生成的本地浏览器认证 grant，没有模型/账号凭据，未访问用户凭据，未提交模型请求或修改插件。所有自建 Electron、Host、后代与 helper 进程均已退出。两项既有系统键盘行为仍需人工确认，不能用这轮输入验证替代。
+
+版本字段、日常安装与公开包仍是 v0.1.8；本轮尚未安装、推送、打标签或发布。下一版本需要另行准备发布记录和 bridge；不得重跑 v0.1.8 发布或移动已有标签。
 
 ## 在新对话中如何继续
 
@@ -57,6 +71,7 @@
 先读 docs/HANDOFF.md 和 docs/ARCHITECTURE.md。
 v0.1.8 界面语言已合入 main、本地安装并在 GitHub 与 Gitee 发布。
 两平台公开安装包完整下载验收通过，发布收尾已完成。
+插件管理入口在 codex/plugin-entry 分支，先读「当前开发」与验收记录。
 不要重复发布或移动已存在的标签，先读当前收尾状态与发布记录。
 接下来做：<写清楚新需求>。
 ```
@@ -189,6 +204,7 @@ src/
     store.ts               JsonStore：原子写入 + 合并默认值 + 范围校验
     sessions.ts            会话洞察：投影缓存解析、聚合、60 秒缓存（约 325 行）
     quickask.ts            快速提问注入：聚焦 composer → insertText → 点击发送
+    plugin-navigation.ts   当前标签页插件面板导航、同步点击授权、确认与取消
     instances.ts           本机 DSH 进程枚举 / 结束（受限权限会标记 restricted）
     updater.ts             electron-updater 封装
     logger.ts              文件日志
@@ -212,6 +228,7 @@ src/
 scripts/
   check-preload.mjs        build 后校验 preload 自包含与 workspace IPC 通道契约
   test-workspace-navigation.mjs 工作区导航与取消回归（npm run test:workspace-navigation，CI 自动执行）
+  test-plugin-navigation.mjs 插件面板导航与前端等待回归（npm run test:plugin-navigation，CI 自动执行）
 ```
 
 改代码时记住四条硬约束（前三条也写在 `CONTRIBUTING.md`）：
@@ -245,6 +262,9 @@ scripts/
 
 ```powershell
 npm run typecheck
+npm run test:workspace-navigation
+npm run test:plugin-navigation
+npm run test:i18n
 npm run build
 ```
 
@@ -272,6 +292,8 @@ node scripts/app-shot.mjs .run-test/shot.png "@.run-test/expr.js"
 `scripts/app-shot.mjs` 只匹配应用自己的 renderer（`index.html` 且不含 `#`），不会误连到内嵌的 Harness webview。`scripts/preview-eval.mjs` 可以在截图前先断言 DOM，避免"图看起来对但其实是旧构建"。
 
 **不想碰本机 `~/.dsh` 时**（v0.1.6 的真机验证就是这么做的）：在隔离的 `userData` 里写一份 `settings.json`，把 `runtime.dshHome` 指向一个空目录、`shortcuts` 三项设为空字符串（不抢本机全局快捷键），再用 `HARNESS_STUDIO_USER_DATA` 指向它启动。首次启动会从内置模板建 `studio` 档案（本机实测约 47 秒），之后几秒就绪。没有凭据也能进入会话界面，只是会弹「开始使用」登录框。注意内嵌界面仍会把「默认工作区」放在系统「文档」目录下的 `deepseek-harness\default-workspace`。
+
+插件入口验收时查到官方 DSH `0.2.1-rc.2` 支持覆盖默认工作区基目录：在隔离 `DSH_HOME/cordis.patch.yml` 中为 `id: workspace-controller` 设置 `config.documentsDirectory` 为隔离目录内的绝对路径；它完全跳过系统 Documents 查找，并在该路径下追加 `deepseek-harness/default-workspace`。同时隔离 `DSH_AGENTS_HOME`，为 `id: credentials` 设置隔离的 `config.path` 与 `watch: false`，启动环境只保留所需系统变量和测试变量。这样正式上游 UI 验收也能把会话、凭据文件、技能和默认工作区写入位置限定在 QA 目录。仅改进程 cwd 不足以覆盖默认工作区位置。
 
 **注意**：截图脚本必须禁用缓存，否则会拿到旧构建的图（这个坑踩过）。`shot.mjs` 已加 `Network.setCacheDisabled`。
 
@@ -302,7 +324,7 @@ v0.1.6 的切换只改 Studio 自己的项目标签，内嵌会话不跟随。v0
 ### 3. 其他
 
 - **macOS 构建**：`.github/workflows/release.yml` 加 `macos-latest` job 即可，但本环境无法验收，需要真机测试。另外 `src/main/menu.ts` 把 `Command+W` 绑在「隐藏窗口」上，而会话标签页把 `Cmd+W` 用作关闭标签：页面 `preventDefault` 之后菜单大概率收不到，结果是 `Cmd+W` 只关标签、焦点在终端时才隐藏窗口。做 macOS 构建前要在真机上确认并决定保留哪一个。
-- **插件市场入口**：只需在 UI 里做一个跳转入口，工作量最小但价值也有限。
+- **插件管理入口（当前开发）**：启动台与命令面板打开当前标签里的官方管理页，进展见顶部。上游没有默认的官方插件市场，入口不能称为市场或承诺一键安装。
 - **界面英文化（v0.1.8）**：已合入 main、安装并双平台发布，公开下载完整哈希验收通过，详情见顶部「当前收尾状态」。
 
 ### 已完成（v0.1.4）

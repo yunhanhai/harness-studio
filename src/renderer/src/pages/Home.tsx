@@ -10,6 +10,7 @@ import {
   Pause,
   Pin,
   Play,
+  Puzzle,
   RefreshCw,
   ScrollText,
   Sparkles,
@@ -32,6 +33,7 @@ export function Home(): React.JSX.Element {
   const prompts = useApp((state) => state.prompts)
   const addWorkspace = useApp((state) => state.addWorkspace)
   const openWorkspace = useApp((state) => state.openWorkspace)
+  const openPlugins = useApp((state) => state.openPlugins)
   const setView = useApp((state) => state.setView)
   const startHost = useApp((state) => state.startHost)
   const stopHost = useApp((state) => state.stopHost)
@@ -375,6 +377,16 @@ export function Home(): React.JSX.Element {
                 <kbd>4</kbd>
               </span>
             </div>
+            <button
+              type="button"
+              className="shortcut-row plugin-entry"
+              disabled={!ready}
+              title={ready ? t('pages.home.pluginManagerHint') : t('pages.home.pluginManagerNotReady')}
+              onClick={() => void openPlugins()}
+            >
+              <span>{t('pages.home.pluginManager')}</span>
+              <span className="keys"><Puzzle size={14} /></span>
+            </button>
             <div className="shortcut-row" onClick={() => setView('logs')}>
               <span>{t('pages.home.logs')}</span>
               <span className="keys">
