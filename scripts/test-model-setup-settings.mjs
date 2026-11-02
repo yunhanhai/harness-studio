@@ -242,6 +242,36 @@ await test('page/tab/guest/Host changes settle cancellation without a main-proce
     assert.deepEqual(toasts(), [])
   })
 })
+await test('explicit dismissal cancels hot or cold model navigation once and leaves the next request usable', async () => {
+  for (const cold of [false, true]) await withStore({ state: cold ? { tabs: [{ id: 'a', seq: 1, title: 'Unsent draft' }] } : {} }, async ({ useApp, calls, replies, toasts, assertClean }) => {
+    useApp.getState().cancelModelNavigation()
+    assert.deepEqual(calls, [], 'idle dismissal has no IPC side effects')
+    const pending = useApp.getState().openModels('custom')
+    await flush()
+    useApp.getState().cancelModelNavigation()
+    useApp.getState().cancelModelNavigation()
+    assert.equal((await bounded(pending)).status, 'cancelled')
+    assertClean()
+    if (cold) {
+      useApp.getState().updateTab('a', { guestId: 42 })
+      await flush()
+      assert.deepEqual(calls, [], 'a later guest mount cannot resume the dismissed request')
+    } else {
+      assert.deepEqual(calls.filter(call => call[0] === 'cancel-models'), [['cancel-models', 42, replies[0].requestId]], 'repeated dismissal cancels the exact native request once')
+      replies[0].reject(new Error('late reply after explicit dismissal'))
+      await flush()
+    }
+    assert.deepEqual(toasts(), [])
+    const tabs = structuredClone(useApp.getState().tabs)
+    const replacement = useApp.getState().openModels('account')
+    await flush()
+    replies.at(-1).resolve({ status: 'opened' })
+    assert.equal((await bounded(replacement)).status, 'opened')
+    useApp.getState().cancelModelNavigation()
+    assert.deepEqual(useApp.getState().tabs, tabs)
+    assert.deepEqual(toasts(), [])
+  })
+})
 await test('models and plugins cancel their predecessor, leaving the replacement request intact', async () => {
   await withStore({}, async ({ useApp, calls, replies, listeners }) => {
     const old = useApp.getState().openPlugins()
