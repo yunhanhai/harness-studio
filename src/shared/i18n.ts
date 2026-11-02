@@ -3,9 +3,11 @@ import { coreMessages } from './locales/core'
 import { pageMessages } from './locales/pages'
 import { shellMessages } from './locales/shell'
 import { mainMessages } from './locales/main'
+import { skillMessages } from './locales/skills'
+import { modelMessages } from './locales/models'
 
 export type Locale = 'zh-CN' | 'en-US'
-export const messages = { ...coreMessages, ...pageMessages, ...shellMessages, ...mainMessages } as const
+export const messages = { ...coreMessages, ...pageMessages, ...shellMessages, ...mainMessages, ...skillMessages, ...modelMessages } as const
 export type MessageKey = keyof typeof messages
 export type MessageParams = Record<string, string | number>
 export type Translator = (key: MessageKey, params?: MessageParams) => string

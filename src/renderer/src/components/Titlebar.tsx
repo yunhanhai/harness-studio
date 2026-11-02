@@ -31,7 +31,9 @@ export function Titlebar(): React.JSX.Element {
             ? t('shell.promptLibrary')
             : view === 'logs'
               ? t('shell.runtimeLogs')
-              : t('shell.settings')
+              : view === 'skills'
+                ? t('skills.title')
+                : t('shell.settings')
 
   return (
     <header className="titlebar">

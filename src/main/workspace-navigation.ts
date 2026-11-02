@@ -144,6 +144,18 @@ export class WorkspaceNavigator {
     return { key, valid, release: () => { state?.inputs.delete(key) } }
   }
 
+  /** Panel navigation can hide the conversation while keeping the same page. */
+  authorizePanel(contents: WebContents, inFront: () => boolean): { key: string; valid: () => boolean; release: () => void } {
+    const state = this.states.get(contents)
+    const revision = state?.revision
+    const epoch = state?.epoch
+    const key = randomUUID()
+    const valid = (): boolean => Boolean(inFront() && state && !contents.isDestroyed() && !state.busy
+      && state.revision === revision && state.epoch === epoch && this.hostReady(contents))
+    state?.inputs.set(key, valid)
+    return { key, valid, release: () => { state?.inputs.delete(key) } }
+  }
+
   private async location(contents: WebContents, expectedId?: string, signal?: AbortSignal): Promise<SessionLocation | null> {
     const sessionId = await evaluate<string | null>(contents, CURRENT_SESSION, signal)
     if (!sessionId || (expectedId && sessionId !== expectedId)) return null

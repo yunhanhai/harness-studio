@@ -34,6 +34,7 @@ export function Home(): React.JSX.Element {
   const addWorkspace = useApp((state) => state.addWorkspace)
   const openWorkspace = useApp((state) => state.openWorkspace)
   const openPlugins = useApp((state) => state.openPlugins)
+  const setSettingsSection = useApp((state) => state.setSettingsSection)
   const setView = useApp((state) => state.setView)
   const startHost = useApp((state) => state.startHost)
   const stopHost = useApp((state) => state.stopHost)
@@ -386,6 +387,12 @@ export function Home(): React.JSX.Element {
             >
               <span>{t('pages.home.pluginManager')}</span>
               <span className="keys"><Puzzle size={14} /></span>
+            </button>
+            <button type="button" className="shortcut-row plugin-entry" onClick={() => setSettingsSection('models')}>
+              <span>{t('models.title')}</span><span className="keys"><Cpu size={14} /></span>
+            </button>
+            <button type="button" className="shortcut-row plugin-entry" onClick={() => setView('skills')}>
+              <span>{t('skills.title')}</span><span className="keys"><Sparkles size={14} /></span>
             </button>
             <div className="shortcut-row" onClick={() => setView('logs')}>
               <span>{t('pages.home.logs')}</span>

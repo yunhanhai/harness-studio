@@ -22,6 +22,8 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "test:workspace-navigation": "node scripts/test-workspace-navigation.mjs",
     "test:plugin-navigation": "node scripts/test-plugin-navigation.mjs",
+    "test:model-navigation": "node scripts/test-model-navigation.mjs && node scripts/test-model-setup-settings.mjs",
+    "test:skills": "node scripts/test-skills.mjs && node scripts/test-skills-launch-context.mjs",
     "test:session-tab-focus": "node scripts/test-session-tab-focus.mjs",
     "test:conversation-font": "node scripts/test-conversation-font-settings.mjs && node scripts/test-conversation-font-preload.mjs",
     "test:i18n": "node scripts/test-i18n.mjs",
@@ -39,7 +41,8 @@
   },
   "dependencies": {
     "electron-updater": "^6.8.9",
-    "extract-zip": "^2.0.1"
+    "extract-zip": "^2.0.1",
+    "js-yaml": "^4.3.2"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

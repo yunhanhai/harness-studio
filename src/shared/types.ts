@@ -1,7 +1,11 @@
+import type { SkillsAPI } from './skills'
+import type { ModelNavigationChoice, OpenModelPanelResult } from './models'
+
 export type ThemeMode = 'system' | 'light' | 'dark'
 export type ConversationFontSize = 0 | 14 | 16 | 18
 export type LanguageSetting = 'system' | 'zh-CN' | 'en-US'
-export type ViewId = 'home' | 'workspace' | 'insights' | 'prompts' | 'logs' | 'settings'
+
+export type ViewId = 'home' | 'workspace' | 'insights' | 'prompts' | 'logs' | 'skills' | 'settings'
 
 export type HostState = 'stopped' | 'starting' | 'ready' | 'stopping' | 'error'
 export type RuntimeState = 'unknown' | 'checking' | 'missing' | 'ready' | 'error'
@@ -106,6 +110,8 @@ export interface Settings {
   zoomFactor: number
   /** Conversation text size in CSS pixels; 0 keeps Harness' own size. */
   conversationFontSize: ConversationFontSize
+  /** First-use model choices are independent of any DeepSeek account. */
+  modelSetupSeen: boolean
   closeToTray: boolean
   minimizeToTray: boolean
   launchAtLogin: boolean
@@ -383,6 +389,7 @@ export type StudioAction =
   | { type: 'open-logs' }
   | { type: 'open-insights' }
   | { type: 'open-plugins' }
+  | { type: 'open-models'; choice?: 'models' | 'custom' | 'account' | 'later' }
   | { type: 'toggle-theme' }
   | { type: 'check-updates' }
   | { type: 'show-about' }
@@ -455,6 +462,7 @@ export interface StudioApi {
     scan(force?: boolean): Promise<InsightsData>
     revealSession(id: string): Promise<boolean>
   }
+  skills: SkillsAPI
   tabs: {
     /**
      * Tell the shell which embedded webview is in front (its webContents id,
@@ -466,6 +474,8 @@ export interface StudioApi {
     openWorkspace(workspaceId: string, webContentsId: number, path?: string): Promise<OpenTabWorkspaceResult>
     openPlugins(webContentsId: number, requestId: string): Promise<OpenPluginPanelResult>
     cancelPlugins(webContentsId: number, requestId: string): void
+    openModels(webContentsId: number, requestId: string, choice?: ModelNavigationChoice): Promise<OpenModelPanelResult>
+    cancelModels(webContentsId: number, requestId: string): void
     cancelWorkspace(webContentsId: number): void
     onWorkspaceChanged(cb: (state: TabWorkspaceState) => void): () => void
   }

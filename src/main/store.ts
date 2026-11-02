@@ -29,6 +29,9 @@ export function mergeSettings(defaults: Settings, input: unknown): Settings {
   }
   const merged = merge(defaults, input) as Settings
   merged.language = normalizeLanguage(merged.language)
+  if (typeof input.modelSetupSeen !== 'boolean') {
+    merged.modelSetupSeen = typeof input.lastWorkspaceId === 'string' && Boolean(input.lastWorkspaceId)
+  }
   merged.zoomFactor = Math.min(2, Math.max(0.5, Number(merged.zoomFactor) || 1))
   if (typeof merged.conversationFontSize !== 'number' || !CONVERSATION_FONT_SIZES.includes(merged.conversationFontSize)) {
     merged.conversationFontSize = defaults.conversationFontSize

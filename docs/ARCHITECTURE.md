@@ -195,6 +195,26 @@ providers:
 
 **权限受限时会明说。** `Win32_Process` 按调用者的完整性级别过滤：Low 完整性令牌（`S-1-16-4096`）只能看到机器的一小部分，而且**不报错**。这会把手里的「看不到」伪装成「没有」，正好给出错误的建议。所以扫描同时检查两件事——能不能枚举到自己、令牌是不是 Low——任一成立就把 `DshProcessReport.restricted` 置为 `true`，界面显示琥珀色警告而不是「没有发现其他 DSH 进程」。
 
+## 模型设置与免 DeepSeek 账号（Unreleased）
+
+Studio 提供首次选择以及设置、启动台、命令面板入口，模型配置继续由 Harness 管理，不复制凭据存储或推理协议。第三方 API / 自定义模型不要求 DeepSeek 账号。无可用模型时仍可编辑草稿和管理本地技能；生成回答需要模型，工具调用取决于模型与接口。本地免认证兼容服务在当前适配层可用 `local-placeholder`，不对任意端点自动注入占位凭据。
+
+`model-navigation.ts` 使用 rc.2 的 `settings.launcher`、设置模态与 `settings.section` 能力，以及精确的中英文导航标签。多步导航持有 `authorizePanel`，不依赖设置页已经隐藏的会话 DOM；每次实际点击同步核对主进程前台许可。打开前取消同 guest 未完成的项目导航并等待队列退出。关标签、切页/标签、刷新、Host 变化、取消与超时撤销许可，renderer 独立结算未返回的 IPC。
+
+只有用户明确选择 custom/later 时，才跳过空白的官方凭据介绍；已填写的密钥/提供商表单和预览版声明保留。Studio 首次选择框可以退出，不以成功关闭官方弹窗为条件。`modelSetupSeen` 只记录已经看过 Studio 引导，不能当作账号登录、凭据配置或真实模型连通性状态。已有工作区的旧设置迁移为已看过；新用户默认显示，恢复默认会重新显示。
+
+## DSH 本地技能中心（Unreleased）
+
+`skills.ts` 在主进程解析 YAML frontmatter、建立来源清单并管理文件，renderer 只拿不透明 source/skill ID 与正文。当前项目从主进程已经核对的 guest 会话 `cwd` 获取，沿最近 Git 根解析项目目录；不使用 Host 书签名代替当前标签项目。运行中的来源依据 `HostManager.getSkillsLaunchContext()` 的不可变启动快照：实际 DSH_HOME、agents/bundled 路径、profile、原始 spawn cwd 与 overlay 文件。切工作区不会改变相对配置的解析基准，快照不包含完整环境或凭据；离线根仍遵循用户的窄路径设置。
+
+这是**默认磁盘清单**，未声称已经组合上游所有 bundle/profile/preset 配置或涵盖虚拟/远程提供商。静态 YAML overlay 只提取可识别的自定义技能目录，`!!js` 保留为惰性值，不执行表达式；不扫描 Codex/Claude 的额外 provider，不读 `.env` / 凭据文件。按 filesystem 的 100/200/300/400/500/600 来源优先级及 entry 顺序诊断局部同名覆盖；当前调用状态和菜单刷新以 Harness `/` 菜单为准。随包来源仅展示实际启动声明的目录，不把任意安装包内资源当作已启用 provider。
+
+仅标准项目 `.dsh/skills` 与当前 DSH_HOME `skills` 可写，共享 agents / 自定义 / 随包来源只读。每次操作重新从当前 context 定位 ID，检查每个路径组成部分及文件类型，拒绝 symlink、Windows junction、硬链接与根目录操作。编辑采用整个资源树内容哈希防并发覆盖，导入和备份保留脚本、二进制文件、引用资源及空目录；操作串行，失败只回滚本次暂存。管理上限为 1 MiB 正文、64 MiB bundle、2,000 文件/目录。
+
+备份位于 Studio userData `skill-backups`，记录所选 DSH_HOME/profile 与源目录。删除和编辑都能恢复；恢复要求原目标为空或仍与当时保存后的版本一致，恢复本身也保留逆向备份，避免覆盖之后的外部编辑。导入路径来自明确的原生文件/目录选择器，选择期间 scope 变化会取消写入。
+
+插件精选只提供项目说明与来源链接，不默认安装第三方插件或修改 Host 重启行为。官方可选发现组件继续使用 Harness 的插件管理与文档，社区索引由用户选择添加。GitHub/Gitee 在线技能下载、差异更新与完整 preset/runtime catalog 接入留待后续迭代。
+
 ## 运行时检测顺序
 
 | 顺序 | 来源 | 说明 |

@@ -17,6 +17,7 @@ import type {
 import { applyAppearance, resolveTheme, watchSystemTheme } from './lib/theme'
 import { applyLanguage, t } from './lib/i18n'
 import type { MessageKey } from '@shared/i18n'
+import type { ModelNavigationChoice, OpenModelPanelResult } from '@shared/models'
 
 export interface ToastItem {
   id: number
@@ -93,6 +94,8 @@ interface AppState {
   updateWorkspace: (id: string, patch: Partial<Pick<Workspace, 'name' | 'pinned' | 'color'>>) => Promise<void>
   openWorkspace: (id: string) => Promise<void>
   openPlugins: () => Promise<void>
+  openModels: (choice?: ModelNavigationChoice) => Promise<OpenModelPanelResult>
+  cancelModelNavigation: () => void
   startHost: (workspaceId?: string) => Promise<void>
   stopHost: () => Promise<void>
   restartHost: () => Promise<void>
@@ -127,6 +130,7 @@ let hostEpoch = 0
 let hostStartRequest: Promise<unknown> | null = null
 const workspaceRequests = new Map<string, AbortController>()
 let cancelPluginOpen: (() => void) | undefined
+let cancelModelOpen: (() => void) | undefined
 let pluginRequestSequence = 0
 type WorkspaceObservation = { guestId: number; sessionId: string; path: string; workspaceId?: string }
 const workspaceObservations = new Map<number, WorkspaceObservation>()
@@ -173,10 +177,10 @@ function waitForTabGuest(tabId: string, signal: AbortSignal): Promise<number | n
 }
 
 /** Cancel our wait even when an IPC reply is delayed or never arrives. */
-function waitForPluginOpen(reply: Promise<OpenPluginPanelResult>, signal: AbortSignal): Promise<OpenPluginPanelResult | null> {
+function waitForPluginOpen<T = OpenPluginPanelResult>(reply: Promise<T>, signal: AbortSignal): Promise<T | null> {
   return new Promise((resolve, reject) => {
     let settled = false
-    const finish = (result: OpenPluginPanelResult | null, error?: unknown): void => {
+    const finish = (result: T | null, error?: unknown): void => {
       if (settled) return
       settled = true
       signal.removeEventListener('abort', abort)
@@ -540,6 +544,7 @@ export const useApp = create<AppState>((set, get) => ({
       return
     }
     cancelPluginOpen?.()
+    cancelModelOpen?.()
     const tabId = state.activeTabId
     const epoch = hostEpoch
     const requestId = `plugin-panel-${++pluginRequestSequence}`
@@ -580,6 +585,63 @@ export const useApp = create<AppState>((set, get) => ({
       unsubscribe()
       if (timedOut && contextCurrent() && cancelPluginOpen === cancel) get().toast(t('core.pluginsTimeout'), 'error')
       if (cancelPluginOpen === cancel) cancelPluginOpen = undefined
+    }
+  },
+
+  cancelModelNavigation: () => { cancelModelOpen?.() },
+  openModels: async (choice = 'models') => {
+    const state = get()
+    if (state.host.state !== 'ready') {
+      const result = { status: 'failed' as const, message: t('models.notReady') }
+      state.toast(result.message, 'info')
+      return result
+    }
+    cancelPluginOpen?.()
+    cancelModelOpen?.()
+    const tabId = state.activeTabId
+    const epoch = hostEpoch
+    const requestId = `model-panel-${++pluginRequestSequence}`
+    const controller = new AbortController()
+    let guestId: number | undefined
+    let timedOut = false
+    const cancel = (): void => {
+      if (controller.signal.aborted) return
+      controller.abort()
+      if (guestId !== undefined) window.studio.tabs.cancelModels(guestId, requestId)
+    }
+    cancelModelOpen = cancel
+    cancelWorkspaceRequest(tabId)
+    get().updateTab(tabId, { pendingWorkspaceId: undefined, pendingWorkspacePath: undefined })
+    state.setView('workspace')
+    const contextCurrent = (): boolean => {
+      const latest = get()
+      return latest.view === 'workspace' && latest.activeTabId === tabId
+        && hostEpoch === epoch && latest.host.state === 'ready'
+        && latest.tabs.some(tab => tab.id === tabId && (guestId === undefined || tab.guestId === guestId))
+    }
+    const current = (): boolean => !controller.signal.aborted && contextCurrent()
+    const unsubscribe = useApp.subscribe(() => { if (!current()) cancel() })
+    const timeout = setTimeout(() => { timedOut = true; cancel() }, 20_000)
+    try {
+      const id = await waitForTabGuest(tabId, controller.signal)
+      if (id === null) return { status: 'cancelled' }
+      guestId = id
+      if (!current()) return { status: 'cancelled' }
+      window.studio.tabs.setActiveGuest(id)
+      const result = await waitForPluginOpen(window.studio.tabs.openModels(id, requestId, choice), controller.signal)
+      if (!result || !current()) return { status: 'cancelled' }
+      if (result.status !== 'opened' && result.status !== 'cancelled') get().toast(result.message, 'error')
+      return result
+    } catch {
+      if (!current()) return { status: 'cancelled' }
+      const result = { status: 'failed' as const, message: t('models.failed') }
+      get().toast(result.message, 'error')
+      return result
+    } finally {
+      clearTimeout(timeout)
+      unsubscribe()
+      if (timedOut && contextCurrent() && cancelModelOpen === cancel) get().toast(t('models.timeout'), 'error')
+      if (cancelModelOpen === cancel) cancelModelOpen = undefined
     }
   },
 
@@ -795,6 +857,9 @@ export const useApp = create<AppState>((set, get) => ({
         break
       case 'open-plugins':
         void state.openPlugins()
+        break
+      case 'open-models':
+        void state.openModels(action.choice)
         break
       case 'check-updates':
         void window.studio.studio.checkUpdates().then((result) => {

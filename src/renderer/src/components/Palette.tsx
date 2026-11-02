@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowRight,
   BarChart3,
+  BookOpen,
   ChevronRight,
   CircleStop,
   Command,
@@ -43,6 +44,7 @@ const ICONS = {
   insights: BarChart3,
   prompts: Sparkles,
   logs: ScrollText,
+  skills: BookOpen,
   settings: Settings2
 }
 
@@ -169,6 +171,24 @@ export default function Palette(): React.JSX.Element {
         icon: ICONS.logs,
         keywords: 'logs console output 运行日志 本地服务输出',
         run: () => navigate('logs')
+      },
+      {
+        id: 'nav-skills',
+        group: t('shell.navigation'),
+        title: t('skills.title'),
+        subtitle: t('skills.subtitle'),
+        icon: ICONS.skills,
+        keywords: 'skill skills 技能 管理 本地 导入 插件 精选',
+        run: () => navigate('skills')
+      },
+      {
+        id: 'nav-models',
+        group: t('shell.navigation'),
+        title: t('models.title'),
+        subtitle: t('models.subtitle'),
+        icon: Settings2,
+        keywords: 'model custom api login 模型 自定义 免登录',
+        run: () => window.studio.studio.runAction({ type: 'open-models' })
       },
       {
         id: 'nav-settings',

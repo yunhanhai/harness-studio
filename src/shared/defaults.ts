@@ -20,6 +20,7 @@ export const DEFAULT_SETTINGS: Settings = {
   reduceMotion: false,
   zoomFactor: 1,
   conversationFontSize: 0,
+  modelSetupSeen: false,
   closeToTray: true,
   minimizeToTray: false,
   launchAtLogin: false,

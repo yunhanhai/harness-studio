@@ -31,8 +31,9 @@ import { sourceLabel } from '../lib/format'
 import { Modal } from '../components/Modal'
 import { BrandMark } from '../components/BrandMark'
 import { GithubMark } from '../components/GithubMark'
+import { ModelSetupChoices } from '../components/ModelSetup'
 
-type SectionId = 'general' | 'appearance' | 'insights' | 'runtime' | 'advanced' | 'about'
+type SectionId = 'general' | 'appearance' | 'insights' | 'models' | 'runtime' | 'advanced' | 'about'
 
 function Toggle({
   checked,
@@ -97,6 +98,7 @@ export function SettingsPage(): React.JSX.Element {
     { id: 'general', label: t('pages.settings.general'), icon: SlidersHorizontal },
     { id: 'appearance', label: t('pages.settings.appearance'), icon: Palette },
     { id: 'insights', label: t('pages.settings.insights'), icon: BarChart3 },
+    { id: 'models', label: t('models.title'), icon: Sparkles },
     { id: 'runtime', label: t('pages.settings.runtime'), icon: Cpu },
     { id: 'advanced', label: t('pages.settings.advanced'), icon: Terminal },
     { id: 'about', label: t('pages.settings.about'), icon: Info }
@@ -115,6 +117,8 @@ export function SettingsPage(): React.JSX.Element {
   const installRuntime = useApp((state) => state.installRuntime)
   const cancelInstall = useApp((state) => state.cancelInstall)
   const toast = useApp((state) => state.toast)
+  const host = useApp((state) => state.host)
+  const openModels = useApp((state) => state.openModels)
   const instances = useApp((state) => state.instances)
   const instancesLoading = useApp((state) => state.instancesLoading)
   const scanInstances = useApp((state) => state.scanInstances)
@@ -132,6 +136,7 @@ export function SettingsPage(): React.JSX.Element {
   const [resetOpen, setResetOpen] = useState(false)
   const [update, setUpdate] = useState<UpdateResult | null>(null)
   const [checking, setChecking] = useState(false)
+  const [openingModels, setOpeningModels] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [progress, setProgress] = useState(0)
 
@@ -187,6 +192,14 @@ export function SettingsPage(): React.JSX.Element {
     setChecking(false)
   }
 
+  const chooseModel = async (choice: 'models' | 'custom' | 'account' | 'later'): Promise<void> => {
+    setOpeningModels(true)
+    try {
+      const result = await openModels(choice)
+      if (result.status === 'opened') await saveSettings({ modelSetupSeen: true })
+    } finally { setOpeningModels(false) }
+  }
+
   const downloadUpdate = async (): Promise<void> => {
     setDownloading(true)
     setProgress(0)
@@ -233,6 +246,10 @@ export function SettingsPage(): React.JSX.Element {
         </aside>
 
         <div className="settings-content">
+          {active === 'models' ? <Card title={t('models.title')} desc={t('models.subtitle')}>
+            <ModelSetupChoices runtimeReady={host.state === 'ready'} busy={openingModels} onChoose={choice => void chooseModel(choice)} />
+            <button className="button button-primary" disabled={openingModels || host.state !== 'ready'} onClick={() => void chooseModel('models')}>{t('models.open')}</button>
+          </Card> : null}
           {active === 'general' ? (
             <>
               <Card title={t('pages.settings.language')} desc={t('pages.settings.languageDesc')}>

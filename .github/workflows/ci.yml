@@ -35,6 +35,12 @@ jobs:
       - name: Plugin navigation regressions
         run: npm run test:plugin-navigation
 
+      - name: Model navigation regressions
+        run: npm run test:model-navigation
+
+      - name: Local skill management regressions
+        run: npm run test:skills
+
       - name: Session tab focus regressions
         run: npm run test:session-tab-focus
 

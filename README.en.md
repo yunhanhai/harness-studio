@@ -99,6 +99,16 @@ $env:ELECTRON_BUILDER_BINARIES_MIRROR = "https://npmmirror.com/mirrors/electron-
 npm run dist
 ```
 
+## Model setup and DSH skill center (development version)
+
+Settings, Home, and the command palette now offer model setup. First use presents **Use a custom model / Sign in to DeepSeek / Configure later**. Third-party APIs and local compatible services do not require a DeepSeek account. Harness retains its native model forms and credential storage. A local server that does not validate keys can use `local-placeholder` with the current adapter; authenticated servers require their own key. Reply generation and tool support depend on the configured API and model.
+
+The sidebar and `Ctrl+6` open the DSH skill center: source and scope labels, search, instruction/resource preview, invalid declarations, and local name conflicts. Standard project `.dsh/skills` and current DSH_HOME `skills` support creation, Markdown or complete-folder import, editing with backups, deletion, and restore. Supporting files and empty folders are preserved. Shared agents, custom, and bundled sources are read only.
+
+This is a default disk inventory with statically identified custom candidates. Full preset composition, virtual/remote providers, and the live invocation catalog are not included; check the Harness `/` menu for availability and refresh. Backups are stored under Studio data in `skill-backups` and cannot overwrite subsequent edits. Plugin picks link to community projects and official discovery documentation; installation remains in Harness and plugin combinations are not Studio-verified.
+
+These changes are **Unreleased**. Downloads and the local installation remain v0.1.11.
+
 ## How it works
 
 ```
@@ -121,6 +131,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full design.
 | `Ctrl+,` | Settings |
 | `Ctrl+1` / `2` / `3` | Home / Workspace / Insights |
 | `Ctrl+4` / `5` | Prompts / Logs |
+| `Ctrl+6` | DSH skill center (development version) |
 | `Ctrl+T` / `Ctrl+W` | New / close session tab |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous session tab |
 | `Ctrl+Alt+H` | Show / hide window globally |

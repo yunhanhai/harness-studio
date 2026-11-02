@@ -70,11 +70,23 @@ const api: StudioApi = {
     scan: (force) => invoke(IPC.insightsScan, force),
     revealSession: (id) => invoke(IPC.insightsReveal, id)
   },
+  skills: {
+    list: () => invoke(IPC.skillsList),
+    preview: (id) => invoke(IPC.skillsPreview, id),
+    create: (sourceId, name, content) => invoke(IPC.skillsCreate, sourceId, name, content),
+    save: (id, revision, content) => invoke(IPC.skillsSave, id, revision, content),
+    import: (sourceId) => invoke(IPC.skillsImport, sourceId),
+    remove: (id, revision) => invoke(IPC.skillsRemove, id, revision),
+    backups: () => invoke(IPC.skillsBackups),
+    restore: (id) => invoke(IPC.skillsRestore, id)
+  },
   tabs: {
     setActiveGuest: (id, options) => ipcRenderer.send(IPC.tabsActiveGuest, id, options),
     openWorkspace: (workspaceId, id, path) => invoke(IPC.tabsOpenWorkspace, workspaceId, id, path),
     openPlugins: (id, requestId) => invoke(IPC.tabsOpenPlugins, id, requestId),
     cancelPlugins: (id, requestId) => ipcRenderer.send(IPC.tabsCancelPlugins, id, requestId),
+    openModels: (id, requestId, choice) => invoke(IPC.tabsOpenModels, id, requestId, choice),
+    cancelModels: (id, requestId) => ipcRenderer.send(IPC.tabsCancelModels, id, requestId),
     cancelWorkspace: (id) => ipcRenderer.send(IPC.tabsCancelWorkspace, id),
     onWorkspaceChanged: (cb) => subscribe(IPC.tabsWorkspaceChanged, cb)
   },

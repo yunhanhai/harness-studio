@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApp } from './store'
 import { Titlebar } from './components/Titlebar'
 import { Rail } from './components/Rail'
@@ -12,6 +12,9 @@ import { Prompts } from './pages/Prompts'
 import { Logs } from './pages/Logs'
 import { SettingsPage } from './pages/Settings'
 import { InstallStrip } from './components/InstallStrip'
+import { Skills } from './pages/Skills'
+import { ModelSetup } from './components/ModelSetup'
+import type { ModelSetupChoice } from '@shared/models'
 
 export default function App(): React.JSX.Element {
   const initialized = useApp((state) => state.initialized)
@@ -24,6 +27,15 @@ export default function App(): React.JSX.Element {
   const newTab = useApp((state) => state.newTab)
   const closeTab = useApp((state) => state.closeTab)
   const cycleTab = useApp((state) => state.cycleTab)
+  const host = useApp((state) => state.host)
+  const settings = useApp((state) => state.settings)
+  const openModels = useApp((state) => state.openModels)
+  const cancelModelNavigation = useApp((state) => state.cancelModelNavigation)
+  const saveSettings = useApp((state) => state.saveSettings)
+  const [modelSetupOpen, setModelSetupOpen] = useState(false)
+  const [modelSetupBusy, setModelSetupBusy] = useState(false)
+  const [modelSetupError, setModelSetupError] = useState('')
+  const modelSetupSequence = useRef(0)
 
   // The workspace page holds one webview per session tab, and unmounting it
   // would destroy them all, so after its first visit it stays mounted and is
@@ -35,6 +47,35 @@ export default function App(): React.JSX.Element {
   useEffect(() => {
     void init()
   }, [init])
+
+  useEffect(() => {
+    if (initialized && settings && !settings.modelSetupSeen && host.state === 'ready' && view === 'workspace') setModelSetupOpen(true)
+  }, [initialized, settings?.modelSetupSeen, host.state, view])
+
+  const chooseModel = async (choice: ModelSetupChoice): Promise<void> => {
+    if (modelSetupBusy) return
+    const sequence = ++modelSetupSequence.current
+    setModelSetupBusy(true)
+    setModelSetupError('')
+    try {
+      const result = host.state === 'ready' ? await openModels(choice) : { status: 'opened' as const }
+      if (sequence !== modelSetupSequence.current) return
+      if (result.status === 'opened' || choice === 'later') {
+        await saveSettings({ modelSetupSeen: true })
+        setModelSetupOpen(false)
+      } else if (result.status !== 'cancelled') setModelSetupError(result.message)
+    } catch (error) { if (sequence === modelSetupSequence.current) setModelSetupError(String(error)) }
+    finally { if (sequence === modelSetupSequence.current) setModelSetupBusy(false) }
+  }
+
+  const dismissModelSetup = (): void => {
+    modelSetupSequence.current++
+    cancelModelNavigation()
+    setModelSetupOpen(false)
+    setModelSetupBusy(false)
+    setModelSetupError('')
+    void saveSettings({ modelSetupSeen: true }).catch(error => useApp.getState().toast(String(error), 'error'))
+  }
 
   // Only sees keys while focus is in Studio's own DOM. Keys typed inside a
   // session webview reach the store as actions from the workspace preload.
@@ -56,6 +97,7 @@ export default function App(): React.JSX.Element {
         '3': () => setView('insights'),
         '4': () => setView('prompts'),
         '5': () => setView('logs'),
+        '6': () => setView('skills'),
         t: () => newTab()
       }
       if (inWorkspace) map.w = () => closeTab()
@@ -94,11 +136,14 @@ export default function App(): React.JSX.Element {
           {view === 'insights' ? <Insights /> : null}
           {view === 'prompts' ? <Prompts /> : null}
           {view === 'logs' ? <Logs /> : null}
+          {view === 'skills' ? <Skills /> : null}
           {view === 'settings' ? <SettingsPage /> : null}
         </main>
       </div>
       {focused ? null : <StatusBar />}
       <ToastHost />
+      <ModelSetup open={modelSetupOpen && view === 'workspace'} runtimeReady={host.state === 'ready'} busy={modelSetupBusy}
+        error={modelSetupError} onChoose={choice => void chooseModel(choice)} onClose={dismissModelSetup} />
     </div>
   )
 }

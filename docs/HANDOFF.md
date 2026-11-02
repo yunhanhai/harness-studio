@@ -33,6 +33,16 @@
 | v0.1.10 | 会话标签切换的原生输入焦点修复（已安装、双平台发布） |
 | v0.1.11 | 会话阅读字号：跟随 Harness、14、16、18 px（已安装，双平台发布） |
 
+## 当前产品增量：免账号模型入口与 DSH 技能中心（Unreleased）
+
+2026-11-02 接着最新研究方案完成了产品实现。正式来源在 `src/main/model-navigation.ts` / `skills.ts` / `skills-ipc.ts`、`src/shared/models.ts` / `skills.ts`，UI 在 `ModelSetup.tsx` 与 `Skills.tsx`。设置、启动台与命令面板有模型入口；首次自定义/账号/稍后选择可以退出，旧用户设置迁移不会重复引导。技能中心 `Ctrl+6` 提供默认磁盘来源、搜索/预览/无效与同名覆盖诊断、标准 DSH 目录新建/完整资源导入/编辑备份/删除恢复、插件精选及官方发现组件说明。
+
+当前技能清单明确是默认文件目录与可静态识别的自定义候选，不声称完整 preset 配置或实时调用目录已核实。仅标准项目/用户 DSH 根可写；共享 agents、自定义与显式随包来源只读，不添加 Codex/Claude provider。Host 来源用不可变 launch snapshot，当前项目取主进程已确认的 guest cwd；相对 overlay 继续以原始 spawn cwd 解析。写操作使用整资源树 revision、串行与备份，拒绝链接/越界/外部修改。在线技能下载与更新、完整 preset/runtime catalog 留后续；没有自动安装八个社区插件或改变上下文/视觉/记忆服务。
+
+类型检查与构建通过；正式旧有回归 86 项，新模型导航 41 项、首次设置/renderer 协调 14 组、技能文件管理 18 组、Host snapshot 8 组，总计 167 项/组通过，CI 与 Release 已接入。原生 DSH `0.2.1-rc.2` filesystem provider 对照的 9 项 frontmatter/布尔结果匹配（`.tools/skills-native-parser-verification.json`）。Studio Electron/preload/IPC loopback fixture 的 10 组通过，4 标签草稿/文档/timeOrigin 零重载，中英文 1040px 布局正常，首次选择和重启持久化、模型原生表单入口、技能新建/编辑/完整删除恢复均验证；报告 `.tools/models-skills-verification/report.json`。真实 Electron 与官方 DSH 0.2.1-rc.2 的 8 项模型入口验收通过，保留官方 Preview 与凭据草稿，未保存模型 Key 或生成回答。验收结果见 `.tools/model-entry-upstream-verification/report.json`，不将 fixture 当作官方 UI 验收。
+
+这次增量未升版本、安装、打标签或发布；package 根版本、已有 v0.1.11 安装与两平台 Release 保持原状态。源码按用户的既有提交/推送要求同步 main，最新记录见 `.tools/models-skills-main-sync-status.json`。本轮全部运行验证使用隔离 home/userData/DSH_HOME/agents 与项目，没有读取日常账号或模型凭据，没有发出真实模型请求。真实端点的生成/工具能力以及两项人工键盘结果仍未收到，不据此标为通过。
+
 ## 当前维护：会话阅读字号回归
 
 v0.1.11 发布完成后，将原先只留在忽略目录 `.tools/` 的字号检查补入正式仓库。`npm run test:conversation-font` 运行 `scripts/test-conversation-font-settings.mjs` 与 `scripts/test-conversation-font-preload.mjs`；前者使用独立临时目录验证真实设置迁移、非法值、保存、重载和重置，后者用 DOM/IPC mock 执行真实 preload，检查字号样式更新与恢复默认。CI 和 Release 在构建前运行。Node mock 不验证浏览器计算字号、官方消息界面或人工按键。

@@ -3,7 +3,7 @@ import { execFile, execFileSync, spawn, type ChildProcessWithoutNullStreams } fr
 import { existsSync } from 'node:fs'
 import { appendFile, cp, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import type { HostStatus, LogLine, RuntimeInfo, Settings } from '@shared/types'
 import { logsDirectory, stripAnsi, writeLogLine } from '../logger'
 
@@ -38,6 +38,72 @@ export interface StartHostOptions {
   workspacePath?: string
   workspaceId?: string
   tempDir?: string
+}
+
+/** Path-only defaults captured from the process that actually launched. */
+export interface SkillsLaunchContext {
+  nodePath: string
+  cliPath: string
+  processCwd: string
+  dshHome: string
+  agentsHome: string
+  bundledSkillDir?: string
+  profile: string
+  profileDir: string
+  /** Explicit CLI overlays, in order; provider configuration can override defaults. */
+  patchFiles: string[]
+  /** Extra launcher identity flags prevent treating the prepared profile as authoritative. */
+  configurationUncertain: boolean
+}
+
+function skillsLaunchContext(
+  options: StartHostOptions,
+  env: NodeJS.ProcessEnv,
+  cwd: string,
+  prepared: PreparedProfile
+): SkillsLaunchContext {
+  const processCwd = resolve(cwd)
+  // Node's home resolver in the child sees its own environment, which may be
+  // different from Studio's. These are paths only; credentials stay in env.
+  const childHome = process.platform === 'win32'
+    ? env.USERPROFILE || (env.HOMEDRIVE && env.HOMEPATH ? env.HOMEDRIVE + env.HOMEPATH : homedir())
+    : env.HOME || homedir()
+  const root = (value: string | undefined, fallback: string): string => {
+    const path = value?.trim() ? value : fallback
+    const expanded = path === '~' ? childHome
+      : path.startsWith('~/') || path.startsWith('~\\') ? join(childHome, path.slice(2)) : path
+    return resolve(processCwd, expanded)
+  }
+  const dshHome = root(env.DSH_HOME, join(childHome, '.dsh'))
+  const patchFiles: string[] = []
+  let configurationUncertain = false
+  const args = options.settings.runtime.extraArgs
+  for (let index = 0; index < args.length; index++) {
+    const arg = args[index]
+    if (arg === '--') break
+    if (/^--(?:profile|from-default-profile)(?:=|$)/.test(arg)) configurationUncertain = true
+    if (arg === '--patch') {
+      const path = args[index + 1]
+      if (path && !path.startsWith('-')) { patchFiles.push(resolve(processCwd, path)); index++ }
+      else configurationUncertain = true
+    } else if (arg.startsWith('--patch=')) {
+      const path = arg.slice('--patch='.length)
+      if (path) patchFiles.push(resolve(processCwd, path))
+      else configurationUncertain = true
+    }
+  }
+  return {
+    nodePath: options.runtime.nodePath!,
+    cliPath: options.runtime.cliPath!,
+    processCwd,
+    dshHome,
+    agentsHome: root(env.DSH_AGENTS_HOME, join(childHome, '.agents')),
+    bundledSkillDir: env.DSH_BUNDLED_SKILL_DIR === undefined ? undefined : resolve(processCwd, env.DSH_BUNDLED_SKILL_DIR),
+    profile: prepared.profile,
+    profileDir: join(dshHome, 'profiles', prepared.profile),
+    patchFiles,
+    configurationUncertain
+  }
 }
 
 /** The parts of the environment that a running host cannot be talked out of. */
@@ -112,6 +178,8 @@ export class HostManager {
   private lifecycle: Promise<unknown> = Promise.resolve()
   /** Options from the last successful start, reused when recovering. */
   private lastOptions: StartHostOptions | null = null
+  /** Retained across workspace adoption; paths are relative to the original spawn cwd. */
+  private skillsContext: SkillsLaunchContext | null = null
   /** How many automatic restarts we have attempted for the current outage. */
   private recoveryAttempt = 0
   private recoveryTimer: NodeJS.Timeout | null = null
@@ -139,6 +207,11 @@ export class HostManager {
 
   getStatus(): HostStatus {
     return { ...this.status }
+  }
+
+  getSkillsLaunchContext(): SkillsLaunchContext | null {
+    if (!this.child || this.status.state !== 'ready' || !this.skillsContext) return null
+    return { ...this.skillsContext, patchFiles: this.skillsContext.patchFiles.slice() }
   }
 
   getLogs(): LogLine[] {
@@ -242,6 +315,7 @@ export class HostManager {
   private async startInternal(options: StartHostOptions): Promise<HostStatus> {
     const { runtime, settings } = options
     if (this.status.state === 'ready' || this.status.state === 'starting') return this.getStatus()
+    this.skillsContext = null
     if (!runtime.nodePath || !runtime.cliPath) {
       this.emitStatus({ state: 'error', error: t('main.runtimePartsMissing') })
       return this.getStatus()
@@ -307,6 +381,7 @@ export class HostManager {
         stdio: ['ignore', 'pipe', 'pipe']
       }) as unknown as ChildProcessWithoutNullStreams
       this.child = child
+      this.skillsContext = skillsLaunchContext(options, env, cwd, profile)
       this.emitStatus({ pid: child.pid })
 
       let stdoutBuffer = ''
@@ -329,6 +404,7 @@ export class HostManager {
       })
 
       child.on('error', (error) => {
+        this.skillsContext = null
         this.clearReadyTimer()
         this.append('sys', t('main.hostLaunchFailedLog', { message: error.message }))
         this.emitStatus({ state: 'error', error: error.message, pid: undefined })
@@ -336,6 +412,7 @@ export class HostManager {
       })
 
       child.on('exit', (code, signal) => {
+        this.skillsContext = null
         this.clearReadyTimer()
         const wasStopping = this.stopping
         this.stopping = false
@@ -375,6 +452,7 @@ export class HostManager {
         if (this.recoveryAttempt > 0) this.scheduleRecovery(error)
       }, READY_TIMEOUT_MS)
     } catch (error) {
+      this.skillsContext = null
       const message = error instanceof Error ? error.message : String(error)
       this.append('sys', t('main.hostStartFailedLog', { message }))
       this.emitStatus({ state: 'error', error: message })
@@ -474,6 +552,7 @@ export class HostManager {
   private async stopInternal(): Promise<HostStatus> {
     // A deliberate stop always wins over a pending automatic restart.
     this.resetRecovery()
+    this.skillsContext = null
     if (!this.child) {
       this.status = { state: 'stopped', startedAt: undefined, url: undefined, port: undefined, error: undefined, recovery: undefined }
       this.emitStatus({})
@@ -526,6 +605,7 @@ export class HostManager {
   /** Synchronous best-effort termination used on app quit. */
   killNow(): void {
     this.resetRecovery()
+    this.skillsContext = null
     this.stopping = true
     if (this.child?.pid) {
       if (process.platform === 'win32') {

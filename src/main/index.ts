@@ -17,6 +17,7 @@ import { readdir } from 'node:fs/promises'
 import { writeFile } from 'node:fs/promises'
 import { basename, isAbsolute, join, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { homedir } from 'node:os'
 import { ACCENTS, DEFAULT_SETTINGS, GITHUB_REPO, GITHUB_URL, GITEE_URL, PRODUCT_NAME } from '@shared/defaults'
 import { IPC } from '@shared/channels'
 import type {
@@ -31,6 +32,7 @@ import type {
   StudioAction,
   TabCommand,
   QuickAskResult,
+  TabWorkspaceState,
   Workspace
 } from '@shared/types'
 import { log, logError, logsDirectory } from './logger'
@@ -44,6 +46,10 @@ import { applyTheme } from './windows'
 import { injectIntoComposer } from './quickask'
 import { WorkspaceNavigator } from './workspace-navigation'
 import { openPluginPanel } from './plugin-navigation'
+import { openModelPanel } from './model-navigation'
+import type { ModelNavigationChoice, OpenModelPanelResult } from '@shared/models'
+import { registerSkillsIpc } from './skills-ipc'
+import type { SkillsContext } from './skills'
 import { SessionTabFocus } from './session-tab-focus'
 import { registerGlobalShortcuts } from './shortcuts'
 import { installApplicationMenu } from './menu'
@@ -78,6 +84,9 @@ let refreshIntegrationLanguage: (() => void) | null = null
 const guests = new Map<number, Electron.WebContents>()
 const workspaceOpenRequests = new Map<number, number>()
 const pluginOpenRequests = new Map<number, { requestId: string; controller: AbortController }>()
+const modelOpenRequests = new Map<number, { requestId: string; controller: AbortController }>()
+const confirmedLocations = new Map<number, TabWorkspaceState>()
+let lastSelectedGuestId: number | null = null
 let activeGuestId: number | null = null
 const guestWaiters: Array<(contents: Electron.WebContents) => void> = []
 
@@ -89,6 +98,28 @@ function liveGuest(id: number | null): Electron.WebContents | null {
 /** Only the guest the renderer explicitly reported as being in front. */
 function activeGuest(): Electron.WebContents | null {
   return liveGuest(activeGuestId)
+}
+
+function skillsContext(): SkillsContext {
+  const launch = host.getSkillsLaunchContext()
+  const current = settings()
+  const guest = liveGuest(lastSelectedGuestId)
+  const location = guest ? confirmedLocations.get(guest.id) : undefined
+  return {
+    cwd: location?.path,
+    sessionId: location?.sessionId,
+    dshHome: launch?.dshHome ?? resolveDshHome(current),
+    home: homedir(),
+    agentsHome: launch?.agentsHome ?? current.runtime.env.DSH_AGENTS_HOME ?? process.env.DSH_AGENTS_HOME,
+    bundledSkillDir: launch?.bundledSkillDir ?? current.runtime.env.DSH_BUNDLED_SKILL_DIR ?? process.env.DSH_BUNDLED_SKILL_DIR,
+    cliPath: launch?.configurationUncertain ? undefined : launch?.cliPath ?? runtimeInfo?.cliPath,
+    processCwd: launch?.processCwd,
+    profile: launch?.profile ?? current.runtime.profile,
+    profileDir: launch?.profileDir,
+    patchFiles: launch?.patchFiles,
+    // These writable directories are labelled as defaults, never a live catalog.
+    allowUnverifiedDefaults: true
+  }
 }
 
 const sessionTabFocus = new SessionTabFocus(() => mainWindow, activeGuest)
@@ -489,13 +520,21 @@ function configureWebviewSecurity(window: BrowserWindow): void {
     contents.once('destroyed', () => {
       pluginOpenRequests.get(id)?.controller.abort()
       pluginOpenRequests.delete(id)
+      modelOpenRequests.get(id)?.controller.abort()
+      modelOpenRequests.delete(id)
+      confirmedLocations.delete(id)
+      if (lastSelectedGuestId === id) lastSelectedGuestId = null
       guests.delete(id)
       sessionTabFocus.forget(id)
       workspaceOpenRequests.delete(id)
       if (activeGuestId === id) activeGuestId = null
     })
     contents.on('did-start-navigation', (_event, _url, inPlace, mainFrame) => {
-      if (mainFrame && !inPlace) pluginOpenRequests.get(id)?.controller.abort()
+      if (mainFrame && !inPlace) {
+        pluginOpenRequests.get(id)?.controller.abort()
+        modelOpenRequests.get(id)?.controller.abort()
+        confirmedLocations.delete(id)
+      }
     })
     contents.setWindowOpenHandler(({ url }) => {
       if (isHttp(url)) void shell.openExternal(url)
@@ -516,6 +555,7 @@ function configureWebviewSecurity(window: BrowserWindow): void {
     contents.on('ipc-message', (_ipcEvent, channel, payload) => {
       if (channel === IPC.guestSession) {
         if (typeof payload === 'string' && payload.length > 0 && payload.length < 256) {
+          if (confirmedLocations.get(id)?.sessionId !== payload) confirmedLocations.delete(id)
           void workspaceNavigator.observe(contents, payload)
         }
         return
@@ -678,8 +718,12 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
         for (const [guestId, request] of pluginOpenRequests) {
           if (guestId !== id) request.controller.abort()
         }
+        for (const [guestId, request] of modelOpenRequests) {
+          if (guestId !== id) request.controller.abort()
+        }
       }
       activeGuestId = id
+      if (typeof id === 'number') lastSelectedGuestId = id
       sessionTabFocus.update(options)
       const front = activeGuest()
       if (front) for (const resolve of guestWaiters.splice(0)) resolve(front)
@@ -690,6 +734,7 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
     const guest = typeof guestId === 'number' ? liveGuest(guestId) : null
     if (!guest) return { status: 'cancelled' }
     pluginOpenRequests.get(guest.id)?.controller.abort()
+    modelOpenRequests.get(guest.id)?.controller.abort()
     const startingStatus = host.getStatus()
     const request = (workspaceOpenRequests.get(guest.id) ?? 0) + 1
     workspaceOpenRequests.set(guest.id, request)
@@ -729,6 +774,7 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
     }
     if (host.getStatus().state !== 'ready') return { status: 'failed', message: t('main.pluginsNotReady') }
     pluginOpenRequests.get(guest.id)?.controller.abort()
+    modelOpenRequests.get(guest.id)?.controller.abort()
     const request = { requestId, controller: new AbortController() }
     pluginOpenRequests.set(guest.id, request)
     const authorization = workspaceNavigator.authorizeInput(guest, () =>
@@ -745,12 +791,50 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
     const request = pluginOpenRequests.get(guestId)
     if (request?.requestId === requestId) request.controller.abort()
   })
+  ipcMain.handle(IPC.tabsOpenModels, async (event, guestId: unknown, requestId: unknown, choice: unknown): Promise<OpenModelPanelResult> => {
+    if (!mainWindow || mainWindow.webContents !== event.sender) throw new Error('IPC request from an untrusted renderer')
+    const guest = typeof guestId === 'number' ? liveGuest(guestId) : null
+    const selections: ModelNavigationChoice[] = ['models', 'custom', 'account', 'later']
+    if (!guest || activeGuest() !== guest || typeof requestId !== 'string' || !requestId || requestId.length > 128
+      || (choice !== undefined && !selections.includes(choice as ModelNavigationChoice))) return { status: 'cancelled' }
+    if (host.getStatus().state !== 'ready') return { status: 'failed', message: t('models.notReady') }
+    pluginOpenRequests.get(guest.id)?.controller.abort()
+    modelOpenRequests.get(guest.id)?.controller.abort()
+    const request = { requestId, controller: new AbortController() }
+    modelOpenRequests.set(guest.id, request)
+    workspaceNavigator.cancel(guest)
+    // Cancelled project navigation must release its queue before panel clicks.
+    for (let attempt = 0; attempt < 50 && workspaceNavigator.isBusy(guest); attempt++) {
+      if (request.controller.signal.aborted || guest.isDestroyed() || activeGuest() !== guest) {
+        if (modelOpenRequests.get(guest.id) === request) modelOpenRequests.delete(guest.id)
+        return { status: 'cancelled' }
+      }
+      await new Promise(resolve => setTimeout(resolve, 30))
+    }
+    if (workspaceNavigator.isBusy(guest) || request.controller.signal.aborted || guest.isDestroyed() || activeGuest() !== guest) {
+      if (modelOpenRequests.get(guest.id) === request) modelOpenRequests.delete(guest.id)
+      return { status: 'cancelled' }
+    }
+    const authorization = workspaceNavigator.authorizePanel(guest, () =>
+      modelOpenRequests.get(guest.id) === request && !request.controller.signal.aborted && activeGuest() === guest)
+    try {
+      return await openModelPanel(guest, authorization, (choice as ModelNavigationChoice | undefined) ?? 'models', { signal: request.controller.signal })
+    } finally {
+      if (modelOpenRequests.get(guest.id) === request) modelOpenRequests.delete(guest.id)
+    }
+  })
+  ipcMain.on(IPC.tabsCancelModels, (event, guestId: unknown, requestId: unknown) => {
+    if (!mainWindow || mainWindow.webContents !== event.sender || typeof guestId !== 'number' || typeof requestId !== 'string') return
+    const request = modelOpenRequests.get(guestId)
+    if (request?.requestId === requestId) request.controller.abort()
+  })
   ipcMain.on(IPC.guestWorkspaceCheck, (event, key: unknown) => {
     event.returnValue = guests.get(event.sender.id) === event.sender && typeof key === 'string'
       && workspaceNavigator.authorize(event.sender, key)
   })
 
   handle(IPC.appInfo, () => buildAppInfo())
+  registerSkillsIpc({ window: () => mainWindow, context: skillsContext, backupRoot: join(app.getPath('userData'), 'skill-backups') })
   on(IPC.appMinimize, () => mainWindow?.minimize())
   on(IPC.appToggleMaximize, () => {
     if (!mainWindow) return
@@ -1147,13 +1231,18 @@ async function bootstrap(): Promise<void> {
     const status = host.getStatus()
     if (status.state !== 'ready' || !status.url || contents.isDestroyed()) return false
     try { return new URL(contents.getURL()).origin === new URL(status.url).origin } catch { return false }
-  }, (state) => sendMain(IPC.tabsWorkspaceChanged, state))
+  }, (state) => {
+    confirmedLocations.set(state.guestId, state)
+    sendMain(IPC.tabsWorkspaceChanged, state)
+  })
   installer = new RuntimeInstaller()
 
   host.onStatus((status) => {
     if (status.state !== 'ready') {
+      confirmedLocations.clear()
       workspaceNavigator.cancelAll(guests.values())
       for (const request of pluginOpenRequests.values()) request.controller.abort()
+      for (const request of modelOpenRequests.values()) request.controller.abort()
     }
     broadcast(IPC.hostStatusChanged, status)
   })

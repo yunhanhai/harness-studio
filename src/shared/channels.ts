@@ -51,10 +51,21 @@ export const IPC = {
   insightsScan: 'insights:scan',
   insightsReveal: 'insights:reveal',
 
+  skillsList: 'skills:list',
+  skillsPreview: 'skills:preview',
+  skillsCreate: 'skills:create',
+  skillsSave: 'skills:save',
+  skillsImport: 'skills:import',
+  skillsRemove: 'skills:remove',
+  skillsBackups: 'skills:backups',
+  skillsRestore: 'skills:restore',
+
   tabsActiveGuest: 'tabs:active-guest',
   tabsOpenWorkspace: 'tabs:open-workspace',
   tabsOpenPlugins: 'tabs:open-plugins',
   tabsCancelPlugins: 'tabs:cancel-plugins',
+  tabsOpenModels: 'tabs:open-models',
+  tabsCancelModels: 'tabs:cancel-models',
   tabsCancelWorkspace: 'tabs:cancel-workspace',
   tabsWorkspaceChanged: 'tabs:workspace-changed',
 

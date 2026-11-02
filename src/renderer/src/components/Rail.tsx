@@ -1,6 +1,7 @@
 import { useI18n } from '../lib/i18n'
 import {
   BarChart3,
+  BookOpen,
   LayoutDashboard,
   MessagesSquare,
   Moon,
@@ -30,6 +31,7 @@ export function Rail(): React.JSX.Element {
     { id: 'insights', label: t('shell.sessionInsights'), icon: BarChart3, shortcut: 'Ctrl 3' },
     { id: 'prompts', label: t('shell.promptLibrary'), icon: Sparkles, shortcut: 'Ctrl 4' },
     { id: 'logs', label: t('shell.runtimeLogs'), icon: ScrollText, shortcut: 'Ctrl 5' },
+    { id: 'skills', label: t('skills.title'), icon: BookOpen, shortcut: 'Ctrl 6' },
     { id: 'settings', label: t('shell.settings'), icon: Settings2, shortcut: 'Ctrl ,' }
   ]
   const view = useApp((state) => state.view)
