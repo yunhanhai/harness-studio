@@ -6,8 +6,8 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 版本 | `0.1.11` 已本地安装、双平台发布，产物与公开安装包完整下载校验通过；人工键盘结果仍待确认 |
-| 开发分支 | `main`（已快进合入 `codex/conversation-font-regressions` 的字号回归维护） |
+| 版本 | `0.1.12` 本地候选包已校验；本机安装与公开下载仍为 `0.1.11`，升级和人工键盘待确认 |
+| 开发分支 | `codex/v0.1.12-readiness`（v0.1.12 验收与可靠性收尾） |
 | 本地 HEAD | `git log --oneline -1` 确认 |
 | 工作区 | `git status` 确认 |
 | 已发布 | GitHub：v0.1.0～v0.1.11；Gitee：v0.1.0～v0.1.4、v0.1.6～v0.1.11（v0.1.5 只有标签；v0.1.0 / v0.1.1 / v0.1.2 / v0.1.3 / v0.1.4 / v0.1.6 仅保留说明与源码包，旧安装包已移除并备份） |
@@ -33,7 +33,35 @@
 | v0.1.10 | 会话标签切换的原生输入焦点修复（已安装、双平台发布） |
 | v0.1.11 | 会话阅读字号：跟随 Harness、14、16、18 px（已安装，双平台发布） |
 
-## 当前产品增量：免账号模型入口与 DSH 技能中心（Unreleased）
+## 当前产品增量：免账号模型入口与 DSH 技能中心（v0.1.12 候选）
+
+### 2026-11-06 发布候选准备
+
+`package.json` 与 lock 两处根版本已升为 `0.1.12`，CHANGELOG 已整理为候选；README 仍指向已公开的 v0.1.11。重新构建后在 `.tools/v0.1.12-staging` 独立打包，`--publish never`。Setup 104,020,601 bytes、Portable 103,751,067 bytes，合计 207,771,668 bytes；清单两处 SHA-512 / 大小与 Setup 一致，blockmap 4,979 个块覆盖完整 Setup。app.asar SHA-256 为 `bb37ffb5f3a3b4de6a93681beeca6e2e5b9396afe5b73d378916981fa36450ec`。正式 `npm run verify:release` 校验通过，报告 `.tools/v0.1.12-artifacts.json`；全部 6 个应用文件与真实模型验收 `electron-L0Hpgp` 完全一致，未重复付费请求。
+
+本机 v0.1.11 程序已完整备份到 `.tools/v0.1.12-install-backup/program`（25 文件，340,911,970 bytes），逐文件核对原件/备份 hash；四项用户状态和两处快捷方式参数也已备份。实际 NSIS 自动启动停在 Windows「Open File - Security Warning」，尚未启动安装器，已结束本次等待进程。已请求用户手动确认并安装，升级验证仍 pending，不能把文件备份或打包校验算作安装通过。
+
+正式 Electron 脚本新增 `--app-executable` 与 `--keep-open-for-keyboard`：前者验证真实打包程序的版本、`isPackaged`、隔离路径与完整构建哈希；后者在 8 项自动检查后开启发送确认并留下两份独立草稿。输入 fallback 诊断单独记录，避免干扰 8 项主检查计数。真实键盘结果仍 pending。
+
+实际 `win-unpacked/Harness Studio.exe` 的 8 项官方 DSH 运行检查通过，报告 `.qa-upstream/electron-z5OLGw/report/report.json`。确认 `version=0.1.12`、`isPackaged=true`，应用内容在测试前后稳定，无未捕获异常、模型请求或提供商凭据写入，所有本轮进程退出。测试脚本的 ASAR 路径已修正为 Windows 原生分隔符。这是打包程序验收，安装升级仍单独待验证。
+
+另一次 `--keep-open-for-keyboard` 运行也完成 8 项自动检查，已展示独立的 Upstream Model QA 窗口。会话信息 `.qa-upstream/electron-dxySnr/report/keyboard-session.json`，人工状态仍 pending；接手时先读取该文件确认窗口是否还在。窗口关闭会正常清理本轮 Host 和隔离状态。安装后的核验命令为 `powershell -NoProfile -ExecutionPolicy Bypass -File .tools/verify-v0.1.12-installed.ps1`；当前报告 `.tools/v0.1.12-installed-verification.json` 明确为 `pending-installation`、实际版本 `0.1.11.0`，四项用户文件和快捷方式未改变。发布说明草稿为 `.tools/release-v0.1.12.md`。
+
+Gitee 分页审计结果：当前附件 1,038,610,783 bytes，按 1 GiB 配额剩 35,131,041 bytes，新版缺 172,640,627 bytes。已将最旧仍含安装包的 v0.1.7 Release `1260876` 两件附件 Setup `3554461` / Portable `3554462` 备份到 `.tools/gitee-v0.1.7-backup`；每件完成两次独立整文件下载，大小/SHA-256/SHA-512 一致且匹配原发布记录。若获授权移除这两件，上传新版后剩 35,056,522 bytes。具体方案 `.tools/v0.1.12-gitee-prune-plan.json` 的 `deletionAuthorized=false`；未删除或发布远端数据，既有标签与说明、源码和 GitHub 安装包均保留。
+
+### 2026-11-05 验收收尾
+
+已将官方 DSH 检查迁入正式仓库：`test:upstream:skills`（实际 filesystem provider 对照）、`test:upstream:adapter`（loopback SSE、多轮与合成工具结果）、`test:upstream:electron`（构建后的 Studio + 官方 UI）。均要求显式 DSH 程序包路径，可校验版本；新增 `upstream-compatibility.yml` 在相关 main/PR 变更运行基线 `0.2.1-rc.2`，支持手动检查其他精确版本。真实模型验收单独使用 `--live-config`，不接入 CI。执行方式与发布候选条件见 [ACCEPTANCE.md](ACCEPTANCE.md)。
+
+故障注入确认技能保存有晚期备份记录写入失败问题：旧实现可能已改正文但无法撤销。现已将预期完整资源 revision 提前写入，恢复使用持久化意图安全完成重试，并保留外部修改保护。Windows `skill.md` / `SKILL.MD` 及历史备份大小写恢复也有回归。技能文件管理从 18 增至 29 组；全部仓库回归 179 项/组，另加 4 项本地 Git 同步场景，类型检查与构建通过。Gitee 工作流现只同步 main，等 tree 不动历史，可快进才推送，分叉停止；发布指南移除了镜像与全量标签推送。
+
+官方 DSH `0.2.1-rc.2` 的 9 项解析、6 项适配器协议、8 项 Electron 默认检查通过。正式 Electron 脚本同时修正两处旧 QA 问题：填草稿前等待目标会话 cwd 确认；进程归属核对启动时间，避免 PID 复用误判。独立项目在 Host 启动前建 `.git` 与 `.dsh/skills`，确保技能扫描/监听始终在 QA 根。
+
+用户指定 `https://ultrarouter.org/v1` 后，真实 `deepseek-v4.1-flash` / OpenAI Chat Completions 验收通过：官方表单配置与模型选择、第一轮回答、第二轮上下文、Studio 新建技能在 `/` 菜单可见、技能指令注入、`read` 工具读取未知随机标记、回答匹配，两个原有标签的草稿/会话/文档保留。最终一次包含 8 项默认检查 + 6 项真实检查，共 14 项；此前两次运行分别用于定位 QA 目录缓存与 `/技能` 事件判定，整个调试过程共提交 8 个短提示词，最终成功运行提交 3 个。`/技能名` 由上游直接注入 `skill-invocation` 指令，不要求模型重复调用 `skill` 工具。
+
+最终报告 `.qa-upstream/electron-L0Hpgp/report/report.json`，脱敏事件证据同目录 `live-tool-evidence.json`。所有测试进程退出；三次真实运行的浏览器/DSH 凭据副本及临时输入密钥文件均已删除，源码和保留 QA 文件的精确密钥扫描为零。报告不含密钥或模型完整响应。此结果仅覆盖上述服务/模型/协议组合，不扩展为 Responses、Anthropic、全部社区插件或人工键盘验收。
+
+以上 11 月 5 日验收没有升版本、安装、打标签或发布；后续候选准备见上一节。上述本地工作流已检查语法与测试接线，尚未宣称远端 Actions 运行通过。
 
 2026-11-02 接着最新研究方案完成了产品实现。正式来源在 `src/main/model-navigation.ts` / `skills.ts` / `skills-ipc.ts`、`src/shared/models.ts` / `skills.ts`，UI 在 `ModelSetup.tsx` 与 `Skills.tsx`。设置、启动台与命令面板有模型入口；首次自定义/账号/稍后选择可以退出，旧用户设置迁移不会重复引导。技能中心 `Ctrl+6` 提供默认磁盘来源、搜索/预览/无效与同名覆盖诊断、标准 DSH 目录新建/完整资源导入/编辑备份/删除恢复、插件精选及官方发现组件说明。
 
@@ -377,7 +405,7 @@ node scripts/app-shot.mjs .run-test/shot.png "@.run-test/expr.js"
 
 ## 下一步建议
 
-v0.1.11 会话阅读字号已本地安装、双平台发布并完成公开附件验收，详见顶部「当前收尾状态」。下一步按新的产品需求继续；以后发布先重新审计 Gitee 配额，其他旧附件删除需另行精准授权，已有标签保持发布内容。两项人工键盘检查可继续并行：双向切标签后直接打字，确认仅进入当前会话；开启「每次发送前确认」后真实按 Enter，确认弹出确认框并取消以保留草稿。用户尚未报告实际结果，状态保持 pending。已完成能力及后续方向如下：
+v0.1.12 候选包、实际打包程序验收及 Gitee 配额/旧包备份已完成，具体记录见顶部。下一步等用户完成 Windows 安装确认后，核验升级和安装后的运行行为，并记录两项人工键盘结果。候选条件满足后审阅发布；Gitee 只针对已备份的 v0.1.7 两件附件请求清理授权，再准备本次精确 main/tag 同步。发布时重新核对配额和远端基线，已有标签保持发布内容。未收到用户实际结果前，人工状态保持 pending。已完成能力及后续方向如下：
 
 ### 已完成：工作区联动（v0.1.7）
 
@@ -454,19 +482,6 @@ Host 崩溃自动恢复已实现并验证：非主动退出后按 2s → 5s → 
 
 ## 发布新版本
 
-完整流程见 `docs/PUBLISHING.md`。简要版：
+完整流程见 [PUBLISHING.md](PUBLISHING.md)，验收要求见 [ACCEPTANCE.md](ACCEPTANCE.md)。先同步三个根版本、整理 CHANGELOG，再独立打包、执行 `verify:release` 并验证安装升级与关键行为。
 
-```powershell
-# 1. 改 package.json / package-lock.json 版本号，更新 CHANGELOG.md 与 README 下载链接
-# 2. 构建
-$env:ELECTRON_BUILDER_BINARIES_MIRROR = "https://npmmirror.com/mirrors/electron-builder-binaries/"
-npm run dist
-# 3. 提交打标签
-git add -A; git commit -m "chore(release): v0.1.x"; git tag -a v0.1.x -m "..."
-# 4. Gitee（GitHub 直连不稳，走 API 更可靠）
-git push gitee main; git push gitee v0.1.x
-# 5. GitHub：推 tag 后 Actions 自动构建并发布
-# 6. Gitee 用官方附件 API 或网页上传安装包（Gitee 不跑 Actions）
-```
-
-两个平台的 Release 都要有 `Setup.exe` 与 `Portable.exe`。Gitee 同时限制单个附件和仓库附件总量；上传前检查总额度，上传后核对公开下载的大小与哈希。操作步骤见 `docs/PUBLISHING.md` 的「在 Gitee 发布附件」。
+当前两平台历史不同，需要按指南准备等 tree 的 GitHub bridge；只推本次 main 和精确新标签，不使用镜像或全量标签推送。GitHub 标签推送会触发公开发布，须在候选审阅完成后执行。Gitee 上传前重新统计配额，具体旧附件清理另行确认。两个平台都要有 Setup 和 Portable，公开完整下载与哈希验收通过后再更新 README 下载链接。

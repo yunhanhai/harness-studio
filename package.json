@@ -1,6 +1,6 @@
 {
   "name": "harness-studio",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "Harness Studio — a focused, feature-rich desktop workspace for DeepSeek Harness.",
   "main": "./out/main/index.js",
   "author": {
@@ -34,7 +34,12 @@
     "dist:portable": "electron-vite build && node scripts/check-preload.mjs && electron-builder --win portable",
     "install:local": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-local.ps1",
     "clean:dist": "node scripts/clean-dist.mjs",
-    "status": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/status.ps1"
+    "status": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/status.ps1",
+    "test:gitee-sync": "node scripts/test-gitee-sync.mjs",
+    "test:upstream:skills": "node scripts/test-skills-native-parser.mjs",
+    "test:upstream:adapter": "node scripts/test-upstream-model-adapter.mjs",
+    "test:upstream:electron": "node scripts/test-upstream-electron.mjs",
+    "verify:release": "node scripts/verify-release-artifacts.mjs"
   },
   "engines": {
     "node": ">=22"

@@ -1,0 +1,71 @@
+name: DSH compatibility
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/**'
+      - 'package*.json'
+      - '.github/workflows/upstream-compatibility.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'scripts/**'
+      - 'package*.json'
+      - '.github/workflows/upstream-compatibility.yml'
+  workflow_dispatch:
+    inputs:
+      dsh_version:
+        description: 'Exact official DSH version to check'
+        default: '0.2.1-rc.2'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  upstream:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    env:
+      DSH_TEST_VERSION: ${{ inputs.dsh_version || '0.2.1-rc.2' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install Studio dependencies
+        run: npm ci
+      - name: Install isolated official DSH package
+        shell: pwsh
+        run: |
+          if ($env:DSH_TEST_VERSION -notmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$') {
+            throw 'Supply an exact DSH version, not a dist-tag, URL or version range.'
+          }
+          $runtimePrefix = Join-Path $env:RUNNER_TEMP 'studio-dsh-compatibility'
+          npm install --prefix $runtimePrefix --no-audit --no-fund "@deepseek-ai/dsh@$env:DSH_TEST_VERSION"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "DSH_TEST_PACKAGE=$runtimePrefix/node_modules/@deepseek-ai/dsh" >> $env:GITHUB_ENV
+          New-Item -ItemType Directory -Force '.qa-upstream/reports' | Out-Null
+      - name: Native filesystem skill metadata
+        run: npm run test:upstream:skills -- --dsh-package "$env:DSH_TEST_PACKAGE" --expect-version "$env:DSH_TEST_VERSION" --report .qa-upstream/reports/skills.json
+      - name: Loopback model adapter protocol
+        run: npm run test:upstream:adapter -- --dsh-package "$env:DSH_TEST_PACKAGE" --expect-version "$env:DSH_TEST_VERSION" --report .qa-upstream/reports/adapter.json
+      - name: Build Studio
+        run: npm run build
+      - name: Official Electron model navigation
+        run: npm run test:upstream:electron -- --dsh-package "$env:DSH_TEST_PACKAGE" --expect-version "$env:DSH_TEST_VERSION"
+      - name: Upload compatibility evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsh-compatibility
+          path: |
+            .qa-upstream/reports/*.json
+            .qa-upstream/electron-*/report/**
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 14

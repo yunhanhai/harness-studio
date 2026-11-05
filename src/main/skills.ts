@@ -145,16 +145,22 @@ async function projectRoot(cwd: string): Promise<string> {
   }
 }
 
-interface BundleFiles { resources: string[]; directories: string[]; revision: string; bytes: number }
+interface BundleFiles { resources: string[]; directories: string[]; revision: string; bytes: number; editedRevision?: string }
+
+function isBundleInstruction(part: string): boolean {
+  return process.platform === 'win32' ? part.toLowerCase() === 'skill.md' : part === 'SKILL.md'
+}
 
 /** Content hashes protect delete/restore against external edits to any attached resource. */
-async function filesAt(path: string, format: LocalSkill['format']): Promise<BundleFiles> {
+async function filesAt(path: string, format: LocalSkill['format'], instructionContent?: string): Promise<BundleFiles> {
   await assertNoLinks(path)
   const resourceRoot = format === 'bundle' ? path : dirname(path)
   const resources: string[] = []
   const directories: string[] = []
   const hashes: string[] = []
+  const editedHashes: string[] = []
   let bytes = 0
+  let instructionBytes = 0
   const visit = async (current: string): Promise<void> => {
     assertWithin(resourceRoot, current, true)
     await assertNoLinks(current)
@@ -165,6 +171,7 @@ async function filesAt(path: string, format: LocalSkill['format']): Promise<Bund
         if (directories.length >= MAX_RESOURCES || part.split('/').length > 64) throw new Error('Bundle has too many or too deeply nested directories.')
         directories.push(part)
         hashes.push(`${part}\0directory`)
+        if (instructionContent !== undefined) editedHashes.push(`${part}\0directory`)
       }
       const entries = await readdir(current)
       for (const entry of entries.sort()) await visit(join(current, entry))
@@ -182,10 +189,18 @@ async function filesAt(path: string, format: LocalSkill['format']): Promise<Bund
       const part = relative(resourceRoot, current).split(sep).join('/')
       resources.push(part)
       hashes.push(`${format === 'file' ? '<instruction>' : part}\0${digest(buffer)}`)
+      const instruction = format === 'file' || isBundleInstruction(part)
+      if (instruction) instructionBytes = buffer.length
+      if (instructionContent !== undefined) {
+        editedHashes.push(`${format === 'file' ? '<instruction>' : part}\0${digest(instruction ? instructionContent : buffer)}`)
+      }
     } finally { await descriptor.close() }
   }
   await visit(path)
-  return { resources, directories, revision: digest(hashes.join('\n')), bytes }
+  if (instructionContent !== undefined && bytes - instructionBytes + Buffer.byteLength(instructionContent, 'utf8') > MAX_BUNDLE_BYTES) {
+    throw new Error('Edited bundle exceeds the management limit of 64 MiB.')
+  }
+  return { resources, directories, revision: digest(hashes.join('\n')), bytes, editedRevision: instructionContent === undefined ? undefined : digest(editedHashes.join('\n')) }
 }
 
 /** Copy only a previously checked regular-file tree; no symlinks are followed. */
@@ -281,6 +296,8 @@ interface BackupRecord extends SkillBackup {
   dshHome: string
   beforeRevision: string
   afterRevision?: string
+  /** Durable intent allows completing metadata after an interrupted restore. */
+  restorePending?: boolean
 }
 
 export class SkillsService {
@@ -563,20 +580,28 @@ export class SkillsService {
       const { skill, source, targetPath } = await this.locate(context, id, true)
       if (typeof revision !== 'string' || skill.revision !== revision) throw new Error('Skill changed on disk. Refresh before saving; your draft was not written.')
       const backup = await this.backup(context, source, skill, targetPath, 'edit')
-      if ((await filesAt(targetPath, skill.format)).revision !== revision) throw new Error('Skill changed during backup. Refresh before saving.')
+      const snapshot = await filesAt(targetPath, skill.format, content)
+      if (snapshot.revision !== revision) throw new Error('Skill changed during backup. Refresh before saving.')
+      // Persist the expected post-edit revision before replacing the instruction.
+      // A failed record write therefore cannot leave an edit without undo metadata.
+      backup.afterRevision = snapshot.editedRevision
+      await this.updateRecord(backup)
+      // Windows resolves SKILL.md regardless of case. Preserve the actual name
+      // so the full-tree revision and its undo retain the original spelling.
+      const instruction = skill.format === 'bundle'
+        ? join(targetPath, snapshot.resources.find(isBundleInstruction) ?? 'SKILL.md')
+        : skill.path
       const temporary = join(source.path, `.studio-${randomUUID()}.tmp`)
       assertWithin(source.path, temporary)
       try {
         await writeFile(temporary, content, { flag: 'wx', encoding: 'utf8' })
-        await assertNoLinks(skill.path)
+        await assertNoLinks(instruction)
         if ((await filesAt(targetPath, skill.format)).revision !== revision) throw new Error('Skill changed while saving. Refresh before saving.')
-        await rename(temporary, skill.path)
+        await rename(temporary, instruction)
       } finally {
         if (await exists(temporary)) { await assertNoLinks(temporary); await rm(temporary) }
       }
       const updated = await this.describe(source, targetPath, skill.path, skill.format)
-      backup.afterRevision = updated.revision
-      await this.updateRecord(backup)
       return { skill: updated, backup }
     })
   }
@@ -628,19 +653,35 @@ export class SkillsService {
       assertWithin(this.backupRoot, payload)
       const files = await filesAt(payload, record.format)
       if (files.revision !== record.beforeRevision) throw new Error('Backup contents changed. Restore was refused.')
+      const instructionName = files.resources.find(isBundleInstruction) ?? 'SKILL.md'
       await assertNoLinks(record.targetPath, true)
       const existsNow = await exists(record.targetPath)
-      let inverseBackup: BackupRecord | undefined
+      const currentRevision = existsNow ? (await filesAt(record.targetPath, record.format)).revision : undefined
+      if (record.restorePending === true && currentRevision === record.beforeRevision) {
+        // A previous attempt installed exactly the backup but failed to commit
+        // its final record. Finish without overwriting any current files.
+        const instruction = record.format === 'bundle' ? join(record.targetPath, instructionName) : record.targetPath
+        const skill = await this.describe(source, record.targetPath, instruction, record.format)
+        if (skill.revision !== record.beforeRevision) throw new Error('Skill changed during restore. Refresh before retrying.')
+        record.restored = true
+        delete record.restorePending
+        await this.updateRecord(record)
+        return { skill, backup: record }
+      }
       if (existsNow) {
-        if (record.operation !== 'edit' || !record.afterRevision || (await filesAt(record.targetPath, record.format)).revision !== record.afterRevision) {
+        if (record.operation !== 'edit' || !record.afterRevision || currentRevision !== record.afterRevision) {
           throw new Error('Restore would overwrite changed files. Keep or move the current skill before restoring.')
         }
-        const instruction = record.format === 'bundle' ? join(record.targetPath, 'SKILL.md') : record.targetPath
+        const instruction = record.format === 'bundle' ? join(record.targetPath, instructionName) : record.targetPath
         const current = await this.describe(source, record.targetPath, instruction, record.format)
-        inverseBackup = await this.backup(context, source, current, record.targetPath, 'edit')
+        const inverseBackup = await this.backup(context, source, current, record.targetPath, 'edit')
+        inverseBackup.afterRevision = record.beforeRevision
+        await this.updateRecord(inverseBackup)
+        record.restorePending = true
+        await this.updateRecord(record)
         // Editing only changes SKILL.md; restore only that file, preserving all
         // resource paths. The full revision above proves resources unchanged.
-        const restoreFile = record.format === 'bundle' ? join(payload, 'SKILL.md') : payload
+        const restoreFile = record.format === 'bundle' ? join(payload, instructionName) : payload
         const temporary = join(source.path, `.studio-${randomUUID()}.tmp`)
         try {
           await copyFile(restoreFile, temporary, constants.COPYFILE_EXCL)
@@ -649,6 +690,8 @@ export class SkillsService {
           await rename(temporary, instruction)
         } finally { if (await exists(temporary)) { await assertNoLinks(temporary); await rm(temporary) } }
       } else {
+        record.restorePending = true
+        await this.updateRecord(record)
         await mkdir(source.path, { recursive: true })
         if (record.format === 'bundle') {
           await this.installNew(source, basename(record.targetPath), async (staging) => copyChecked(payload, staging, 'bundle'), true)
@@ -661,10 +704,11 @@ export class SkillsService {
           } finally { if (await exists(temporary)) { await assertNoLinks(temporary); await rm(temporary) } }
         }
       }
-      const instruction = record.format === 'bundle' ? join(record.targetPath, 'SKILL.md') : record.targetPath
+      const instruction = record.format === 'bundle' ? join(record.targetPath, instructionName) : record.targetPath
       const skill = await this.describe(source, record.targetPath, instruction, record.format)
-      if (inverseBackup) { inverseBackup.afterRevision = skill.revision; await this.updateRecord(inverseBackup) }
+      if (skill.revision !== record.beforeRevision) throw new Error('Skill changed during restore. Refresh before retrying.')
       record.restored = true
+      delete record.restorePending
       await this.updateRecord(record)
       return { skill, backup: record }
     })

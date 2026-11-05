@@ -1,27 +1,68 @@
-name: Mirror to Gitee
+name: Sync main to Gitee
 
-# 手动触发。需要仓库 Secrets：GITEE_USERNAME、GITEE_TOKEN。
-# Token 需具备 projects 权限；目标仓库必须已存在。
+# 仅同步 main，不触碰标签或其他分支。不同历史且 tree 不同时需要维护者桥接。
+# Secrets：GITEE_USERNAME、GITEE_TOKEN（projects 权限）；目标 main 必须已存在。
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-main-to-gitee
+  cancel-in-progress: false
+
 jobs:
-  mirror:
+  sync-main:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - name: Checkout full history
+      - name: Checkout main history
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
+          persist-credentials: false
 
-      - name: Push mirror to Gitee
+      - name: Fast-forward Gitee main when histories permit
+        shell: bash
         env:
           GITEE_USERNAME: ${{ secrets.GITEE_USERNAME }}
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          GIT_TERMINAL_PROMPT: '0'
         run: |
+          set -euo pipefail
           if [ -z "$GITEE_USERNAME" ] || [ -z "$GITEE_TOKEN" ]; then
             echo "Missing GITEE_USERNAME or GITEE_TOKEN secrets"
             exit 1
           fi
-          git remote add gitee "https://${GITEE_USERNAME}:${GITEE_TOKEN}@gitee.com/${GITEE_USERNAME}/harness-studio.git"
-          git push gitee --mirror
+          if [[ ! "$GITEE_USERNAME" =~ ^[A-Za-z0-9_.-]+$ ]]; then
+            echo "Invalid GITEE_USERNAME"
+            exit 1
+          fi
+          export GIT_ASKPASS
+          GIT_ASKPASS="$(mktemp "$RUNNER_TEMP/gitee-askpass.XXXXXX")"
+          trap 'rm -f -- "$GIT_ASKPASS"' EXIT
+          cat > "$GIT_ASKPASS" <<'ASKPASS'
+          #!/usr/bin/env bash
+          case "$1" in
+            *Username*) printf '%s\n' "$GITEE_USERNAME" ;;
+            *Password*) printf '%s\n' "$GITEE_TOKEN" ;;
+            *) exit 1 ;;
+          esac
+          ASKPASS
+          chmod 700 "$GIT_ASKPASS"
+          git remote add gitee "https://gitee.com/${GITEE_USERNAME}/harness-studio.git"
+          git fetch --no-tags gitee refs/heads/main:refs/remotes/gitee/main
+          source_tree="$(git rev-parse 'HEAD^{tree}')"
+          target_tree="$(git rev-parse 'refs/remotes/gitee/main^{tree}')"
+          if [ "$source_tree" = "$target_tree" ]; then
+            echo "main already has identical content; preserving both histories and all tags."
+            exit 0
+          fi
+          if ! git merge-base --is-ancestor refs/remotes/gitee/main HEAD; then
+            echo "Gitee main cannot fast-forward. Follow docs/PUBLISHING.md to bridge the reviewed source changes."
+            exit 1
+          fi
+          git push --no-follow-tags gitee HEAD:refs/heads/main
+          echo "main fast-forwarded; no tags or other branches were pushed."

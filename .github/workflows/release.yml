@@ -28,6 +28,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Gitee synchronization guards
+        run: npm run test:gitee-sync
+
       - name: Typecheck
         run: npm run typecheck
 
@@ -58,6 +61,15 @@ jobs:
       - name: Package Windows installer
         run: npx electron-builder --win --publish never
 
+      - name: Verify release package integrity
+        shell: pwsh
+        run: |
+          $releaseVersion = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($env:GITHUB_REF -like 'refs/tags/*' -and $env:GITHUB_REF_NAME -ne "v$releaseVersion") {
+            throw 'Release tag must match the package version.'
+          }
+          npm run verify:release -- --dir dist --version "$releaseVersion" --report .qa-release/artifacts.json
+
       - name: List artifacts
         run: Get-ChildItem dist | Format-Table Name,Length
         shell: pwsh
@@ -70,7 +82,9 @@ jobs:
             dist/*.exe
             dist/latest.yml
             dist/*.blockmap
+            .qa-release/artifacts.json
           if-no-files-found: warn
+          include-hidden-files: true
 
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/')

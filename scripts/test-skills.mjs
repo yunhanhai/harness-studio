@@ -27,6 +27,42 @@ async function writeBundle(root, name, content = text(name)) {
   return directory
 }
 
+function withBackupMetadataFailure(backupRoot) {
+  let fail = false
+  let failures = 0
+  const controlledLoader = createTypeScriptLoader({ 'node:fs/promises': {
+    ...fs,
+    writeFile: async (path, content, options) => {
+      if (fail && path.endsWith(`${sep}record.json`) && options?.flag === 'wx') {
+        failures++
+        throw new Error('Injected backup metadata failure')
+      }
+      return fs.writeFile(path, content, options)
+    }
+  } })
+  const ControlledService = controlledLoader(new URL('../src/main/skills.ts', import.meta.url)).SkillsService
+  return {
+    service: new ControlledService(backupRoot),
+    arm: () => { fail = true }, disarm: () => { fail = false }, failures: () => failures
+  }
+}
+
+function withRecordUpdateFailure(backupRoot, shouldFail) {
+  let failures = 0
+  const controlledLoader = createTypeScriptLoader({ 'node:fs/promises': {
+    ...fs,
+    rename: async (from, to) => {
+      if (to.endsWith(`${sep}record.json`) && shouldFail(JSON.parse(await fs.readFile(from, 'utf8')))) {
+        failures++
+        throw new Error('Injected backup record update failure')
+      }
+      return fs.rename(from, to)
+    }
+  } })
+  const ControlledService = controlledLoader(new URL('../src/main/skills.ts', import.meta.url)).SkillsService
+  return { service: new ControlledService(backupRoot), failures: () => failures }
+}
+
 try {
   await fs.mkdir(context.cwd, { recursive: true })
   await fs.mkdir(join(taskRoot, 'repo', '.git'))
@@ -236,6 +272,194 @@ try {
     assert.equal(await fs.readFile(join(incoming, 'another.txt'), 'utf8'), 'kept')
     assert.equal((await fs.readdir(project.path)).filter(value => value.startsWith('.studio-')).length, 0)
   })
+  for (const operation of ['save', 'remove']) {
+    await check(`${operation} refuses to change source files when backup metadata cannot be written, and can retry`, async () => {
+      const name = `metadata-${operation}`
+      const project = await source('project-dsh')
+      const directory = await writeBundle(project.path, name)
+      const resource = Buffer.from([0, 42, 255, 17])
+      await fs.writeFile(join(directory, 'resource.bin'), resource)
+      const skill = await item(name)
+      const backupRoot = join(taskRoot, `${name}-backups`)
+      const fault = withBackupMetadataFailure(backupRoot)
+      const run = () => operation === 'save'
+        ? fault.service.save(context, skill.id, skill.revision, text(name, 'Edited'))
+        : fault.service.remove(context, skill.id, skill.revision)
+
+      fault.arm()
+      await assert.rejects(run(), /Injected backup metadata failure/)
+      assert.equal(fault.failures(), 1)
+      assert.equal((await fault.service.preview(context, skill.id)).skill.revision, skill.revision)
+      assert.equal(await fs.readFile(skill.path, 'utf8'), text(name))
+      assert.deepEqual(await fs.readFile(join(directory, 'resource.bin')), resource)
+      assert.deepEqual(await fault.service.backups(context), [])
+      assert.deepEqual(await fs.readdir(backupRoot), [])
+      assert.equal((await fs.readdir(project.path)).filter(value => value.startsWith('.studio-')).length, 0)
+
+      fault.disarm()
+      const result = await run()
+      if (operation === 'save') assert.equal(await fs.readFile(skill.path, 'utf8'), text(name, 'Edited'))
+      else await assert.rejects(fs.stat(skill.path), { code: 'ENOENT' })
+      const restored = await fault.service.restore(context, result.backup.id)
+      assert.equal(restored.skill.revision, skill.revision)
+      assert.deepEqual(await fs.readFile(join(directory, 'resource.bin')), resource)
+    })
+  }
+  await check('edit restore preserves current files and its original backup when inverse backup metadata fails', async () => {
+    const name = 'metadata-restore'
+    const project = await source('project-dsh')
+    const directory = await writeBundle(project.path, name)
+    await fs.writeFile(join(directory, 'resource.txt'), 'Original resource')
+    const original = await item(name)
+    const backupRoot = join(taskRoot, `${name}-backups`)
+    const fault = withBackupMetadataFailure(backupRoot)
+    const saved = await fault.service.save(context, original.id, original.revision, text(name, 'Edited'))
+
+    fault.arm()
+    await assert.rejects(fault.service.restore(context, saved.backup.id), /Injected backup metadata failure/)
+    assert.equal(fault.failures(), 1)
+    assert.equal((await fault.service.preview(context, original.id)).skill.revision, saved.skill.revision)
+    assert.equal(await fs.readFile(original.path, 'utf8'), text(name, 'Edited'))
+    assert.equal(await fs.readFile(join(directory, 'resource.txt'), 'utf8'), 'Original resource')
+    assert.deepEqual(await fs.readdir(backupRoot), [saved.backup.id])
+    const backups = await fault.service.backups(context)
+    assert.equal(backups.length, 1)
+    assert.equal(backups[0].restored, false)
+    assert.equal((await fs.readdir(project.path)).filter(value => value.startsWith('.studio-')).length, 0)
+
+    fault.disarm()
+    const restored = await fault.service.restore(context, saved.backup.id)
+    assert.equal(restored.skill.revision, original.revision)
+    const inverse = (await fault.service.backups(context)).find(value => value.id !== saved.backup.id)
+    assert.ok(inverse && !inverse.restored)
+    await fault.service.restore(context, inverse.id)
+    assert.equal((await fault.service.preview(context, original.id)).skill.revision, saved.skill.revision)
+  })
+  for (const format of ['bundle', 'file']) {
+    await check(`save commits recoverable metadata before replacing a ${format} instruction`, async () => {
+      const name = `save-record-${format}`
+      const project = await source('project-dsh')
+      if (format === 'bundle') {
+        const directory = await writeBundle(project.path, name)
+        await fs.mkdir(join(directory, 'empty'))
+        await fs.writeFile(join(directory, 'resource.bin'), Buffer.from([0, 17, 255]))
+      } else await fs.writeFile(join(project.path, `${name}.md`), text(name))
+      const skill = await item(name)
+      const backupRoot = join(taskRoot, `${name}-backups`)
+      let fail = true
+      const fault = withRecordUpdateFailure(backupRoot, record => fail && !!record.afterRevision)
+      await assert.rejects(fault.service.save(context, skill.id, skill.revision, text(name, 'Edited')), /Injected backup record update failure/)
+      assert.equal(fault.failures(), 1)
+      assert.equal((await service.preview(context, skill.id)).skill.revision, skill.revision)
+      assert.equal(await fs.readFile(skill.path, 'utf8'), text(name))
+      for (const directory of await fs.readdir(backupRoot)) {
+        assert.ok(!(await fs.readdir(join(backupRoot, directory))).some(value => value.startsWith('.record-')))
+      }
+      assert.equal((await fs.readdir(project.path)).filter(value => value.startsWith('.studio-')).length, 0)
+
+      fail = false
+      const saved = await fault.service.save(context, skill.id, skill.revision, text(name, 'Edited'))
+      const restored = await fault.service.restore(context, saved.backup.id)
+      assert.equal(restored.skill.revision, skill.revision)
+    })
+  }
+  await check('edit restore commits inverse metadata before replacing the current instruction', async () => {
+    const name = 'restore-inverse-record'
+    const project = await source('project-dsh')
+    await writeBundle(project.path, name)
+    const skill = await item(name)
+    const backupRoot = join(taskRoot, `${name}-backups`)
+    const baseline = new SkillsService(backupRoot)
+    const saved = await baseline.save(context, skill.id, skill.revision, text(name, 'Edited'))
+    let fail = true
+    const fault = withRecordUpdateFailure(backupRoot, record => fail && record.id !== saved.backup.id && !!record.afterRevision)
+    await assert.rejects(fault.service.restore(context, saved.backup.id), /Injected backup record update failure/)
+    assert.equal(fault.failures(), 1)
+    assert.equal((await service.preview(context, skill.id)).skill.revision, saved.skill.revision)
+    fail = false
+    assert.equal((await fault.service.restore(context, saved.backup.id)).skill.revision, skill.revision)
+  })
+  for (const operation of ['edit', 'delete']) {
+    await check(`${operation} restore can finish after final metadata failure without overwriting subsequent edits`, async () => {
+      const name = `restore-final-${operation}`
+      const project = await source('project-dsh')
+      await writeBundle(project.path, name)
+      const skill = await item(name)
+      const backupRoot = join(taskRoot, `${name}-backups`)
+      const baseline = new SkillsService(backupRoot)
+      const saved = operation === 'edit'
+        ? await baseline.save(context, skill.id, skill.revision, text(name, 'Edited'))
+        : await baseline.remove(context, skill.id, skill.revision)
+      let fail = true
+      const fault = withRecordUpdateFailure(backupRoot, record => fail && record.id === saved.backup.id && record.restored)
+      await assert.rejects(fault.service.restore(context, saved.backup.id), /Injected backup record update failure/)
+      assert.equal(fault.failures(), 1)
+      assert.equal((await service.preview(context, skill.id)).skill.revision, skill.revision)
+
+      await fs.writeFile(skill.path, text(name, 'External edit'))
+      await assert.rejects(fault.service.restore(context, saved.backup.id), /overwrite changed/)
+      assert.equal(await fs.readFile(skill.path, 'utf8'), text(name, 'External edit'))
+      await fs.writeFile(skill.path, text(name))
+      fail = false
+      // Recreate the service to prove recovery uses durable state, not memory.
+      const resumed = new SkillsService(backupRoot)
+      const restored = await resumed.restore(context, saved.backup.id)
+      assert.equal(restored.skill.revision, skill.revision)
+      assert.equal((await resumed.backups(context)).find(value => value.id === saved.backup.id).restored, true)
+      if (operation === 'edit') {
+        const inverse = (await resumed.backups(context)).find(value => value.id !== saved.backup.id && !value.restored)
+        assert.ok(inverse)
+        assert.equal((await resumed.restore(context, inverse.id)).skill.revision, saved.skill.revision)
+      }
+    })
+  }
+  if (process.platform === 'win32') {
+    for (const instructionName of ['skill.md', 'SKILL.MD']) {
+      await check(`Windows edits and inverse restores preserve ${instructionName} casing and resource revisions`, async () => {
+        const name = instructionName === 'skill.md' ? 'lowercase-instruction' : 'uppercase-instruction'
+        const project = await source('project-dsh')
+        const directory = join(project.path, name)
+        await fs.mkdir(join(directory, 'empty'), { recursive: true })
+        await fs.writeFile(join(directory, instructionName), text(name))
+        await fs.writeFile(join(directory, 'resource.bin'), Buffer.from([0, 55, 255]))
+        const original = await item(name)
+        const backupRoot = join(taskRoot, `${name}-backups`)
+        const selected = new SkillsService(backupRoot)
+        const saved = await selected.save(context, original.id, original.revision, text(name, 'Edited'))
+        assert.ok((await fs.readdir(directory)).includes(instructionName))
+        assert.equal((await selected.restore(context, saved.backup.id)).skill.revision, original.revision)
+        const inverse = (await selected.backups(context)).find(value => value.id !== saved.backup.id && !value.restored)
+        assert.ok(inverse)
+        assert.equal((await selected.restore(context, inverse.id)).skill.revision, saved.skill.revision)
+        assert.ok((await fs.readdir(directory)).includes(instructionName))
+      })
+    }
+    await check('Windows restores a legacy edit whose replacement changed instruction filename casing', async () => {
+      const name = 'legacy-instruction-casing'
+      const project = await source('project-dsh')
+      const directory = join(project.path, name)
+      await fs.mkdir(directory)
+      await fs.writeFile(join(directory, 'skill.md'), text(name))
+      const original = await item(name)
+      const backupRoot = join(taskRoot, `${name}-backups`)
+      const selected = new SkillsService(backupRoot)
+      const saved = await selected.save(context, original.id, original.revision, text(name, 'Edited'))
+      // Older saves renamed to canonical SKILL.md, then recorded the resulting
+      // tree revision. Recreate that persisted state to verify existing backups.
+      await fs.rename(join(directory, 'skill.md'), join(directory, 'SKILL.md'))
+      const legacy = await item(name)
+      const recordPath = join(backupRoot, saved.backup.id, 'record.json')
+      const record = JSON.parse(await fs.readFile(recordPath, 'utf8'))
+      record.afterRevision = legacy.revision
+      await fs.writeFile(recordPath, JSON.stringify(record))
+      assert.equal((await selected.restore(context, saved.backup.id)).skill.revision, original.revision)
+      assert.ok((await fs.readdir(directory)).includes('skill.md'))
+      const inverse = (await selected.backups(context)).find(value => value.id !== saved.backup.id && !value.restored)
+      assert.ok(inverse)
+      assert.equal((await selected.restore(context, inverse.id)).skill.revision, legacy.revision)
+      assert.ok((await fs.readdir(directory)).includes('SKILL.md'))
+    })
+  }
   process.stdout.write(`Passed ${passed} DSH skill filesystem regression groups.\n`)
 } finally {
   const cleanPath = resolve(taskRoot)

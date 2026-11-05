@@ -33,6 +33,8 @@ $env:ELECTRON_MIRROR = "https://github.com/electron/electron/releases/download/"
 | `npm run status` | 查看磁盘占用、检查是否有重复安装 |
 | `npm run typecheck` | 主进程 + 渲染进程类型检查 |
 | `npm run test:plugin-navigation` | 插件管理入口、取消与前端等待回归 |
+| `npm run test:skills` | 技能资源管理、写入失败恢复与 Host 上下文回归 |
+| `npm run test:gitee-sync` | 在临时本地仓库验证 main 同步与标签保留 |
 | `npm run build` | 构建 `out/` |
 | `npm run preview:ui` | 无需 Electron 的浏览器 UI 预览 |
 | `npm run icons` | 从 `resources/brand.svg` 重新生成图标 |
@@ -40,6 +42,8 @@ $env:ELECTRON_MIRROR = "https://github.com/electron/electron/releases/download/"
 | `npm run dist:dir` | 仅生成 `dist/win-unpacked` |
 
 改完代码想在桌面上直接用新版本，跑 `npm run install:local` 即可原地升级，不会堆积目录。详见 [docs/LOCAL-INSTALL.md](docs/LOCAL-INSTALL.md)。
+
+完整检查、官方 DSH 兼容测试与显式真实模型验收见 [验收流程](docs/ACCEPTANCE.md)。上游脚本需要传入 DSH 程序包路径；默认检查不会读取日常模型凭据或发出模型请求。
 
 浏览器预览的 mock 数据在 `scripts/preview-mock.mjs`，适合改样式和截图：
 
