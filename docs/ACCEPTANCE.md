@@ -1,16 +1,18 @@
 # v0.1.12 验收
 
-本版范围为模型设置、首次选择、DSH 本地技能中心及其可靠性修复。本地 v0.1.12 候选包已生成；公开下载目前仍为 v0.1.11。功能验收、协议 fixture 与真实模型结果分别记录，不用其中一种代替另一种。
+本版范围为模型设置、首次选择、DSH 本地技能中心及其可靠性修复。**v0.1.12 已于 2026-11-06 在 [GitHub](https://github.com/yunhanhai/harness-studio/releases/tag/v0.1.12) 与 [Gitee](https://gitee.com/yunhanhai/harness-studio/releases) 公开发布**，两平台全部公开附件均已完整匿名下载并核对哈希；GitHub 更新清单与 Setup 一致。汇总证据 `.tools/v0.1.12-publication-status.json`。功能验收、协议 fixture、真实模型及人工操作分别记录，不互相替代。
 
-2026-11-05 当前结果：类型检查、构建、179 项/组仓库回归和 4 项同步回归通过；官方 DSH `0.2.1-rc.2` 的解析对照 9 项、loopback 协议 6 项、Electron 默认检查 8 项通过。用户指定的 `ultrarouter.org` / `deepseek-v4.1-flash` / Chat Completions 最终三轮真实验收通过，含技能指令加载与实际 `read` 工具读取；报告 `.qa-upstream/electron-L0Hpgp/report/report.json` 和同目录 `live-tool-evidence.json`。测试进程和临时凭据已清理。人工键盘、安装/升级与发布仍待完成。
+最终发布包的一键安装固定使用已验收的 DSH `0.2.1-rc.2` 与 Node 22，避免移动的 `latest` 已变为要求 Node.js 24.9+ 的 `0.2.2-rc.1`。发布目录为 `.tools/v0.1.12-release-staging`，完整性报告 `.tools/v0.1.12-release-artifacts.json`；Setup、Portable、更新清单、blockmap 和 app.asar 均通过校验。最终实际打包程序的 **8/8 项官方 DSH 检查通过**，报告 `.qa-upstream/electron-kyhicV/report/report.json`，确认 `version=0.1.12`、`isPackaged=true`、打包内容与对应 `out` 一致且执行前后稳定、无未捕获异常、模型请求或提供商凭据写入，所有本轮进程已退出。此前 `.qa-upstream/electron-z5OLGw/report/report.json` 属于安装版本固定前的候选验收，不能替代这份最终报告。
 
-2026-11-06 发布候选：三个根版本字段已升为 `0.1.12`，独立目录 `.tools/v0.1.12-staging` 的 Setup / Portable、更新清单、blockmap 与 app.asar 校验通过。全部 6 个应用构建文件与上述真实模型验收一致，因此未重复调用付费服务。安装前已备份现有 v0.1.11 程序、四项用户状态和快捷方式参数；自动启动安装被 Windows 安全提示暂停，已关闭本次等待进程并交由用户手动确认，不能据此标记安装通过。Gitee 配额审计与 v0.1.7 两件旧包的可恢复备份完成，尚未删除附件或发布新版。
+发布源的 GitHub [CI](https://github.com/yunhanhai/harness-studio/actions/runs/42158592498) 与 [Release](https://github.com/yunhanhai/harness-studio/actions/runs/42158592330) 成功。独立 [DSH compatibility](https://github.com/yunhanhai/harness-studio/actions/runs/42158592362) 首次执行在 Electron 程序缺失处失败：技能和适配器步骤已通过，GUI 未启动，不能标记整条工作流通过。后续工作流已增加 Electron 显式安装与存在检查，属于 `Unreleased`；远端主线执行结果以发布状态记录为准。
 
-实际打包程序的 8 项官方 DSH 检查也通过：报告 `.qa-upstream/electron-z5OLGw/report/report.json` 确认版本 `0.1.12`、`isPackaged=true`、完整构建匹配、无未捕获异常和模型请求，测试进程已退出。此结果覆盖 `win-unpacked` 程序，不替代安装升级验证。
+安装升级与两项人工键盘检查仍 **pending**，已在发行说明中披露。本机安装记录仍为 `0.1.11.0`；升级前程序、四项用户状态及快捷方式已备份，自动安装被 Windows 安全提示阻挡后交由用户手动操作。实际打包程序通过不等于安装成功。人工准备会话 `.qa-upstream/electron-dxySnr/report/keyboard-session.json` 是当时快照，相关 runner、GUI 和 Host 目前均无进程，未收到人工结果；不能将旧快照的 `awaiting` 当作窗口仍开着，也不能将自动输入或用户“继续”记为人工通过。
 
-2026-11-06 用户明确要求现在发布并继续后续优化。本次按该决定推进发布，安装升级和两项人工键盘检查保留为未完成验证，在发行说明中披露；发布授权不代表这些检查通过。下述流程仍作为后续验收目标。
+Gitee 清理仅执行了直接授权的 v0.1.7 Setup `3554461` 与 Portable `3554462`，删除前完整备份并核对哈希；该版标签、说明、源码及 GitHub 安装包保留。证据 `.tools/v0.1.12-gitee-prune-verification.json`，授权不涵盖其他附件。
 
-发布前上游检查发现 DSH `latest` 已变为要求 Node.js 24.9+ 的 `0.2.2-rc.1`。本版一键安装因此固定到已验收的 `0.2.1-rc.2`，继续配套 Node 22。修复后重新构建和打包至 `.tools/v0.1.12-release-staging`，最终完整性报告为 `.tools/v0.1.12-release-artifacts.json`（主报告 `.tools/v0.1.12-artifacts.json` 同步指向最终包）。Setup 104,020,924 bytes、Portable 103,751,392 bytes，app.asar SHA-256 `34fd3c00f21bd6f1a01b2c6bc580d4289e4c7a9956b3fcfd30c89e17b3e7a354`。仅安装器主进程代码有变化，两个 preload 与 renderer 仍与真实模型验收一致；未重复付费调用。
+2026-11-05 的功能验收记录：类型检查、构建、179 项/组仓库回归和 4 项同步回归通过；官方 DSH `0.2.1-rc.2` 的解析对照 9 项、loopback 协议 6 项、Electron 默认检查 8 项通过。用户指定的 `ultrarouter.org` / `deepseek-v4.1-flash` / Chat Completions 最终三轮真实验收通过，含技能指令加载与实际 `read` 工具读取；报告 `.qa-upstream/electron-L0Hpgp/report/report.json` 和同目录 `live-tool-evidence.json`。最终发布前的变更仅涉及安装版本固定，两个 preload 与 renderer 保留该验收构建内容，未重复付费调用。测试进程和临时凭据已清理。
+
+发布后的 `Unreleased` 优化已检查所选 DSH 程序包的 `engines.node`，在不兼容、声明无效或元数据无法读取时阻止启动，并补充运行时诊断与保存后重新检测。根主线的 `npm ci`、运行时 10 组、语言 11 组回归、类型检查、构建与 preload 校验已通过；远端执行结果继续记录于发布状态文件，不据本地结果宣称远端通过。该优化不改变已发布的 v0.1.12 标签或附件，检测范围及上游依据见 [UPSTREAM_REVIEW.md](UPSTREAM_REVIEW.md)。
 
 ## 仓库回归
 
@@ -26,10 +28,13 @@ npm run test:session-tab-focus
 npm run test:conversation-font
 npm run test:i18n
 npm run test:gitee-sync
+npm run test:runtime
 npm run build
 ```
 
 技能测试包含保存/删除/恢复时的文件 API 故障、新服务实例重试、外部编辑保护，以及 Windows 指令文件大小写和历史备份恢复。它不代表断电或磁盘硬件故障测试。Gitee 测试只使用临时本地 Git 仓库，执行工作流的实际同步脚本。
+
+`test:runtime` 是发布后新增的 `Unreleased` 检查，使用内存中的程序包元数据与模拟 Node 探测验证版本兼容分支；它不启动 DSH，也不验证完整依赖树或模型调用能力。
 
 ## 官方 DSH 兼容检查
 
@@ -103,7 +108,7 @@ npm run test:upstream:electron -- --dsh-package "$dshPackage" --expect-version 0
 独立打包后运行以下检查；它验证 PE 格式、清单 SHA-512 / 大小、blockmap 全文件覆盖、根版本与 app.asar 内全部应用构建文件，不执行安装或发布：
 
 ```powershell
-npm run verify:release -- --dir .tools/v0.1.12-staging --version 0.1.12 --report .tools/v0.1.12-artifacts.json
+npm run verify:release -- --dir .tools/v0.1.12-release-staging --version 0.1.12 --report .qa-upstream/reports/release-recheck.json
 ```
 
 - 上述仓库检查与官方 DSH 基线通过，真实服务结果有明确记录。
@@ -111,4 +116,4 @@ npm run verify:release -- --dir .tools/v0.1.12-staging --version 0.1.12 --report
 - 更新版本与本版 CHANGELOG，独立打包，验证安装/升级、更新清单和安装包一致。
 - 按 [发布指南](PUBLISHING.md) 同步两个平台的 main/tag；发布前重新核算 Gitee 额度和附件保留方案。
 
-已有版本标签与安装包不用于复用新版本号。发布后的完整下载核验完成后，再更新 README 下载链接。
+校验已发布的 v0.1.12 时，应使用对应发布标签的源码与构建；包含 `Unreleased` 改动的当前 out 不再是该包的比较基线。已有版本标签与安装包不用于复用新版本号。发布后的完整下载核验完成后，再更新 README 下载链接。

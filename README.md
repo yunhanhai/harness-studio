@@ -8,7 +8,7 @@
 ![status](https://img.shields.io/badge/status-beta-F59E0B?style=flat-square)
 
 [![GitHub release](https://img.shields.io/github/v/release/yunhanhai/harness-studio?style=flat-square&color=5B8CFF)](https://github.com/yunhanhai/harness-studio/releases)
-[![Gitee release](https://img.shields.io/badge/gitee-v0.1.11-C71D23?style=flat-square)](https://gitee.com/yunhanhai/harness-studio/releases)
+[![Gitee release](https://img.shields.io/badge/gitee-v0.1.12-C71D23?style=flat-square)](https://gitee.com/yunhanhai/harness-studio/releases)
 [![GitHub stars](https://img.shields.io/github/stars/yunhanhai/harness-studio?style=flat-square&color=F59E0B)](https://github.com/yunhanhai/harness-studio/stargazers)
 
 [English](README.en.md) · [下载](#下载) · [架构说明](docs/ARCHITECTURE.md) · [发布指南](docs/PUBLISHING.md) · [参与贡献](CONTRIBUTING.md) · [开发接手](docs/HANDOFF.md) · [本地安装](docs/LOCAL-INSTALL.md)
@@ -91,19 +91,19 @@ Harness Studio 换了一个角度：**先让一个人每天用得顺手**。
 
 修复反向切标签后文字仍进入后台会话的问题。切标签统一交接 DOM 与原生输入焦点，离开工作区后输入交回 Studio；加载完成时保留正在使用的工具栏输入框。该修复已包含在当前本地安装版；v0.1.10 已在 GitHub 与 Gitee 发布，产物及两平台公开安装包的整文件下载校验通过。双向切换、跨页输入和发送确认的 Win32 自动验收已通过，人工键盘结果仍待确认。
 
-### 模型与免账号使用（开发版）
+### 模型与免账号使用（v0.1.12）
 
 新增「设置 → 模型设置」、启动台和命令面板入口。首次打开工作区可选择**使用自定义模型 / 登录 DeepSeek 账号 / 稍后配置**。第三方 API 和本地兼容服务无需 DeepSeek 账号；接口地址、协议、模型 ID 与服务要求的密钥由 Harness 原生表单管理。没有配置可用模型时，可以先写草稿和管理技能，生成回答前仍需配置并选择模型。
 
 当前兼容层支持 OpenAI Chat Completions、OpenAI Responses 与 Anthropic Messages。本地服务若不验证密钥，可填写 `local-placeholder`；有认证时使用服务要求的密钥。工具调用、图片和推理能力取决于实际模型与接口。
 
-### DSH 技能中心（开发版）
+### DSH 技能中心（v0.1.12）
 
 侧栏与 `Ctrl+6` 打开技能中心，可搜索、预览正文和附带资源，查看项目/用户来源、无效声明与同名覆盖。标准项目 `.dsh/skills` 和当前 DSH_HOME 的 `skills` 支持新建、Markdown / 完整技能文件夹导入、编辑备份、删除与恢复；脚本、引用资料、二进制资源和空目录会一起保留。共享 `.agents`、自定义与随包来源只读。
 
 清单显示默认磁盘目录与可静态识别的自定义候选，完整 preset 配置及虚拟/远程提供商尚未包含。当前会话能否调用、是否刷新，请在 Harness 的 `/` 菜单确认。备份位于 Studio 数据目录的 `skill-backups`，恢复会检查原目录与外部修改，避免覆盖后续编辑。
 
-「插件精选」提供社区项目说明、官方发现组件文档与社区索引地址，安装仍由 Harness 管理；推荐项的组合兼容性尚未经过 Studio 验收。这两部分属于 `Unreleased`，当前下载和本地安装仍为 v0.1.11。
+「插件精选」提供社区项目说明、官方发现组件文档与社区索引地址，安装仍由 Harness 管理；推荐项的组合兼容性尚未经过 Studio 验收。模型入口与技能中心已随 v0.1.12 在 GitHub、Gitee 发布。所选 Chat Completions 服务的多轮对话、技能指令与 `read` 工具验收通过；安装升级与人工键盘检查仍待补充，详见 [验收记录](docs/ACCEPTANCE.md)。
 
 ### 插件管理（v0.1.9）
 
@@ -231,13 +231,15 @@ Studio 的页面、日期格式、托盘、菜单及确认框使用所选语言�
 
 | 平台 | 安装版 | 便携版 |
 | --- | --- | --- |
-| **GitHub**（全球） | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.11/Harness-Studio-0.1.11-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.11/Harness-Studio-0.1.11-x64-Portable.exe) |
-| **Gitee**（国内更快） | [Setup.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.11/Harness-Studio-0.1.11-x64-Setup.exe) | [Portable.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.11/Harness-Studio-0.1.11-x64-Portable.exe) |
+| **GitHub**（全球） | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.12/Harness-Studio-0.1.12-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.12/Harness-Studio-0.1.12-x64-Portable.exe) |
+| **Gitee**（国内更快） | [Setup.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.12/Harness-Studio-0.1.12-x64-Setup.exe) | [Portable.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.12/Harness-Studio-0.1.12-x64-Portable.exe) |
 
 - **Setup.exe**（99 MB）— 安装版，创建开始菜单与桌面快捷方式，支持自动更新
 - **Portable.exe**（99 MB）— 免安装，数据写在可执行文件旁的 `HarnessStudioData/`
 
 完整发布页：[GitHub Releases](https://github.com/yunhanhai/harness-studio/releases) · [Gitee 发行版](https://gitee.com/yunhanhai/harness-studio/releases)
+
+当前版本为 v0.1.12，两平台公开附件均已完整匿名下载并核对哈希。实际打包程序的 8 项官方 DSH 检查通过；安装升级与人工键盘结果单独记录，尚未标记通过。
 
 > 当前安装包未做代码签名，Windows SmartScreen 可能提示"未知发布者"。选择「更多信息 → 仍要运行」即可。介意的话可以自行从源码构建。
 

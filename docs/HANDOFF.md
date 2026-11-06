@@ -6,11 +6,11 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 版本 | `0.1.12` 本地候选包已校验；本机安装与公开下载仍为 `0.1.11`，升级和人工键盘待确认 |
-| 开发分支 | `codex/v0.1.12-readiness`（v0.1.12 验收与可靠性收尾） |
+| 版本 | `0.1.12` 已在 GitHub / Gitee 公开发布；本机安装记录仍为 `0.1.11.0`，升级和人工键盘待确认 |
+| 开发分支 | `main`；发布后的运行时兼容检测属于 `Unreleased`，不修改已发布标签或附件 |
 | 本地 HEAD | `git log --oneline -1` 确认 |
 | 工作区 | `git status` 确认 |
-| 已发布 | GitHub：v0.1.0～v0.1.11；Gitee：v0.1.0～v0.1.4、v0.1.6～v0.1.11（v0.1.5 只有标签；v0.1.0 / v0.1.1 / v0.1.2 / v0.1.3 / v0.1.4 / v0.1.6 仅保留说明与源码包，旧安装包已移除并备份） |
+| 已发布 | GitHub：v0.1.0～v0.1.12；Gitee：v0.1.0～v0.1.4、v0.1.6～v0.1.12（v0.1.5 只有标签；v0.1.0 / v0.1.1 / v0.1.2 / v0.1.3 / v0.1.4 / v0.1.6 / v0.1.7 仅保留说明与源码包，旧安装包已移除并备份） |
 | 远端 | `origin` → GitHub，`gitee` → Gitee |
 | 平台 | Windows 10/11 x64（主要目标） |
 
@@ -32,8 +32,31 @@
 | v0.1.9 | 启动台与命令面板打开当前标签页的官方插件管理 |
 | v0.1.10 | 会话标签切换的原生输入焦点修复（已安装、双平台发布） |
 | v0.1.11 | 会话阅读字号：跟随 Harness、14、16、18 px（已安装，双平台发布） |
+| v0.1.12 | 模型设置与首次选择、DSH 技能中心、技能恢复可靠性与固定安装基线（双平台发布；安装升级和人工键盘 pending） |
 
-## 当前产品增量：免账号模型入口与 DSH 技能中心（v0.1.12 候选）
+## 当前发布完成：v0.1.12 模型入口与 DSH 技能中心
+
+2026-11-06，[GitHub v0.1.12](https://github.com/yunhanhai/harness-studio/releases/tag/v0.1.12) 与 [Gitee v0.1.12](https://gitee.com/yunhanhai/harness-studio/releases) 均已公开。GitHub 四件附件和 Gitee 两件安装包已完整匿名下载并核对哈希，公开更新清单与 Setup 一致。当前事实以 `.tools/v0.1.12-publication-status.json` 为准；README 下载入口已升为 v0.1.12，不需重新打标签、上传或移动既有标签。
+
+本地/Gitee 发布提交为 `5e1a63f14f85b71ed810f543c21307bb3e416b6f`，GitHub 发布提交为 `9c3874b99fb1904d2b85c25dfcb647ecc070a75e`，发布 tree 同为 `f83f76ebe267b00e34bd89d4eb4f05fe80f4f255`。后续 main 同步基线取发布状态中的 `githubBridgeNextBaseline`，只同步主线，保留两平台不同历史和全部已有标签。
+
+最终产物位于 `.tools/v0.1.12-release-staging`，完整性报告 `.tools/v0.1.12-release-artifacts.json`。最终打包版的官方 DSH `0.2.1-rc.2` **8/8 项检查通过**，报告 `.qa-upstream/electron-kyhicV/report/report.json`；版本、`isPackaged`、应用内容与对应 out、进程退出均已核对，无未捕获异常、模型请求或提供商凭据写入。所选真实模型的多轮、技能及 `read` 验收见下方 11 月 5 日记录，覆盖范围不扩展到其他协议或所有插件。
+
+GitHub 发布源 [CI](https://github.com/yunhanhai/harness-studio/actions/runs/42158592498) 和 [Release](https://github.com/yunhanhai/harness-studio/actions/runs/42158592330) 成功。独立 [DSH compatibility](https://github.com/yunhanhai/harness-studio/actions/runs/42158592362) 首次执行因 Electron 程序缺失失败，技能和适配器通过但 GUI 未启动；后续修复已在主线增加显式 Electron 下载与存在检查，不能将尚未完成的远端复跑写成成功。
+
+Gitee 本次只删除了直接授权的 v0.1.7 Setup `3554461` 与 Portable `3554462`，删除前备份和双哈希核对完成，释放 207,697,149 bytes。备份 `.tools/gitee-v0.1.7-backup`，核验 `.tools/v0.1.12-gitee-prune-verification.json`；该版标签、说明、源码、其他附件和 GitHub 安装包保留。本次发布后附件合计 1,038,685,950 bytes，剩余 35,055,874 bytes，下一版需重新审计；本次授权不涵盖其他附件。
+
+**未完成的验证**：安装升级与两项人工键盘仍 pending，发布说明已披露。本机安装验证记录仍为 `0.1.11.0`，此前 Windows 安全提示阻挡自动安装，用户尚未回报手动安装结果。原人工准备会话 `.qa-upstream/electron-dxySnr/report/keyboard-session.json` 是历史快照，相关 runner、GUI 和 Host 已无进程；不要依据旧 `awaiting` 状态声称窗口仍在，也不要把自动输入、窗口退出或用户“继续”当作人工通过。
+
+## 发布后开发：运行时版本兼容检测（Unreleased）
+
+上游 `latest/next` 已为需要 Node.js >=24.9.0 的 DSH `0.2.2-rc.1`。v0.1.12 已将一键安装固定到实际验收的 `0.2.1-rc.2` + Node 22；发布后主线进一步读取**用户当前选择的 DSH 程序包**的 `engines.node`，不兼容、声明无效或元数据不可读时阻止启动，在运行时设置和启动台显示原因，保存运行时配置后重新检测。无 Node 声明的旧包维持原行为。检测不升级用户运行时，也不验证整个依赖树和插件能力，依据与范围见 [UPSTREAM_REVIEW.md](UPSTREAM_REVIEW.md)。
+
+已合入运行时兼容提交 `23c0701` 和锁文件整理 `b98fb19`；根主线的 `npm ci`、类型检查、构建/preload、运行时 10 组及语言 11 组回归已通过。兼容工作流增加显式 Electron 安装，手动任务可选择 Node 22 或 24，默认基线不变。本轮源码与文档的远端同步/CI 状态继续记录到发布状态文件，未完成前不宣称远端通过；已发布的 v0.1.12 安装包不包含这些 `Unreleased` 检测改动。
+
+## 历史过程：v0.1.12 候选与功能验收
+
+以下按当时状态保留过程证据；“待发布”“未删除”等描述仅反映该阶段，不覆盖上方最终发布状态。旧同步命令与旧版本基线也只作历史记录，当前接手从顶部发布状态与下方「下一步建议」开始。
 
 ### 2026-11-06 发布候选准备
 
@@ -83,7 +106,7 @@ v0.1.11 发布完成后，将原先只留在忽略目录 `.tools/` 的字号检�
 
 `npm run test:conversation-font` 的 16 组（6 组设置、10 组 preload）与 `npm run typecheck` 通过，独立复核未发现问题。维护提交 `e11b18f` 已快进合入 `main`，此次仅同步两端 main，最新同步与精确提交 CI 结果见 `.tools/conversation-font-main-sync-status.json`。这是测试与文档维护，应用版本保持 `0.1.11`；不需要重新安装、打包、打标签或发布。当前隔离键盘窗口和草稿保留，两项人工结果仍 pending。
 
-## 当前收尾状态：v0.1.11 会话阅读字号
+## 历史发布收尾：v0.1.11 会话阅读字号
 
 「设置 → 外观 → 会话阅读字号」支持跟随 Harness、14、16、18 px，默认跟随，可恢复默认。保存后即时更新所有标签的用户与助手正文、列表、表格和标题，保留草稿与会话；上游自定义代码字号、composer、导航、工具卡和终端维持原字号。官方 DSH `0.2.1-rc.2` 的节点与字体变量已通过程序文件只读核对，范围见 ARCHITECTURE「会话阅读字号」。
 
@@ -147,7 +170,7 @@ Gitee [v0.1.9 发行版](https://gitee.com/yunhanhai/harness-studio/releases)（
 
 GitHub [v0.1.9 发行版](https://github.com/yunhanhai/harness-studio/releases/tag/v0.1.9)（ID `430416739`）已公开，包含 Setup / Portable / blockmap / latest.yml；[Release 工作流](https://github.com/yunhanhai/harness-studio/actions/runs/41283163481) 和 [CI](https://github.com/yunhanhai/harness-studio/actions/runs/41283163561) 均成功，说明与 CHANGELOG 一致。GitHub 标签 commit 为 `1653a8813a393e06b388c06d07a1258ed55f4c94`，本地/Gitee 为 `7ff97450ce26c8756996d6109b1e5660f5b9fd9e`，发布 tree 同为 `b2640794fb9b815f297b8524b4adebeee891cba9`。四件附件均完整匿名下载，大小与整文件 API SHA-256 匹配，公开 Setup 为 103,998,548 bytes、Portable 为 103,729,006 bytes；Setup 完整 SHA-512 与公开 latest.yml 两处值一致。下载 helper 和 curl 均已退出，报告 `.tools/v0.1.9-github-release-verification.json` / `.tools/v0.1.9-github-download-verification.json`，进度 complete=true，不需要续跑。GitHub 与本地分别构建，各自哈希匹配；README 两平台链接与 Gitee 徽章均已升为 v0.1.9。本地安装、双平台发布与完整公开下载验收已完成，发布记录见 `.tools/v0.1.9-publication-status.json`；不要重复打标签、发布或重跑 release 模式，也不要移动旧标签。两项既有真实键盘检查仍待人工确认。
 
-v0.1.9 当时只同步文档时，先在干净的 `main` 提交，再运行 `node .tools/gitee-push-v0.1.9.mjs --sync-main --push` 和 `node .tools/github-bridge-v0.1.9.mjs --sync-main --base <上次成功同步的本地提交> --push`。基线以 `.tools/v0.1.9-publication-status.json` 的 `githubBridgeNextBaseline` 为准，成功同步后更新状态记录。本次双平台收尾文档从此前已成功同步的本地提交继续；不要复用 release 模式或旧版本基线。两个同步命令仅推 main，既有 v0.1.9 标签保持发布内容。该段及旧 v0.1.8 bridge 指令均属于历史记录；当前使用顶部 v0.1.11 收尾指令与状态记录。
+v0.1.9 当时只同步文档时，先在干净的 `main` 提交，再运行 `node .tools/gitee-push-v0.1.9.mjs --sync-main --push` 和 `node .tools/github-bridge-v0.1.9.mjs --sync-main --base <上次成功同步的本地提交> --push`。基线以 `.tools/v0.1.9-publication-status.json` 的 `githubBridgeNextBaseline` 为准，成功同步后更新状态记录。本次双平台收尾文档从此前已成功同步的本地提交继续；不要复用 release 模式或旧版本基线。两个同步命令仅推 main，既有 v0.1.9 标签保持发布内容。该段及旧 v0.1.8 bridge 指令均属于历史记录；当前使用顶部 v0.1.12 发布状态记录。
 
 用户针对仅移除 Gitee v0.1.3 两件旧安装附件并发布 v0.1.9 的具体方案回复「按照你的推荐继续」，已仅删除 Setup（ID `3462777`）与 Portable（ID `3462787`），释放 207,658,948 bytes。删除前两件完整备份到 `.tools/gitee-v0.1.3-backup/` 并经独立二次公开下载核对 SHA-256/SHA-512；最终审计再次核对备份哈希。该版标签、发行说明、源码包、其他 Gitee 附件与 GitHub 同版安装包均保留。授权与清理记录为 `.tools/v0.1.9-gitee-deletion-authorization.json` / `.tools/v0.1.9-gitee-prune-verification.json`，保留快照为 `.tools/v0.1.9-gitee-preservation-before.json`。最终附件合计 1,038,495,500 bytes，按 1,073,741,824 bytes（1 GiB）上限剩 35,246,324 bytes；下次发布需重新审计配额，本次授权不涵盖其他版本附件。
 
@@ -164,7 +187,7 @@ v0.1.9 当时只同步文档时，先在干净的 `main` 提交，再运行 `nod
 从下面挑一个，或者提你自己的需求：
 
 - "按 HANDOFF「下一步建议」选择后续功能"
-- "在已双平台发布的 v0.1.11 基础上继续开发，先读当前状态与下一步建议"
+- "在已双平台发布的 v0.1.12 基础上继续开发，先读当前状态、Unreleased 优化与下一步建议"
 - "给 xxx 页面加 yyy 功能"
 
 **3. 需要时提供凭据**
@@ -176,13 +199,14 @@ v0.1.9 当时只同步文档时，先在干净的 `main` 提交，再运行 `nod
 ```text
 在 D:\Program Files\develop\vscode\her 继续开发 Harness Studio。
 先读 docs/HANDOFF.md 和 docs/ARCHITECTURE.md。
-v0.1.11 会话阅读字号已合入 main、本地安装并在 GitHub 与 Gitee 发布；类型检查、70 项回归、隔离 Electron fixture、产物及两平台公开附件完整下载校验通过。
-两个平台的 main 与 v0.1.11 标签已推送，标签固定发布内容；同步基线以 .tools/v0.1.11-publication-status.json 为准。
-Gitee 新安装包已发布并校验；经本次直接用户批准，仅删除 v0.1.6 的 Setup 3553808 与 Portable 3553815，两件已各两次完整下载备份并核对双哈希。
+v0.1.12 模型入口与 DSH 技能中心已在 GitHub 与 Gitee 发布，全部公开附件完整匿名下载及哈希校验通过；最终打包程序 8/8 检查通过，报告 .qa-upstream/electron-kyhicV/report/report.json。
+已发布标签和附件冻结；主线有 Unreleased 运行时 Node 版本检测与兼容工作流优化，不能当作已发布包功能。
+同步基线和远端执行结果以 .tools/v0.1.12-publication-status.json 为准，不把本地通过写成远端通过。
+经直接用户批准，本次仅删除 Gitee v0.1.7 的 Setup 3554461 与 Portable 3554462，完整备份在 .tools/gitee-v0.1.7-backup。
 该版标签、说明、源码包、其他附件及 GitHub 安装包均保留；本次删除授权不覆盖其他附件。
-先读顶部「当前收尾状态」与 .tools/v0.1.11-publication-status.json；本次发布已完成，按新需求继续，不重复打包或发布。
-两项真实键盘检查仍待人工确认，用户“继续”不算人工通过。
-不要重复发布或移动已存在的标签，先读当前收尾状态与发布记录。
+安装升级仍待确认，本机安装记录为 0.1.11.0；两项人工键盘检查仍 pending，原隔离窗口和 Host 已无进程。
+用户“继续”、自动输入或窗口关闭均不算人工通过；按 docs/ACCEPTANCE.md 单独补验。
+先完成主线同步和对应 CI 结果核对，再按 docs/UPSTREAM_REVIEW.md 规划隔离的上游兼容实验；不重复发布或移动已有标签。
 接下来做：<写清楚新需求>。
 ```
 
@@ -411,7 +435,13 @@ node scripts/app-shot.mjs .run-test/shot.png "@.run-test/expr.js"
 
 ## 下一步建议
 
-v0.1.12 候选包、实际打包程序验收及 Gitee 配额/旧包备份已完成，具体记录见顶部。下一步等用户完成 Windows 安装确认后，核验升级和安装后的运行行为，并记录两项人工键盘结果。候选条件满足后审阅发布；Gitee 只针对已备份的 v0.1.7 两件附件请求清理授权，再准备本次精确 main/tag 同步。发布时重新核对配额和远端基线，已有标签保持发布内容。未收到用户实际结果前，人工状态保持 pending。已完成能力及后续方向如下：
+v0.1.12 双平台发布和完整公开下载核验已完成，不再重跑发布或请求已完成的 v0.1.7 两件附件清理授权。按以下顺序继续：
+
+1. 完成当前 `Unreleased` 运行时检测、兼容工作流修复与文档的 main 同步，核对精确提交上的 CI 和 DSH compatibility 结果，更新 `.tools/v0.1.12-publication-status.json`。本地回归通过不代表远端已通过。
+2. 用户完成安装后核验安装版本、用户状态和快捷方式，再单独记录双向切标签输入及 Enter/取消的人工结果。当前仍 pending，原隔离测试窗口已不在运行；需要时按 [ACCEPTANCE.md](ACCEPTANCE.md) 重新创建隔离会话。
+3. 按 [UPSTREAM_REVIEW.md](UPSTREAM_REVIEW.md) 在独立 Node 24.9+ 环境实验 DSH `0.2.2-rc.1`，覆盖模型表单、技能、工作区/标签和工具能力。结果充分前不移动默认 `0.2.1-rc.2` + Node 22 基线，也不直接升级用户日常运行时。
+
+以下是已完成能力与长期方向，保留用于定位代码，不是当前发布待办：
 
 ### 已完成：工作区联动（v0.1.7）
 

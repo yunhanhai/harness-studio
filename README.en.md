@@ -69,7 +69,7 @@ When returning to a project with only an unsent draft, Harness may open a new bl
 
 Get the installer or portable build from [GitHub Releases](https://github.com/yunhanhai/harness-studio/releases) or [Gitee Releases](https://gitee.com/yunhanhai/harness-studio/releases).
 
-Current downloads: GitHub and Gitee both provide v0.1.11; the public installer downloads have been fully verified on both platforms.
+Current downloads: GitHub and Gitee both provide v0.1.12. All public release assets were downloaded anonymously in full and their hashes verified. The packaged application passed eight official DSH checks; installation/upgrade and human keyboard verification remain pending. See [acceptance notes](docs/ACCEPTANCE.md).
 
 > Builds are unsigned for now, so Windows SmartScreen may warn about an unknown publisher. Choose **More info → Run anyway**, or build from source.
 
@@ -99,7 +99,7 @@ $env:ELECTRON_BUILDER_BINARIES_MIRROR = "https://npmmirror.com/mirrors/electron-
 npm run dist
 ```
 
-## Model setup and DSH skill center (development version)
+## Model setup and DSH skill center (v0.1.12)
 
 Settings, Home, and the command palette now offer model setup. First use presents **Use a custom model / Sign in to DeepSeek / Configure later**. Third-party APIs and local compatible services do not require a DeepSeek account. Harness retains its native model forms and credential storage. A local server that does not validate keys can use `local-placeholder` with the current adapter; authenticated servers require their own key. Reply generation and tool support depend on the configured API and model.
 
@@ -107,7 +107,7 @@ The sidebar and `Ctrl+6` open the DSH skill center: source and scope labels, sea
 
 This is a default disk inventory with statically identified custom candidates. Full preset composition, virtual/remote providers, and the live invocation catalog are not included; check the Harness `/` menu for availability and refresh. Backups are stored under Studio data in `skill-backups` and cannot overwrite subsequent edits. Plugin picks link to community projects and official discovery documentation; installation remains in Harness and plugin combinations are not Studio-verified.
 
-These changes are **Unreleased**. Downloads and the local installation remain v0.1.11.
+These features are available in **v0.1.12** on GitHub and Gitee. A selected Chat Completions service passed multi-turn conversation, skill instruction, and real `read` tool checks. This does not establish compatibility with every provider, protocol, or community plugin combination.
 
 ## How it works
 
@@ -131,7 +131,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full design.
 | `Ctrl+,` | Settings |
 | `Ctrl+1` / `2` / `3` | Home / Workspace / Insights |
 | `Ctrl+4` / `5` | Prompts / Logs |
-| `Ctrl+6` | DSH skill center (development version) |
+| `Ctrl+6` | DSH skill center |
 | `Ctrl+T` / `Ctrl+W` | New / close session tab |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous session tab |
 | `Ctrl+Alt+H` | Show / hide window globally |
