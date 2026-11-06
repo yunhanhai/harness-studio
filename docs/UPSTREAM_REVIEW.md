@@ -25,7 +25,9 @@ DSH `0.2.2-rc.1` 要求 Node.js >=24.9.0，同步 Cordis 4.1、Loader/Include 1.
 
 已启动独立的 DSH `0.2.2-rc.1` + Node 24 [首次实验](https://github.com/yunhanhai/harness-studio/actions/runs/42164978335)。9 项技能对照通过；适配器测试尚未发起 HTTP 就在请求头准备阶段停止，后续 Electron 步骤未运行。已核对精确 npm 发布包及 Cordis 4.1.0 实现：新版会调用同步 `ctx.waterfall('llm-pi-ai/request-headers', request, headers, fallback)`，旧测试模拟缺少该方法，产生的 `TypeError` 被上游归一化为 `REQUEST_HEADERS` 错误。这是测试模拟未覆盖的新接口，不能据此宣称模型或 Studio 不兼容。
 
-验收脚本已补齐无扩展监听器时调用 `fallback()`、保持原 `Headers` 的行为，严格检查事件名并记录 `requestHeaderHookCalls`；没有放宽原无密钥错误断言或跳过协议检查。当前 `0.2.1-rc.2` 的 6 项协议回归通过。新版复跑结果待记录；模型/PTC/图片与第三方插件仍需独立验收，默认安装基线不变。
+验收脚本已补齐无扩展监听器时调用 `fallback()`、保持原 `Headers` 的行为，严格检查事件名并记录 `requestHeaderHookCalls`；没有放宽原无密钥错误断言或跳过协议检查。当前 `0.2.1-rc.2` 的 6 项协议回归通过。
+
+适配器模拟修正后，[Node 24 / DSH 0.2.2-rc.1 复跑](https://github.com/yunhanhai/harness-studio/actions/runs/42166098460) 的 9 项技能和 6 项协议检查均通过，请求头扩展回调执行 5 次。Electron 检查前四项通过（启动、预览提示保留、模型入口和草稿保留）；第五项在第二标签创建独立会话时超时，报告 `.tools/postrelease-actions/42166098460/dsh-compatibility/electron-EYlXWh/report/report.json` 与 `failure-dom.json`。这使新版实验保持**部分通过**：不能称为 Studio 或 DSH 全面不兼容，也不能把 0.2.2-rc.1 升为默认安装基线。下一步先把该独立会话超时拆成可复现的上游 UI 行为与测试等待问题，再补工具/PTC、图片和真实模型实验。
 
 ## 近期反馈与改进优先级
 
@@ -62,7 +64,7 @@ DSH `0.2.2-rc.1` 要求 Node.js >=24.9.0，同步 Cordis 4.1、Loader/Include 1.
 ## 后续验证
 
 1. 运行时版本检测已同步并通过主线 CI 与基线 DSH compatibility。后续首先处理上方确认的本地状态保留问题，并补会话中断恢复验收。已发布的 v0.1.12 标签和附件保持冻结。
-2. 完成请求头接口模拟后的 `0.2.2-rc.1` + Node 24 隔离复跑，再对需要模型执行的工具/PTC、图像能力单独验收。充分验证后再考虑调整安装基线，不升级用户日常运行时来做实验。
+2. 继续定位 `0.2.2-rc.1` + Node 24 隔离实验中的第二标签独立会话超时，再对需要模型执行的工具/PTC、图像能力单独验收。充分验证后再考虑调整安装基线，不升级用户日常运行时来做实验。
 3. 增加技能根目录部分失败场景。上游新版会跳过失败根、保留其他技能并标记清单不完整，Studio 应验证不可读根不会掩盖其他来源。
 4. 持续核对官方 DOM 合同。新版仍保留 `data-shortcut-modal="settings"`、`settings.launcher`、`settings.section`、`data-conversation-session` 和工作区/新会话入口；这些标记不是永久 API，变动时应先定位适配和等待条件，再修改产品逻辑。
 

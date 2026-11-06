@@ -12,7 +12,7 @@ Gitee 清理仅执行了直接授权的 v0.1.7 Setup `3554461` 与 Portable `355
 
 2026-11-05 的功能验收记录：类型检查、构建、179 项/组仓库回归和 4 项同步回归通过；官方 DSH `0.2.1-rc.2` 的解析对照 9 项、loopback 协议 6 项、Electron 默认检查 8 项通过。用户指定的 `ultrarouter.org` / `deepseek-v4.1-flash` / Chat Completions 最终三轮真实验收通过，含技能指令加载与实际 `read` 工具读取；报告 `.qa-upstream/electron-L0Hpgp/report/report.json` 和同目录 `live-tool-evidence.json`。最终发布前的变更仅涉及安装版本固定，两个 preload 与 renderer 保留该验收构建内容，未重复付费调用。测试进程和临时凭据已清理。
 
-发布后的 `Unreleased` 优化已检查所选 DSH 程序包的 `engines.node`，在不兼容、声明无效或元数据无法读取时阻止启动，并补充运行时诊断与保存后重新检测。根主线的 `npm ci`、运行时 10 组、语言 11 组回归、类型检查、构建与 preload 校验已通过，完整 CI 与基线 DSH 兼容检查也已通过。该优化不改变已发布的 v0.1.12 标签或附件，检测范围及上游依据见 [UPSTREAM_REVIEW.md](UPSTREAM_REVIEW.md)。
+发布后的 `Unreleased` 优化已检查所选 DSH 程序包的 `engines.node`，在不兼容、声明无效或元数据无法读取时阻止启动，并补充运行时诊断与保存后重新检测。根主线的 `npm ci`、运行时 10 组、语言 11 组回归、类型检查、构建与 preload 校验已通过，完整 CI 与基线 DSH 兼容检查也已通过。Node 24 / DSH `0.2.2-rc.1` 隔离复跑的技能 9 项、适配器 6 项通过；Electron 检查在第二标签独立会话等待处超时，仍是部分通过，不能据此升级默认基线。该优化不改变已发布的 v0.1.12 标签或附件，检测范围及上游依据见 [UPSTREAM_REVIEW.md](UPSTREAM_REVIEW.md)。
 
 ## 仓库回归
 
