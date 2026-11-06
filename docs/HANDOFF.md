@@ -42,7 +42,7 @@
 
 最终产物位于 `.tools/v0.1.12-release-staging`，完整性报告 `.tools/v0.1.12-release-artifacts.json`。最终打包版的官方 DSH `0.2.1-rc.2` **8/8 项检查通过**，报告 `.qa-upstream/electron-kyhicV/report/report.json`；版本、`isPackaged`、应用内容与对应 out、进程退出均已核对，无未捕获异常、模型请求或提供商凭据写入。所选真实模型的多轮、技能及 `read` 验收见下方 11 月 5 日记录，覆盖范围不扩展到其他协议或所有插件。
 
-GitHub 发布源 [CI](https://github.com/yunhanhai/harness-studio/actions/runs/42158592498) 和 [Release](https://github.com/yunhanhai/harness-studio/actions/runs/42158592330) 成功。独立 [DSH compatibility](https://github.com/yunhanhai/harness-studio/actions/runs/42158592362) 首次执行因 Electron 程序缺失失败，技能和适配器通过但 GUI 未启动；后续修复已在主线增加显式 Electron 下载与存在检查，不能将尚未完成的远端复跑写成成功。
+GitHub 发布源 [CI](https://github.com/yunhanhai/harness-studio/actions/runs/42158592498) 和 [Release](https://github.com/yunhanhai/harness-studio/actions/runs/42158592330) 成功。独立 DSH compatibility 首次执行因 Electron 程序缺失失败，技能和适配器通过但 GUI 未启动；主线增加显式 Electron 下载与存在检查后，[基线兼容工作流](https://github.com/yunhanhai/harness-studio/actions/runs/42164874071) 已完整通过。
 
 Gitee 本次只删除了直接授权的 v0.1.7 Setup `3554461` 与 Portable `3554462`，删除前备份和双哈希核对完成，释放 207,697,149 bytes。备份 `.tools/gitee-v0.1.7-backup`，核验 `.tools/v0.1.12-gitee-prune-verification.json`；该版标签、说明、源码、其他附件和 GitHub 安装包保留。本次发布后附件合计 1,038,685,950 bytes，剩余 35,055,874 bytes，下一版需重新审计；本次授权不涵盖其他附件。
 
@@ -52,7 +52,7 @@ Gitee 本次只删除了直接授权的 v0.1.7 Setup `3554461` 与 Portable `355
 
 上游 `latest/next` 已为需要 Node.js >=24.9.0 的 DSH `0.2.2-rc.1`。v0.1.12 已将一键安装固定到实际验收的 `0.2.1-rc.2` + Node 22；发布后主线进一步读取**用户当前选择的 DSH 程序包**的 `engines.node`，不兼容、声明无效或元数据不可读时阻止启动，在运行时设置和启动台显示原因，保存运行时配置后重新检测。无 Node 声明的旧包维持原行为。检测不升级用户运行时，也不验证整个依赖树和插件能力，依据与范围见 [UPSTREAM_REVIEW.md](UPSTREAM_REVIEW.md)。
 
-已合入运行时兼容提交 `23c0701` 和锁文件整理 `b98fb19`；根主线的 `npm ci`、类型检查、构建/preload、运行时 10 组及语言 11 组回归已通过。兼容工作流增加显式 Electron 安装，手动任务可选择 Node 22 或 24，默认基线不变。本轮源码与文档的远端同步/CI 状态继续记录到发布状态文件，未完成前不宣称远端通过；已发布的 v0.1.12 安装包不包含这些 `Unreleased` 检测改动。
+已合入运行时兼容提交 `23c0701`、锁文件整理 `b98fb19` 及诊断提示修正 `5404616`；根主线的 `npm ci`、类型检查、构建/preload、运行时 10 组及语言 11 组回归已通过。代码已同步两平台，GitHub 提交 `58eebf6f376342d6ece1bab0beb02c82bcfbf1cc`（本地 `5a2d02e`）的 [完整 CI](https://github.com/yunhanhai/harness-studio/actions/runs/42164874020) 与 [DSH 0.2.1-rc.2 / Node 22 兼容检查](https://github.com/yunhanhai/harness-studio/actions/runs/42164874071) 均成功，后者包括实际 Electron 界面。工作流支持独立选择 Node 22 或 24，默认基线不变。已发布的 v0.1.12 安装包不包含这些 `Unreleased` 检测改动。
 
 ## 历史过程：v0.1.12 候选与功能验收
 
@@ -206,7 +206,8 @@ v0.1.12 模型入口与 DSH 技能中心已在 GitHub 与 Gitee 发布，全部�
 该版标签、说明、源码包、其他附件及 GitHub 安装包均保留；本次删除授权不覆盖其他附件。
 安装升级仍待确认，本机安装记录为 0.1.11.0；两项人工键盘检查仍 pending，原隔离窗口和 Host 已无进程。
 用户“继续”、自动输入或窗口关闭均不算人工通过；按 docs/ACCEPTANCE.md 单独补验。
-先完成主线同步和对应 CI 结果核对，再按 docs/UPSTREAM_REVIEW.md 规划隔离的上游兼容实验；不重复发布或移动已有标签。
+运行时检测优化已同步两平台，完整 CI 和 DSH 0.2.1-rc.2 / Node22 兼容工作流通过；最新上游实验结果与近期反馈见 docs/UPSTREAM_REVIEW.md。
+下一迭代优先处理 JsonStore 读取异常时保留原件和写入失败提示，再补会话中断恢复验收；不重复发布或移动已有标签。
 接下来做：<写清楚新需求>。
 ```
 
@@ -437,7 +438,7 @@ node scripts/app-shot.mjs .run-test/shot.png "@.run-test/expr.js"
 
 v0.1.12 双平台发布和完整公开下载核验已完成，不再重跑发布或请求已完成的 v0.1.7 两件附件清理授权。按以下顺序继续：
 
-1. 完成当前 `Unreleased` 运行时检测、兼容工作流修复与文档的 main 同步，核对精确提交上的 CI 和 DSH compatibility 结果，更新 `.tools/v0.1.12-publication-status.json`。本地回归通过不代表远端已通过。
+1. 当前 `Unreleased` 运行时检测已同步主线，完整 CI 与基线 DSH compatibility 通过。下一迭代优先修复 `JsonStore` 将读取/解析失败统一回退并写默认值、吞掉写入错误的问题，先设计原件保留、错误提示与内存回滚，再补隔离故障测试；详见近期反馈调研。
 2. 用户完成安装后核验安装版本、用户状态和快捷方式，再单独记录双向切标签输入及 Enter/取消的人工结果。当前仍 pending，原隔离测试窗口已不在运行；需要时按 [ACCEPTANCE.md](ACCEPTANCE.md) 重新创建隔离会话。
 3. 按 [UPSTREAM_REVIEW.md](UPSTREAM_REVIEW.md) 在独立 Node 24.9+ 环境实验 DSH `0.2.2-rc.1`，覆盖模型表单、技能、工作区/标签和工具能力。结果充分前不移动默认 `0.2.1-rc.2` + Node 22 基线，也不直接升级用户日常运行时。
 

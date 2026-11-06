@@ -4,7 +4,7 @@
 
 最终发布包的一键安装固定使用已验收的 DSH `0.2.1-rc.2` 与 Node 22，避免移动的 `latest` 已变为要求 Node.js 24.9+ 的 `0.2.2-rc.1`。发布目录为 `.tools/v0.1.12-release-staging`，完整性报告 `.tools/v0.1.12-release-artifacts.json`；Setup、Portable、更新清单、blockmap 和 app.asar 均通过校验。最终实际打包程序的 **8/8 项官方 DSH 检查通过**，报告 `.qa-upstream/electron-kyhicV/report/report.json`，确认 `version=0.1.12`、`isPackaged=true`、打包内容与对应 `out` 一致且执行前后稳定、无未捕获异常、模型请求或提供商凭据写入，所有本轮进程已退出。此前 `.qa-upstream/electron-z5OLGw/report/report.json` 属于安装版本固定前的候选验收，不能替代这份最终报告。
 
-发布源的 GitHub [CI](https://github.com/yunhanhai/harness-studio/actions/runs/42158592498) 与 [Release](https://github.com/yunhanhai/harness-studio/actions/runs/42158592330) 成功。独立 [DSH compatibility](https://github.com/yunhanhai/harness-studio/actions/runs/42158592362) 首次执行在 Electron 程序缺失处失败：技能和适配器步骤已通过，GUI 未启动，不能标记整条工作流通过。后续工作流已增加 Electron 显式安装与存在检查，属于 `Unreleased`；远端主线执行结果以发布状态记录为准。
+发布源的 GitHub [CI](https://github.com/yunhanhai/harness-studio/actions/runs/42158592498) 与 [Release](https://github.com/yunhanhai/harness-studio/actions/runs/42158592330) 成功。独立 [DSH compatibility](https://github.com/yunhanhai/harness-studio/actions/runs/42158592362) 首次执行在 Electron 程序缺失处失败：技能和适配器步骤已通过，GUI 未启动。后续工作流增加 Electron 显式安装与存在检查后，GitHub 主线提交 `58eebf6f376342d6ece1bab0beb02c82bcfbf1cc` 的 [完整 CI](https://github.com/yunhanhai/harness-studio/actions/runs/42164874020) 和 [基线 DSH compatibility](https://github.com/yunhanhai/harness-studio/actions/runs/42164874071) 均成功，包括实际 Electron 界面步骤；这些后续改动属于 `Unreleased`。
 
 安装升级与两项人工键盘检查仍 **pending**，已在发行说明中披露。本机安装记录仍为 `0.1.11.0`；升级前程序、四项用户状态及快捷方式已备份，自动安装被 Windows 安全提示阻挡后交由用户手动操作。实际打包程序通过不等于安装成功。人工准备会话 `.qa-upstream/electron-dxySnr/report/keyboard-session.json` 是当时快照，相关 runner、GUI 和 Host 目前均无进程，未收到人工结果；不能将旧快照的 `awaiting` 当作窗口仍开着，也不能将自动输入或用户“继续”记为人工通过。
 
@@ -12,7 +12,7 @@ Gitee 清理仅执行了直接授权的 v0.1.7 Setup `3554461` 与 Portable `355
 
 2026-11-05 的功能验收记录：类型检查、构建、179 项/组仓库回归和 4 项同步回归通过；官方 DSH `0.2.1-rc.2` 的解析对照 9 项、loopback 协议 6 项、Electron 默认检查 8 项通过。用户指定的 `ultrarouter.org` / `deepseek-v4.1-flash` / Chat Completions 最终三轮真实验收通过，含技能指令加载与实际 `read` 工具读取；报告 `.qa-upstream/electron-L0Hpgp/report/report.json` 和同目录 `live-tool-evidence.json`。最终发布前的变更仅涉及安装版本固定，两个 preload 与 renderer 保留该验收构建内容，未重复付费调用。测试进程和临时凭据已清理。
 
-发布后的 `Unreleased` 优化已检查所选 DSH 程序包的 `engines.node`，在不兼容、声明无效或元数据无法读取时阻止启动，并补充运行时诊断与保存后重新检测。根主线的 `npm ci`、运行时 10 组、语言 11 组回归、类型检查、构建与 preload 校验已通过；远端执行结果继续记录于发布状态文件，不据本地结果宣称远端通过。该优化不改变已发布的 v0.1.12 标签或附件，检测范围及上游依据见 [UPSTREAM_REVIEW.md](UPSTREAM_REVIEW.md)。
+发布后的 `Unreleased` 优化已检查所选 DSH 程序包的 `engines.node`，在不兼容、声明无效或元数据无法读取时阻止启动，并补充运行时诊断与保存后重新检测。根主线的 `npm ci`、运行时 10 组、语言 11 组回归、类型检查、构建与 preload 校验已通过，完整 CI 与基线 DSH 兼容检查也已通过。该优化不改变已发布的 v0.1.12 标签或附件，检测范围及上游依据见 [UPSTREAM_REVIEW.md](UPSTREAM_REVIEW.md)。
 
 ## 仓库回归
 
