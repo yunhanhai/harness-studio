@@ -48,6 +48,7 @@ async function runChild(values) {
     requests: [],
     externalRequests: [],
     credentialRecordWrites: 0,
+    requestHeaderHookCalls: 0,
     accountServicesAvailable: false,
     realModelTested: false,
     realToolExecutions: 0,
@@ -179,6 +180,18 @@ async function runChild(values) {
       }
       const ctx = {
         fiber: { entry: { options: { id: 'llm-pi-ai' } } }, inject: () => {}, on: () => {},
+        // DSH 0.2.2 adds this Cordis hook. No header-contributing plugins are
+        // registered in the fixture, so preserve the default request headers.
+        waterfall: (event, request, headers, fallback) => {
+          assert.equal(event, 'llm-pi-ai/request-headers')
+          assert.ok(request && typeof request === 'object')
+          assert.ok(headers instanceof Headers)
+          assert.equal(typeof fallback, 'function')
+          report.requestHeaderHookCalls++
+          const result = fallback()
+          assert.equal(result, headers)
+          return result
+        },
         get: name => {
           if (name === 'credentials') return credentials
           if (name === 'launchEnvironment') return { get: () => undefined }
