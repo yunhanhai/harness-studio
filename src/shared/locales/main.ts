@@ -255,8 +255,8 @@ export const mainMessages = {
     "Could not read or parse the selected DSH package.json to verify Node.js compatibility. Check package permissions or reinstall the runtime."
   ],
   "main.nodeEngineMismatch": [
-    "DSH {version} 要求 Node.js {required}，当前检测到 {actual}。请在设置 → 运行时选择兼容的 Node.js，或安装便携运行时。",
-    "DSH {version} requires Node.js {required}; detected {actual}. Choose a compatible Node.js in Settings → Runtime, or install the portable runtime."
+    "DSH {version} 要求 Node.js {required}，当前检测到 {actual}。请在设置 → 运行时选择兼容的 Node.js。",
+    "DSH {version} requires Node.js {required}; detected {actual}. Choose a compatible Node.js in Settings → Runtime."
   ],
   "main.dshMissing": [
     "未找到 DeepSeek Harness CLI。可以使用「安装便携运行时」一键部署。",
