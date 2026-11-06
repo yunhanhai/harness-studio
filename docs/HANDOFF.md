@@ -37,6 +37,8 @@
 
 ### 2026-11-06 发布候选准备
 
+用户随后明确要求「该发布发布，发布完以后继续更新」，授权本版发布及后续上游研究和优化。按此决定开始精确 main/tag 发布流程，安装升级与人工键盘保持 pending 并在发行说明中披露；不再以未收到人工结果推迟本次发布。Gitee v0.1.7 的具体附件清理单独待确认，不能从发布授权推定旧包删除授权。
+
 `package.json` 与 lock 两处根版本已升为 `0.1.12`，CHANGELOG 已整理为候选；README 仍指向已公开的 v0.1.11。重新构建后在 `.tools/v0.1.12-staging` 独立打包，`--publish never`。Setup 104,020,601 bytes、Portable 103,751,067 bytes，合计 207,771,668 bytes；清单两处 SHA-512 / 大小与 Setup 一致，blockmap 4,979 个块覆盖完整 Setup。app.asar SHA-256 为 `bb37ffb5f3a3b4de6a93681beeca6e2e5b9396afe5b73d378916981fa36450ec`。正式 `npm run verify:release` 校验通过，报告 `.tools/v0.1.12-artifacts.json`；全部 6 个应用文件与真实模型验收 `electron-L0Hpgp` 完全一致，未重复付费请求。
 
 本机 v0.1.11 程序已完整备份到 `.tools/v0.1.12-install-backup/program`（25 文件，340,911,970 bytes），逐文件核对原件/备份 hash；四项用户状态和两处快捷方式参数也已备份。实际 NSIS 自动启动停在 Windows「Open File - Security Warning」，尚未启动安装器，已结束本次等待进程。已请求用户手动确认并安装，升级验证仍 pending，不能把文件备份或打包校验算作安装通过。
