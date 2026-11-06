@@ -335,7 +335,9 @@ export default function Palette(): React.JSX.Element {
   const execute = (item: PaletteItem | undefined): void => {
     if (!item) return
     close()
-    void item.run()
+    void Promise.resolve().then(() => item.run()).catch((error) => {
+      window.studio.studio.toast(error instanceof Error ? error.message : String(error), 'error')
+    })
   }
 
   const onKeyDown = (event: React.KeyboardEvent): void => {

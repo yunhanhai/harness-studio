@@ -23,7 +23,7 @@ import {
   Wrench,
   Zap
 } from 'lucide-react'
-import type { ConversationFontSize, InsightsSettings, LanguageSetting, RuntimeSettings, UpdateResult } from '@shared/types'
+import type { ConversationFontSize, InsightsSettings, LanguageSetting, RuntimeSettings, Settings, UpdateResult } from '@shared/types'
 import { ACCENTS, CONVERSATION_FONT_SIZES, DOCS_URL, GITEE_URL, GITHUB_URL, RELEASES_URL } from '@shared/defaults'
 import { useApp } from '../store'
 import { t as translateNow, useI18n } from '../lib/i18n'
@@ -163,10 +163,22 @@ export function SettingsPage(): React.JSX.Element {
 
   const active = (section as SectionId) || 'general'
 
+  const saveShortcut = async (key: keyof Settings['shortcuts'], input: HTMLInputElement): Promise<void> => {
+    const value = input.value
+    await saveSettings({ shortcuts: { [key]: value } })
+    // A failed blur save must not leave an unsaved shortcut looking committed.
+    // Preserve any newer edit made while this request was pending.
+    if (input.value === value) input.value = useApp.getState().settings?.shortcuts[key] ?? settings.shortcuts[key]
+  }
+
   const saveRuntimeDraft = async (): Promise<void> => {
     if (!runtimeDraft) return
-    await saveSettings({ runtime: runtimeDraft })
-    await refreshRuntime()
+    if (!await saveSettings({ runtime: runtimeDraft })) return
+    try { await refreshRuntime() }
+    catch (error) {
+      toast(error instanceof Error ? error.message : String(error), 'error')
+      return
+    }
     toast(translateNow('pages.settings.runtimeSaved'), 'success')
   }
 
@@ -182,7 +194,7 @@ export function SettingsPage(): React.JSX.Element {
       const index = trimmed.indexOf('=')
       env[trimmed.slice(0, index).trim()] = trimmed.slice(index + 1).trim()
     }
-    await saveSettings({ runtime: { ...settings.runtime, extraArgs: args, env } })
+    if (!await saveSettings({ runtime: { ...settings.runtime, extraArgs: args, env } })) return
     toast(translateNow('pages.settings.advancedSaved'), 'success')
   }
 
@@ -348,21 +360,21 @@ export function SettingsPage(): React.JSX.Element {
                   <input
                     className="input mono"
                     defaultValue={settings.shortcuts.toggleWindow}
-                    onBlur={(event) => void saveSettings({ shortcuts: { ...settings.shortcuts, toggleWindow: event.target.value } })}
+                    onBlur={(event) => void saveShortcut('toggleWindow', event.currentTarget)}
                   />
                 </Row>
                 <Row title={t('pages.settings.openPalette')} stacked>
                   <input
                     className="input mono"
                     defaultValue={settings.shortcuts.palette}
-                    onBlur={(event) => void saveSettings({ shortcuts: { ...settings.shortcuts, palette: event.target.value } })}
+                    onBlur={(event) => void saveShortcut('palette', event.currentTarget)}
                   />
                 </Row>
                 <Row title={t('pages.settings.globalQuickAsk')} desc={t('pages.settings.globalQuickAskDesc')} stacked>
                   <input
                     className="input mono"
                     defaultValue={settings.shortcuts.quickAsk}
-                    onBlur={(event) => void saveSettings({ shortcuts: { ...settings.shortcuts, quickAsk: event.target.value } })}
+                    onBlur={(event) => void saveShortcut('quickAsk', event.currentTarget)}
                   />
                 </Row>
               </Card>
@@ -593,7 +605,7 @@ export function SettingsPage(): React.JSX.Element {
                     className="button button-primary button-small"
                     onClick={async () => {
                       if (!insightsDraft) return
-                      await saveSettings({ insights: insightsDraft })
+                      if (!await saveSettings({ insights: insightsDraft })) return
                       toast(translateNow('pages.settings.insightsSaved'), 'success')
                     }}
                   >
@@ -1064,9 +1076,8 @@ export function SettingsPage(): React.JSX.Element {
             </button>
             <button
               className="button button-danger"
-              onClick={() => {
-                void resetSettings()
-                setResetOpen(false)
+              onClick={async () => {
+                if (await resetSettings()) setResetOpen(false)
               }}
             >
               {t('pages.settings.restoreDefaults')}

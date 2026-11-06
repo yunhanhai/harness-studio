@@ -29,6 +29,16 @@ Harness Studio 是一个 Electron 外壳，不重写模型能力，也不复制 
 - 渲染进程没有 Node 权限；`nodeIntegration`、`contextIsolation`、`sandbox` 均按 Electron 安全推荐配置。
 - Webview 使用 `persist:harness-studio` 分区，只允许加载当前 Host 的 origin；新窗口和跨 origin 导航一律交给系统浏览器。
 
+## 本地数据保护
+
+`src/main/store.ts` 的 `JsonStore` 管理 `settings.json`、`workspaces.json`、`prompts.json` 和 `quickask-recent.json`。读取成功时只归一化内存，不重写磁盘；只有 `ENOENT` 才以独占创建方式初始化默认值。读取、解析、根类型或归一化失败时保留原文件，并锁住该 store 的写入，直到成功重新加载。
+
+每个 store 将加载和修改串行化。更新函数取得上次成功保存值的副本；写入唯一临时文件并完成替换后，才提交内存和通知订阅者。写入失败向调用者抛出 `StorePersistenceError`，保留旧文件、旧内存与可重试队列。调用者或订阅者修改取得的对象不会绕过持久化，某个订阅者抛错也不会把已经完成的保存误报为失败。设置 IPC 在队列内合并 patch，保留并发设置和窗口位置更新。
+
+`store-errors.ts` 在所有启动加载都结束后处理异常，提供中英文的重试、打开数据目录和退出选项；恢复前不创建应用窗口或 Host。错误只展示文件路径、已知故障类别和处理方法，不展示 JSON 内容或解析器原文。主进程后台保存错误使用可关闭的常驻提示；交互式保存失败保留编辑状态，不显示成功消息或关闭删除/重置确认。工作区书签与最近项目偏好分别保存；后者失败会提示，但不会把已完成的导航或书签操作误报为失败。快速提问的历史记录失败也不会改变已经发送/填入的结果或触发重发。
+
+这是单个进程内的读写保护，不是跨文件事务、外部编辑冲突检测或断电恢复方案。首次创建中途失败留下的文件同样保留，需要修复或从备份恢复后重试；本功能不会自动删除、修复或覆盖损坏原件。验收范围见 [ACCEPTANCE.md](ACCEPTANCE.md)。
+
 ## 界面语言
 
 `Settings.language` 保存 `system / zh-CN / en-US`，旧文件缺字段或含无效值时回到 `system`。主进程通过 `app.getLocale()` 解析系统语言：中文区域使用简体中文，其余区域使用英文；`AppInfo.systemLocale` 将同一个系统值交给渲染窗口，避免 Electron 的默认浏览器语言与 OS 不一致。

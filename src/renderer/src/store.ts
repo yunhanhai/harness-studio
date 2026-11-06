@@ -10,6 +10,7 @@ import type {
   PromptItem,
   RuntimeInfo,
   Settings,
+  SettingsPatch,
   StudioAction,
   ViewId,
   Workspace
@@ -82,8 +83,8 @@ interface AppState {
   toast: (message: string, kind?: ToastItem['kind']) => void
   stickyToast: (message: string, kind?: ToastItem['kind'], action?: ToastItem['action']) => void
   dismissToast: (id: number) => void
-  saveSettings: (patch: Partial<Settings>) => Promise<void>
-  resetSettings: () => Promise<void>
+  saveSettings: (patch: SettingsPatch) => Promise<boolean>
+  resetSettings: () => Promise<boolean>
   loadInsights: (force?: boolean) => Promise<void>
   revealSession: (id: string) => Promise<void>
   refreshRuntime: () => Promise<void>
@@ -100,7 +101,7 @@ interface AppState {
   stopHost: () => Promise<void>
   restartHost: () => Promise<void>
   savePrompt: (input: Pick<PromptItem, 'title' | 'content' | 'tags'> & { id?: string }) => Promise<boolean>
-  deletePrompt: (id: string) => Promise<void>
+  deletePrompt: (id: string) => Promise<boolean>
   usePrompt: (item: PromptItem) => Promise<void>
   clearLogs: () => Promise<void>
   scanInstances: () => Promise<void>
@@ -445,20 +446,28 @@ export const useApp = create<AppState>((set, get) => ({
 
   saveSettings: async (patch) => {
     const current = get().settings
-    if (!current) return
+    if (!current) return false
     try {
       const next = await window.studio.settings.save(patch)
       set({ settings: next })
       refreshDocumentTheme(next)
+      return true
     } catch (error) {
       get().toast(error instanceof Error ? error.message : String(error), 'error')
+      return false
     }
   },
   resetSettings: async () => {
-    const next = await window.studio.settings.reset()
-    set({ settings: next })
-    refreshDocumentTheme(next)
-    get().toast(t('core.settingsReset'), 'success')
+    try {
+      const next = await window.studio.settings.reset()
+      set({ settings: next })
+      refreshDocumentTheme(next)
+      get().toast(t('core.settingsReset'), 'success')
+      return true
+    } catch (error) {
+      get().toast(error instanceof Error ? error.message : String(error), 'error')
+      return false
+    }
   },
 
   loadInsights: async (force = false) => {
@@ -524,18 +533,26 @@ export const useApp = create<AppState>((set, get) => ({
     }
   },
   removeWorkspace: async (id) => {
-    await window.studio.workspaces.remove(id)
-    for (const tab of get().tabs) {
-      if (tab.pendingWorkspaceId === id) cancelWorkspaceRequest(tab.id)
+    try {
+      await window.studio.workspaces.remove(id)
+      for (const tab of get().tabs) {
+        if (tab.pendingWorkspaceId === id) cancelWorkspaceRequest(tab.id)
+      }
+      set((state) => ({ tabs: state.tabs.map((tab) => ({
+        ...tab,
+        workspaceId: tab.workspaceId === id ? undefined : tab.workspaceId,
+        pendingWorkspaceId: tab.pendingWorkspaceId === id ? undefined : tab.pendingWorkspaceId
+      })) }))
+    } catch (error) {
+      get().toast(error instanceof Error ? error.message : String(error), 'error')
     }
-    set((state) => ({ tabs: state.tabs.map((tab) => ({
-      ...tab,
-      workspaceId: tab.workspaceId === id ? undefined : tab.workspaceId,
-      pendingWorkspaceId: tab.pendingWorkspaceId === id ? undefined : tab.pendingWorkspaceId
-    })) }))
   },
   updateWorkspace: async (id, patch) => {
-    await window.studio.workspaces.update(id, patch)
+    try {
+      await window.studio.workspaces.update(id, patch)
+    } catch (error) {
+      get().toast(error instanceof Error ? error.message : String(error), 'error')
+    }
   },
   openPlugins: async () => {
     const state = get()
@@ -682,13 +699,23 @@ export const useApp = create<AppState>((set, get) => ({
     }
   },
   deletePrompt: async (id) => {
-    await window.studio.prompts.remove(id)
-    get().toast(t('core.promptDeleted'), 'success')
+    try {
+      await window.studio.prompts.remove(id)
+      get().toast(t('core.promptDeleted'), 'success')
+      return true
+    } catch (error) {
+      get().toast(error instanceof Error ? error.message : String(error), 'error')
+      return false
+    }
   },
   usePrompt: async (item) => {
-    await window.studio.clipboard.write(item.content)
-    await window.studio.prompts.use(item.id)
-    get().toast(t('core.promptCopied'), 'success')
+    try {
+      await window.studio.clipboard.write(item.content)
+      await window.studio.prompts.use(item.id)
+      get().toast(t('core.promptCopied'), 'success')
+    } catch (error) {
+      get().toast(error instanceof Error ? error.message : String(error), 'error')
+    }
   },
   clearLogs: async () => {
     await window.studio.host.clearLogs()

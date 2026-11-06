@@ -20,6 +20,7 @@ Gitee 清理仅执行了直接授权的 v0.1.7 Setup `3554461` 与 Portable `355
 
 ```powershell
 npm run typecheck
+npm run test:store
 npm run test:workspace-navigation
 npm run test:plugin-navigation
 npm run test:model-navigation
@@ -35,6 +36,12 @@ npm run build
 技能测试包含保存/删除/恢复时的文件 API 故障、新服务实例重试、外部编辑保护，以及 Windows 指令文件大小写和历史备份恢复。它不代表断电或磁盘硬件故障测试。Gitee 测试只使用临时本地 Git 仓库，执行工作流的实际同步脚本。
 
 `test:runtime` 是发布后新增的 `Unreleased` 检查，使用内存中的程序包元数据与模拟 Node 探测验证版本兼容分支；它不启动 DSH，也不验证完整依赖树或模型调用能力。
+
+## 本地数据保护（Unreleased）
+
+`npm run test:store` 包含 18 组真实临时文件/注入 I/O 故障、10 组执行真实主进程入口和 IPC 的测试、10 组 preload 与 renderer 检查。覆盖损坏 JSON、错误根类型、权限不足、磁盘满、部分写入、替换失败、首次创建竞争、内存隔离、并发保存、失败后重试与新实例重新加载。主进程检查还覆盖启动修复/重试/退出、后台错误提示、书签与最近项目分别保存，以及快速提问已发送时历史写入失败；renderer 检查确认不误报成功、不丢失草稿或关闭待重试的确认框。
+
+2026-11-06 本地类型检查、构建/preload 和 231 项/组仓库回归已通过。实际 Electron 的 5 项检查使用独立 userData 与 DSH_HOME、关闭 Host 和全局快捷键，通过 Windows 只读文件触发真实保存错误；中英文界面均保留原件、内存与高级设置草稿，只显示错误，解除只读后重试成功，正常退出并重启后读回保存结果。最终报告 `.qa-store-electron/run-29RVRj/report/report.json`，同目录保留四张截图及构建哈希。该记录使用当前 `out/` 的真实 Electron/preload/IPC，不代表已安装包升级、断电或人工键盘验收；启动恢复弹窗的分支由上述主进程测试验证。
 
 ## 官方 DSH 兼容检查
 

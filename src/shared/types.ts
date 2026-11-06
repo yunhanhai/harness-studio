@@ -101,6 +101,11 @@ export interface TabSettings {
   limit: number
 }
 
+/** Object groups accept individual fields so concurrent edits need not send stale siblings. */
+export type SettingsPatch = {
+  [Key in keyof Settings]?: Settings[Key] extends object ? Partial<Settings[Key]> : Settings[Key]
+}
+
 export interface Settings {
   version: number
   language: LanguageSetting
@@ -418,7 +423,7 @@ export interface StudioApi {
   }
   settings: {
     get(): Promise<Settings>
-    save(patch: Partial<Settings>): Promise<Settings>
+    save(patch: SettingsPatch): Promise<Settings>
     reset(): Promise<Settings>
     onChange(cb: (settings: Settings) => void): () => void
     onWindowState(cb: (state: WindowState) => void): () => void

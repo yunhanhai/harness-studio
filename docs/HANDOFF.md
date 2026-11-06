@@ -7,7 +7,7 @@
 | 项目 | 值 |
 | --- | --- |
 | 版本 | `0.1.12` 已在 GitHub / Gitee 公开发布；本机安装记录仍为 `0.1.11.0`，升级和人工键盘待确认 |
-| 开发分支 | `main`；发布后的运行时兼容检测属于 `Unreleased`，不修改已发布标签或附件 |
+| 开发分支 | `main`；发布后的运行时兼容检测与本地数据保护属于 `Unreleased`，不修改已发布标签或附件 |
 | 本地 HEAD | `git log --oneline -1` 确认 |
 | 工作区 | `git status` 确认 |
 | 已发布 | GitHub：v0.1.0～v0.1.12；Gitee：v0.1.0～v0.1.4、v0.1.6～v0.1.12（v0.1.5 只有标签；v0.1.0 / v0.1.1 / v0.1.2 / v0.1.3 / v0.1.4 / v0.1.6 / v0.1.7 仅保留说明与源码包，旧安装包已移除并备份） |
@@ -53,6 +53,16 @@ Gitee 本次只删除了直接授权的 v0.1.7 Setup `3554461` 与 Portable `355
 上游 `latest/next` 已为需要 Node.js >=24.9.0 的 DSH `0.2.2-rc.1`。v0.1.12 已将一键安装固定到实际验收的 `0.2.1-rc.2` + Node 22；发布后主线进一步读取**用户当前选择的 DSH 程序包**的 `engines.node`，不兼容、声明无效或元数据不可读时阻止启动，在运行时设置和启动台显示原因，保存运行时配置后重新检测。无 Node 声明的旧包维持原行为。检测不升级用户运行时，也不验证整个依赖树和插件能力，依据与范围见 [UPSTREAM_REVIEW.md](UPSTREAM_REVIEW.md)。
 
 已合入运行时兼容提交 `23c0701`、锁文件整理 `b98fb19` 及诊断提示修正 `5404616`；根主线的 `npm ci`、类型检查、构建/preload、运行时 10 组及语言 11 组回归已通过。代码已同步两平台，GitHub 提交 `58eebf6f376342d6ece1bab0beb02c82bcfbf1cc`（本地 `5a2d02e`）的 [完整 CI](https://github.com/yunhanhai/harness-studio/actions/runs/42164874020) 与 [DSH 0.2.1-rc.2 / Node 22 兼容检查](https://github.com/yunhanhai/harness-studio/actions/runs/42164874071) 均成功，后者包括实际 Electron 界面。工作流支持独立选择 Node 22 或 24，默认基线不变。已发布的 v0.1.12 安装包不包含这些 `Unreleased` 检测改动。
+
+## 发布后开发：本地数据保护（Unreleased）
+
+2026-11-06 已接续中断的 `codex/store-data-protection` 工作，完成设置、工作区、提示词和最近提问的读写保护。读取/解析/根类型异常保留原文件，仅文件缺失时独占创建默认数据；启动提供重试、打开数据目录和退出，成功加载前不创建窗口或 Host。保存先完成文件替换再提交内存与通知，失败显示原因并保留已保存状态；并发设置 patch 在队列内合并，防止覆盖其他刚保存的设置。
+
+后台主题、缩放、窗口位置和最近项目保存失败会提示。设置保存、重置和提示词删除失败不会误报成功或关闭待重试的确认框；草稿保留。工作区书签操作与最近项目偏好分别报告，快速提问已经发送/填入后仍保持真实结果，不因历史保存失败而重发。错误文案包含处理方法，不携带配置内容；preload 移除 Electron 内部调用前缀，提示分行显示。
+
+本地 `typecheck`、构建/preload、231 项/组回归通过，其中新增 `test:store` 为 18 组存储 + 10 组主进程 + 10 组界面检查，已接入 CI 和发布工作流。实际 Electron 的中英文只读文件失败、重试与重启 5 项检查通过，最终报告 `.qa-store-electron/run-29RVRj/report/report.json`，截图与构建哈希同目录；两次 Electron 启动均正常退出。云端检查与同步的精确提交以 `.tools/store-data-protection-status.json` 为准，不将旧版 CI 成功当作本次结果。
+
+本功能不提供跨文件事务、外部编辑冲突检测或断电恢复；不自动修改损坏原件。已发布的 v0.1.12 安装包尚不包含本轮改动，安装升级与人工键盘验收仍按原记录保持 pending。下一项开发是会话中断恢复验收，参见 [UPSTREAM_REVIEW.md](UPSTREAM_REVIEW.md)。
 
 ## 历史过程：v0.1.12 候选与功能验收
 
@@ -207,7 +217,8 @@ v0.1.12 模型入口与 DSH 技能中心已在 GitHub 与 Gitee 发布，全部�
 安装升级仍待确认，本机安装记录为 0.1.11.0；两项人工键盘检查仍 pending，原隔离窗口和 Host 已无进程。
 用户“继续”、自动输入或窗口关闭均不算人工通过；按 docs/ACCEPTANCE.md 单独补验。
 运行时检测优化已同步两平台，完整 CI 和 DSH 0.2.1-rc.2 / Node22 兼容工作流通过；Node 24 / DSH 0.2.2-rc.1 实验的技能与适配器通过，Electron 第二标签独立会话仍超时，详见 docs/UPSTREAM_REVIEW.md。
-下一迭代优先处理 JsonStore 读取异常时保留原件和写入失败提示，再补会话中断恢复验收；不重复发布或移动已有标签。
+JsonStore 本地数据保护已完成，38 组专用回归和 5 项隔离 Electron 验收通过；本轮主线同步与云端检查以 .tools/store-data-protection-status.json 为准。
+下一迭代优先补会话中断恢复验收；不重复发布或移动已有标签。
 接下来做：<写清楚新需求>。
 ```
 
@@ -399,6 +410,7 @@ scripts/
 
 ```powershell
 npm run typecheck
+npm run test:store
 npm run test:workspace-navigation
 npm run test:plugin-navigation
 npm run test:i18n
@@ -438,7 +450,7 @@ node scripts/app-shot.mjs .run-test/shot.png "@.run-test/expr.js"
 
 v0.1.12 双平台发布和完整公开下载核验已完成，不再重跑发布或请求已完成的 v0.1.7 两件附件清理授权。按以下顺序继续：
 
-1. 当前 `Unreleased` 运行时检测已同步主线，完整 CI 与基线 DSH compatibility 通过。下一迭代优先修复 `JsonStore` 将读取/解析失败统一回退并写默认值、吞掉写入错误的问题，先设计原件保留、错误提示与内存回滚，再补隔离故障测试；详见近期反馈调研。
+1. 当前 `Unreleased` 本地数据保护已完成，原件保留、启动恢复、写入失败提示和失败重试都有回归；本轮同步与云端结果见 `.tools/store-data-protection-status.json`。下一迭代按近期反馈调研补会话中断恢复验收，覆盖工具调用中途停止及重启读取，不自动改写会话或重发工具。
 2. 用户完成安装后核验安装版本、用户状态和快捷方式，再单独记录双向切标签输入及 Enter/取消的人工结果。当前仍 pending，原隔离测试窗口已不在运行；需要时按 [ACCEPTANCE.md](ACCEPTANCE.md) 重新创建隔离会话。
 3. 按 [UPSTREAM_REVIEW.md](UPSTREAM_REVIEW.md) 在独立 Node 24.9+ 环境实验 DSH `0.2.2-rc.1`，覆盖模型表单、技能、工作区/标签和工具能力。结果充分前不移动默认 `0.2.1-rc.2` + Node 22 基线，也不直接升级用户日常运行时。
 

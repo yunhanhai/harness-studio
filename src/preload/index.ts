@@ -3,7 +3,14 @@ import { IPC } from '@shared/channels'
 import type { StudioApi } from '@shared/types'
 
 function invoke<T>(channel: string, ...args: unknown[]): Promise<T> {
-  return ipcRenderer.invoke(channel, ...args) as Promise<T>
+  return ipcRenderer.invoke(channel, ...args).catch((error: unknown) => {
+    // Electron adds transport details before the actionable main-process error.
+    const prefix = `Error invoking remote method '${channel}': `
+    if (error instanceof Error && error.message.startsWith(prefix)) {
+      throw new Error(error.message.slice(prefix.length).replace(/^Error: /, ''))
+    }
+    throw error
+  }) as Promise<T>
 }
 
 function subscribe<T>(channel: string, callback: (payload: T) => void): () => void {

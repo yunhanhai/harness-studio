@@ -61,8 +61,7 @@ export default function App(): React.JSX.Element {
       const result = host.state === 'ready' ? await openModels(choice) : { status: 'opened' as const }
       if (sequence !== modelSetupSequence.current) return
       if (result.status === 'opened' || choice === 'later') {
-        await saveSettings({ modelSetupSeen: true })
-        setModelSetupOpen(false)
+        if (await saveSettings({ modelSetupSeen: true })) setModelSetupOpen(false)
       } else if (result.status !== 'cancelled') setModelSetupError(result.message)
     } catch (error) { if (sequence === modelSetupSequence.current) setModelSetupError(String(error)) }
     finally { if (sequence === modelSetupSequence.current) setModelSetupBusy(false) }
@@ -74,7 +73,7 @@ export default function App(): React.JSX.Element {
     setModelSetupOpen(false)
     setModelSetupBusy(false)
     setModelSetupError('')
-    void saveSettings({ modelSetupSeen: true }).catch(error => useApp.getState().toast(String(error), 'error'))
+    void saveSettings({ modelSetupSeen: true })
   }
 
   // Only sees keys while focus is in Studio's own DOM. Keys typed inside a

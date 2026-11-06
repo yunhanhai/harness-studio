@@ -32,6 +32,7 @@ $env:ELECTRON_MIRROR = "https://github.com/electron/electron/releases/download/"
 | `npm run clean:dist` | 清理预览副本、旧安装包与 `win-unpacked` |
 | `npm run status` | 查看磁盘占用、检查是否有重复安装 |
 | `npm run typecheck` | 主进程 + 渲染进程类型检查 |
+| `npm run test:store` | 本地数据保护、启动恢复、写入失败与界面反馈回归 |
 | `npm run test:plugin-navigation` | 插件管理入口、取消与前端等待回归 |
 | `npm run test:skills` | 技能资源管理、写入失败恢复与 Host 上下文回归 |
 | `npm run test:gitee-sync` | 在临时本地仓库验证 main 同步与标签保留 |

@@ -2646,6 +2646,7 @@ select.input {
   -webkit-user-select: text;
   cursor: text;
   line-height: 1.65;
+  white-space: pre-line;
   overflow-wrap: anywhere;
 }
 .toast-body {

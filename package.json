@@ -28,6 +28,7 @@
     "test:conversation-font": "node scripts/test-conversation-font-settings.mjs && node scripts/test-conversation-font-preload.mjs",
     "test:i18n": "node scripts/test-i18n.mjs",
     "test:runtime": "node scripts/test-runtime-compatibility.mjs",
+    "test:store": "node scripts/test-store-persistence.mjs && node scripts/test-store-main.mjs && node scripts/test-store-renderer.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "preview:ui": "node scripts/preview-server.mjs",
     "dist": "electron-vite build && node scripts/check-preload.mjs && electron-builder --win",

@@ -37,6 +37,9 @@ jobs:
       - name: Runtime compatibility regressions
         run: npm run test:runtime
 
+      - name: Local data persistence regressions
+        run: npm run test:store
+
       - name: Workspace navigation regressions
         run: npm run test:workspace-navigation
 

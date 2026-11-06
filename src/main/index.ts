@@ -29,6 +29,7 @@ import type {
   PromptItem,
   RuntimeInfo,
   Settings,
+  SettingsPatch,
   StudioAction,
   TabCommand,
   QuickAskResult,
@@ -37,7 +38,8 @@ import type {
 } from '@shared/types'
 import { log, logError, logsDirectory } from './logger'
 import { listDshProcesses, killProcesses } from './instances'
-import { createStores, deepMerge, loadStores, mergeSettings, type Stores } from './store'
+import { createStores, deepMerge, mergeSettings, StorePersistenceError, type Stores } from './store'
+import { loadStoresWithRecovery, storeErrorMessage, storeIpcError } from './store-errors'
 import { detectRuntime, resolveDshHome } from './runtime/detect'
 import { HostManager } from './runtime/host'
 import { RuntimeInstaller } from './runtime/installer'
@@ -144,6 +146,23 @@ function waitForGuest(timeoutMs = 15_000): Promise<Electron.WebContents | null> 
 const settings = (): Settings => stores.settings.get()
 const workspaceList = (): Workspace[] => stores.workspaces.get()
 const promptList = (): PromptItem[] => stores.prompts.get()
+
+function reportBackgroundStoreError(error: unknown, context?: string): void {
+  const detail = error instanceof StorePersistenceError ? storeErrorMessage(error) : t('main.storeBackgroundFailed')
+  logError('store-background', error instanceof StorePersistenceError ? new Error(detail) : error)
+  sendMain(IPC.toast, { message: context ? `${context}\n\n${detail}` : detail, kind: 'error', sticky: true })
+}
+
+async function rememberWorkspace(id: string): Promise<void> {
+  // Recent-project metadata must not report an already completed navigation as
+  // failed, or prevent a valid workspace from starting when its disk is full.
+  await stores.settings.update((value) => ({ ...value, lastWorkspaceId: id }))
+    .then((value) => broadcast(IPC.settingsChanged, value))
+    .catch(reportBackgroundStoreError)
+  await stores.workspaces.update((list) => list.map((item) => item.id === id ? { ...item, lastOpenedAt: Date.now() } : item))
+    .then((value) => broadcast(IPC.workspacesChanged, value))
+    .catch(reportBackgroundStoreError)
+}
 
 function isHttp(url: string): boolean {
   return /^https?:\/\//i.test(url)
@@ -287,7 +306,7 @@ async function submitQuickAsk(
     const trimmed = text.trim()
     await stores.quickAskRecent
       .update((current) => [trimmed, ...current.filter((item) => item !== trimmed)].slice(0, limit))
-      .catch(() => undefined)
+      .catch((error) => reportBackgroundStoreError(error, t(result.status === 'sent' ? 'main.quickAskSentHistoryFailed' : 'main.quickAskInsertedHistoryFailed')))
     if (reveal) showMain()
     hideQuickAsk()
     sendMain(IPC.toast, {
@@ -365,10 +384,7 @@ async function startHost(workspaceId?: string): Promise<HostStatus> {
   const current = host.getStatus()
   if (current.state === 'ready' && current.workspaceId === workspace.id) return current
 
-  await stores.settings.update((value) => ({ ...value, lastWorkspaceId: workspace.id }))
-  await stores.workspaces.update((list) =>
-    list.map((item) => (item.id === workspace.id ? { ...item, lastOpenedAt: Date.now() } : item))
-  )
+  await rememberWorkspace(workspace.id)
 
   const hostOptions = {
     runtime: info,
@@ -675,10 +691,15 @@ function confirmSend(request: { kind?: string; preview?: string; queued?: number
   return choice === 0
 }
 
-function registerIpc(): void {  const handle = (channel: string, fn: (...args: never[]) => unknown): void => {
+function registerIpc(): void {
+  const handle = (channel: string, fn: (...args: never[]) => unknown): void => {
     ipcMain.handle(channel, async (event, ...args) => {
       assertTrusted(event)
-      return fn(...(args as never[]))
+      try {
+        return await fn(...(args as never[]))
+      } catch (error) {
+        throw storeIpcError(error)
+      }
     })
   }
   const on = (channel: string, fn: (...args: never[]) => void): void => {
@@ -752,10 +773,7 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
     }
     const result = await workspaceNavigator.open(guest, workspace)
     if (result.status === 'opened' && result.workspaceId) {
-      const next = await stores.settings.update((value) => ({ ...value, lastWorkspaceId: result.workspaceId! }))
-      await stores.workspaces.update((list) => list.map((item) => item.id === result.workspaceId ? { ...item, lastOpenedAt: Date.now() } : item))
-      broadcast(IPC.settingsChanged, next)
-      broadcast(IPC.workspacesChanged, workspaceList())
+      await rememberWorkspace(result.workspaceId)
     }
     return result
   })
@@ -863,15 +881,13 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
   })
 
   handle(IPC.settingsGet, () => settings())
-  handle(IPC.settingsSave, async (patch: Partial<Settings>) => {
-    const next = mergeSettings(DEFAULT_SETTINGS, deepMerge(settings(), patch))
-    await stores.settings.set(next)
+  handle(IPC.settingsSave, async (patch: SettingsPatch) => {
+    const next = await stores.settings.update((current) => mergeSettings(DEFAULT_SETTINGS, deepMerge(current, patch)))
     applySettings(next)
     return next
   })
   handle(IPC.settingsReset, async () => {
-    const next = mergeSettings(DEFAULT_SETTINGS, { window: settings().window })
-    await stores.settings.set(next)
+    const next = await stores.settings.update((current) => mergeSettings(DEFAULT_SETTINGS, { window: current.window }))
     applySettings(next)
     return next
   })
@@ -961,7 +977,7 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
     if (!existsSync(normalized)) throw new Error(t('main.folderMissing'))
     const existing = workspaceList().find((item) => item.path.toLowerCase() === normalized.toLowerCase())
     if (existing) return existing
-    const workspace: Workspace = {
+    let workspace: Workspace = {
       id: `ws_${randomUUID()}`,
       name: basename(normalized) || normalized,
       path: normalized,
@@ -970,17 +986,24 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
       createdAt: Date.now(),
       lastOpenedAt: 0
     }
-    await stores.workspaces.update((list) => [workspace, ...list])
-    const nextSettings = await stores.settings.update((value) =>
+    const list = await stores.workspaces.update((list) => {
+      const existing = list.find((item) => item.path.toLowerCase() === normalized.toLowerCase())
+      if (existing) { workspace = existing; return list }
+      workspace = { ...workspace, color: ACCENTS[list.length % ACCENTS.length] }
+      return [workspace, ...list]
+    })
+    broadcast(IPC.workspacesChanged, list)
+    await stores.settings.update((value) =>
       value.lastWorkspaceId ? value : { ...value, lastWorkspaceId: workspace.id }
     )
-    broadcast(IPC.workspacesChanged, workspaceList())
-    broadcast(IPC.settingsChanged, nextSettings)
+      .then((value) => broadcast(IPC.settingsChanged, value))
+      .catch(reportBackgroundStoreError)
     return workspace
   })
   handle(IPC.workspacesRemove, async (id: string) => {
-    await stores.workspaces.update((list) => list.filter((item) => item.id !== id))
-    const nextSettings = await stores.settings.update((value) => {
+    const list = await stores.workspaces.update((list) => list.filter((item) => item.id !== id))
+    broadcast(IPC.workspacesChanged, list)
+    await stores.settings.update((value) => {
       const remaining = workspaceList()
       return {
         ...value,
@@ -988,8 +1011,8 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
           value.lastWorkspaceId === id ? (remaining[0]?.id ?? '') : value.lastWorkspaceId
       }
     })
-    broadcast(IPC.workspacesChanged, workspaceList())
-    broadcast(IPC.settingsChanged, nextSettings)
+      .then((value) => broadcast(IPC.settingsChanged, value))
+      .catch(reportBackgroundStoreError)
     return workspaceList()
   })
   handle(IPC.workspacesUpdate, async (id: string, patch: Partial<Pick<Workspace, 'name' | 'pinned' | 'color'>>) => {
@@ -1094,6 +1117,7 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
       void stores.settings
         .update((value) => ({ ...value, theme: nextTheme }))
         .then((value) => applySettings(value))
+        .catch(reportBackgroundStoreError)
       return
     }
     sendAction(action)
@@ -1119,9 +1143,12 @@ function registerIpc(): void {  const handle = (channel: string, fn: (...args: n
   handle(IPC.zoomGet, () => mainWindow?.webContents.getZoomFactor() ?? 1)
   on(IPC.zoomSet, (factor: number) => {
     const clamped = Math.min(2, Math.max(0.5, factor))
-    mainWindow?.webContents.setZoomFactor(clamped)
     void stores.settings.update((value) => ({ ...value, zoomFactor: clamped }))
-    sendMain(IPC.zoomChanged, clamped)
+      .then((value) => {
+        applySettings(value)
+        sendMain(IPC.zoomChanged, value.zoomFactor)
+      })
+      .catch(reportBackgroundStoreError)
   })
 }
 
@@ -1135,6 +1162,7 @@ function createShellWindows(): void {
     startMinimized: settings().startMinimized,
     onBounds: (bounds) => {
       void stores.settings.updateSilent((value) => ({ ...value, window: { ...value.window, ...bounds } }))
+        .catch(reportBackgroundStoreError)
     },
     onClose: handleClose,
     onState: (state) => sendMain(IPC.windowState, state)
@@ -1224,7 +1252,11 @@ async function bootstrap(): Promise<void> {
   await app.whenReady()
   app.setAppUserModelId('com.harness.studio')
   stores = createStores(app.getPath('userData'))
-  await loadStores(stores)
+  if (!await loadStoresWithRecovery(stores)) {
+    quitting = true
+    app.quit()
+    return
+  }
   setMainLanguage(settings().language, app.getLocale())
   host = new HostManager()
   workspaceNavigator = new WorkspaceNavigator(workspaceList, (contents) => {
@@ -1357,6 +1389,7 @@ if (!gotLock) {
   void bootstrap().catch((error) => {
     logError('bootstrap', error)
     dialog.showErrorBox(t('main.startupFailed'), error instanceof Error ? error.message : String(error))
+    quitting = true
     app.quit()
   })
 }

@@ -35,7 +35,7 @@ DSH `0.2.2-rc.1` 要求 Node.js >=24.9.0，同步 Cordis 4.1、Loader/Include 1.
 
 | 优先级与反馈 | 与 Studio 的关系及下一步 |
 | --- | --- |
-| 1. 本地状态保护；[#12384 认证失败与 profile 重置](https://github.com/deepseek-ai/deepseek-harness/discussions/12384) | 报告涉及官方 Desktop 的一次非确定恢复事件，不是 Studio 的复现。但独立源码复核发现 `src/main/store.ts` 的 `JsonStore.load()` 对读取/解析异常统一回退并写默认值，`persist()` 吞掉 I/O 错误。下一迭代优先设计仅在文件不存在时初始化、其余错误保留原件、写失败提示和内存状态回滚，并覆盖损坏 JSON、权限错误和重启后的数据保留。尚未修复，不能把 Node 兼容检查视为数据保护。 |
+| 1. 本地状态保护；[#12384 认证失败与 profile 重置](https://github.com/deepseek-ai/deepseek-harness/discussions/12384) | 报告涉及官方 Desktop 的一次非确定恢复事件，不是 Studio 的复现。独立源码复核发现 Studio 的读取异常会覆盖默认值、写入错误被吞掉。本轮已实现原件保留、仅缺失时初始化、启动恢复和保存失败提示；保存成功后才更新内存。38 组专用回归与 5 项真实 Electron 检查通过，属于 Unreleased，范围见 [验收记录](ACCEPTANCE.md#本地数据保护unreleased)。 |
 | 2. 会话中断恢复；[#12179 pending 工具调用导致恢复失败](https://github.com/deepseek-ai/deepseek-harness/discussions/12179) | 报告使用 DSH `0.2.1-rc.2` 与 Chat Completions，和当前基线及协议类别相同，但模型不同。现有 fixture 只覆盖正常工具 ID，未覆盖持久化恢复；应在隔离 Host 中测试空/正常工具 ID、调用中途停止及重启读取，保留原始记录，不自动改写会话或重发工具。 |
 | 3. 自托管模型容量；[#3973 未识别 max_model_len](https://github.com/deepseek-ai/deepseek-harness/discussions/3973) | 新评论指出未识别部署容量可能叠加新版 1M context / 128K output 默认值，属于代码推论，尚无实际请求抓取。现有 adapter fixture 固定 8192/1024 且关闭 discovery；应补 loopback 模型列表、显式容量优先级和请求上限断言。模型宣称的最大值不能直接当作部署容量。 |
 | 4. 托盘失效后的窗口恢复；[#12369 Windows 10 托盘创建失败](https://github.com/deepseek-ai/deepseek-harness/discussions/12369) | 反馈针对官方 Desktop，不能据此判定 Studio 复现。Studio 自建托盘并支持关闭隐藏，已有第二次启动显示主窗口的入口；应验证 Win10/11、Explorer 重启及竖排任务栏下仍可找回窗口。 |
@@ -63,7 +63,7 @@ DSH `0.2.2-rc.1` 要求 Node.js >=24.9.0，同步 Cordis 4.1、Loader/Include 1.
 
 ## 后续验证
 
-1. 运行时版本检测已同步并通过主线 CI 与基线 DSH compatibility。后续首先处理上方确认的本地状态保留问题，并补会话中断恢复验收。已发布的 v0.1.12 标签和附件保持冻结。
+1. 运行时版本检测已同步并通过主线 CI 与基线 DSH compatibility；本地状态保护也已完成，当前同步与云端结果见 `.tools/store-data-protection-status.json`。下一项是会话中断恢复验收。已发布的 v0.1.12 标签和附件保持冻结。
 2. 继续定位 `0.2.2-rc.1` + Node 24 隔离实验中的第二标签独立会话超时，再对需要模型执行的工具/PTC、图像能力单独验收。充分验证后再考虑调整安装基线，不升级用户日常运行时来做实验。
 3. 增加技能根目录部分失败场景。上游新版会跳过失败根、保留其他技能并标记清单不完整，Studio 应验证不可读根不会掩盖其他来源。
 4. 持续核对官方 DOM 合同。新版仍保留 `data-shortcut-modal="settings"`、`settings.launcher`、`settings.section`、`data-conversation-session` 和工作区/新会话入口；这些标记不是永久 API，变动时应先定位适配和等待条件，再修改产品逻辑。

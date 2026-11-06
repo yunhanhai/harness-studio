@@ -211,9 +211,8 @@ export function Prompts(): React.JSX.Element {
             </button>
             <button
               className="button button-danger"
-              onClick={() => {
-                if (pendingDelete) void deletePrompt(pendingDelete.id)
-                setPendingDelete(null)
+              onClick={async () => {
+                if (pendingDelete && await deletePrompt(pendingDelete.id)) setPendingDelete(null)
               }}
             >
               {t('shell.delete')}
