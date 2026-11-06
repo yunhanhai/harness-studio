@@ -156,6 +156,8 @@ export interface RuntimeInfo {
   cliPath?: string
   dshHome?: string
   nodeVersion?: string
+  /** Declared engines.node range from the selected DSH program package. */
+  nodeRequirement?: string
   error?: string
   checkedAt: number
 }

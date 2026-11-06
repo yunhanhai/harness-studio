@@ -29,6 +29,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Runtime compatibility regressions
+        run: npm run test:runtime
+
       - name: Workspace navigation regressions
         run: npm run test:workspace-navigation
 

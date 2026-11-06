@@ -242,6 +242,22 @@ export const mainMessages = {
     "Node.js 无法执行，请检查路径。",
     "Node.js could not be started. Check its path."
   ],
+  "main.nodeVersionInvalid": [
+    "无法识别 Node.js 版本。请在设置 → 运行时检查 Node.js 路径。",
+    "Could not recognize the Node.js version. Check its path in Settings → Runtime."
+  ],
+  "main.nodeEngineInvalid": [
+    "DSH 程序包声明了无效的 Node.js 版本要求。请重新安装该运行时，或在设置 → 运行时选择有效的 DSH 程序包。",
+    "The DSH package declares an invalid Node.js requirement. Reinstall that runtime or select a valid DSH package in Settings → Runtime."
+  ],
+  "main.runtimePackageInvalid": [
+    "无法读取或解析所选 DSH 程序包的 package.json，暂不能确认 Node.js 兼容性。请检查程序包权限或重新安装运行时。",
+    "Could not read or parse the selected DSH package.json to verify Node.js compatibility. Check package permissions or reinstall the runtime."
+  ],
+  "main.nodeEngineMismatch": [
+    "DSH {version} 要求 Node.js {required}，当前检测到 {actual}。请在设置 → 运行时选择兼容的 Node.js，或安装便携运行时。",
+    "DSH {version} requires Node.js {required}; detected {actual}. Choose a compatible Node.js in Settings → Runtime, or install the portable runtime."
+  ],
   "main.dshMissing": [
     "未找到 DeepSeek Harness CLI。可以使用「安装便携运行时」一键部署。",
     "DeepSeek Harness CLI was not found. Use Install portable runtime to set it up."

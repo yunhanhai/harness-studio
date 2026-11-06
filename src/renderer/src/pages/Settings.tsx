@@ -166,6 +166,7 @@ export function SettingsPage(): React.JSX.Element {
   const saveRuntimeDraft = async (): Promise<void> => {
     if (!runtimeDraft) return
     await saveSettings({ runtime: runtimeDraft })
+    await refreshRuntime()
     toast(translateNow('pages.settings.runtimeSaved'), 'success')
   }
 
@@ -625,7 +626,7 @@ export function SettingsPage(): React.JSX.Element {
               <section className="runtime-hero">
                 <div className={`runtime-hero-status ${runtime?.state === 'ready' ? 'ok' : ''}`}>
                   <span className="status-dot" />
-                  {runtime?.state === 'ready' ? t('pages.settings.runtimeReady') : runtime?.state === 'missing' ? t('pages.settings.runtimeMissing') : t('pages.settings.checking')}
+                  {runtime?.state === 'ready' ? t('pages.settings.runtimeReady') : runtime?.state === 'missing' ? t('pages.settings.runtimeMissing') : runtime?.state === 'error' ? t('pages.settings.runtimeError') : t('pages.settings.checking')}
                 </div>
                 <div className="runtime-hero-title">
                   dsh {runtime?.version ?? '—'}
@@ -654,6 +655,7 @@ export function SettingsPage(): React.JSX.Element {
                     {installing ? t('pages.settings.installing') : t('pages.settings.installPortable')}
                   </button>
                 </div>
+                {runtime?.error ? <p className="panel-callout" role="alert">{runtime.error}</p> : null}
                 {installing && install ? (
                   <div className="runtime-install">
                     <div className="runtime-install-head">

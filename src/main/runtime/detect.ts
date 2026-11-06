@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { promisify } from 'node:util'
+import { satisfies, valid, validRange } from 'semver'
 import type { RuntimeInfo, Settings } from '@shared/types'
 
 const execFileAsync = promisify(execFile)
@@ -26,14 +27,27 @@ async function where(executable: string): Promise<string | undefined> {
   }
 }
 
-async function packageVersion(packageDir: string): Promise<string | undefined> {
+interface RuntimePackage {
+  version?: string
+  nodeEngine?: unknown
+  error?: 'manifest' | 'engine'
+}
+
+async function runtimePackage(packageDir: string): Promise<RuntimePackage> {
   try {
     const raw = await readFile(join(packageDir, 'package.json'), 'utf8')
-    const parsed = JSON.parse(raw) as { name?: string; version?: string }
-    if (parsed.name === '@deepseek-ai/dsh' || parsed.name === 'dsh') return parsed.version
-    return parsed.version
+    const parsed = JSON.parse(raw) as { version?: unknown; engines?: unknown } | null
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { error: 'manifest' }
+    const version = typeof parsed.version === 'string' ? parsed.version : undefined
+    if (parsed.engines !== undefined && (!parsed.engines || typeof parsed.engines !== 'object' || Array.isArray(parsed.engines))) {
+      return { version, error: 'engine' }
+    }
+    return {
+      version,
+      nodeEngine: (parsed.engines as { node?: unknown } | undefined)?.node
+    }
   } catch {
-    return undefined
+    return { error: 'manifest' }
   }
 }
 
@@ -126,6 +140,9 @@ export async function detectRuntime(settings: Settings, userData: string): Promi
   if (!nVersion) {
     return { state: 'error', source, nodePath, dshHome, error: t('main.nodeNotExecutable'), checkedAt }
   }
+  if (!valid(nVersion)) {
+    return { state: 'error', source, nodePath, nodeVersion: nVersion, cliPath, dshHome, error: t('main.nodeVersionInvalid'), checkedAt }
+  }
 
   if (!cliPath) {
     return {
@@ -139,8 +156,8 @@ export async function detectRuntime(settings: Settings, userData: string): Promi
     }
   }
 
-  const version = await packageVersion(dirname(dirname(cliPath)))
-  return {
+  const { version, nodeEngine, error } = await runtimePackage(dirname(dirname(cliPath)))
+  const info: RuntimeInfo = {
     state: 'ready',
     source,
     version,
@@ -150,5 +167,21 @@ export async function detectRuntime(settings: Settings, userData: string): Promi
     dshHome,
     checkedAt
   }
+  if (error) return { ...info, state: 'error', error: t(error === 'manifest' ? 'main.runtimePackageInvalid' : 'main.nodeEngineInvalid') }
+  // Read the selected program package rather than a dist-tag or version table.
+  // Older DSH releases without engines.node retain their existing behavior.
+  if (nodeEngine !== undefined) {
+    if (typeof nodeEngine !== 'string' || !nodeEngine.trim() || !validRange(nodeEngine)) {
+      return { ...info, state: 'error', error: t('main.nodeEngineInvalid') }
+    }
+    info.nodeRequirement = nodeEngine.trim()
+    if (!satisfies(nVersion, info.nodeRequirement)) {
+      return {
+        ...info, state: 'error',
+        error: t('main.nodeEngineMismatch', { version: version ?? t('main.unknownVersion'), required: info.nodeRequirement, actual: nVersion })
+      }
+    }
+  }
+  return info
 }
 

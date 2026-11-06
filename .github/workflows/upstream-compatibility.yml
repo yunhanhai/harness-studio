@@ -17,10 +17,18 @@ on:
   workflow_dispatch:
     inputs:
       dsh_version:
-        description: 'Exact official DSH version to check'
+        description: 'Exact official DSH version to check (0.2.2-rc.1 needs Node 24.9+; select Node 24)'
         default: '0.2.1-rc.2'
         required: true
         type: string
+      node_version:
+        description: 'Node.js major for this isolated compatibility run'
+        default: '22'
+        required: true
+        type: choice
+        options:
+          - '22'
+          - '24'
 
 permissions:
   contents: read
@@ -35,10 +43,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ inputs.node_version || '22' }}
           cache: npm
       - name: Install Studio dependencies
         run: npm ci
+      - name: Ensure Electron runtime
+        shell: pwsh
+        run: |
+          node node_modules/electron/install.js
+          if ($LASTEXITCODE -ne 0) { throw 'Electron runtime installation failed.' }
+          if (!(Test-Path -LiteralPath 'node_modules/electron/dist/electron.exe' -PathType Leaf)) {
+            throw 'Electron executable is missing after installation.'
+          }
       - name: Install isolated official DSH package
         shell: pwsh
         run: |

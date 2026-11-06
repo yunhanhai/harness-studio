@@ -62,7 +62,9 @@ npm run test:upstream:electron -- --dsh-package "$dshPackage" --expect-version 0
 
 `--keep-open-for-keyboard` 在 8 项自动检查通过后保留两个独立草稿，切回中文工作区，并开启、读回「每次发送前确认」。见命令打印的 `keyboard-session.json`。人工使用 `Ctrl+Tab` / `Ctrl+Shift+Tab` 后直接打字，确认只进入当前会话；再真实按 Enter，确认弹框，选择取消后草稿保留。此模式不配置模型凭据，不能与真实模型模式合用。关闭测试窗口或创建报告指定的 `stopRequestFile` 后，脚本退出并清理本轮隔离账户和浏览器状态；关闭窗口不代表人工验收通过。报告的无模型请求结论只覆盖自动阶段，人工结果单独记录。
 
-`.github/workflows/upstream-compatibility.yml` 在相关 main/PR 变更时自动检查基线版本，也支持手动指定另一个精确 DSH 版本。报告与截图作为 artifact 保存；它不配置真实服务或发送付费请求。
+`.github/workflows/upstream-compatibility.yml` 在相关 main/PR 变更时固定使用 Node.js 22 检查 `0.2.1-rc.2` 基线，不以 `latest` 作为自动门槛。手动运行可填写另一个精确 `dsh_version`，并从 `node_version` 选择 22 或 24，默认仍为 22。DSH `0.2.2-rc.1` 要求 Node.js 24.9+，检查该版本时需手动选择 24；工作流只在 CI 的临时目录安装所选版本，不升级用户运行时，也不改变默认基线。
+
+工作流在 `npm ci` 后显式运行 Electron 安装脚本，并确认 `node_modules/electron/dist/electron.exe` 存在后再开始验收，避免依赖安装结束但 Electron 未下载造成误报。报告与截图作为 artifact 保存；它不配置真实服务或发送付费请求。
 
 ## 显式真实模型验收
 

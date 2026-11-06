@@ -310,7 +310,7 @@ export function Home(): React.JSX.Element {
               <dt>{t('pages.home.status')}</dt>
               <dd>
                 <span className={`state-inline state-${runtime?.state ?? 'unknown'}`}>
-                  {runtime?.state === 'ready' ? t('pages.home.ready') : runtime?.state === 'missing' ? t('pages.home.missing') : t('pages.home.checking')}
+                  {runtime?.state === 'ready' ? t('pages.home.ready') : runtime?.state === 'missing' ? t('pages.home.missing') : runtime?.state === 'error' ? t('pages.home.runtimeError') : t('pages.home.checking')}
                 </span>
               </dd>
             </div>
