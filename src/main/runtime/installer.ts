@@ -8,6 +8,9 @@ import { logError, writeLogLine } from '../logger'
 import { detectRuntime } from './detect'
 
 const NODE_FALLBACKS = ['22.23.3', '22.20.0', '22.18.0']
+// Keep the Node 22 installer on the runtime covered by Studio's acceptance
+// checks. DSH 0.2.2 requires Node >=24.9; a moving dist-tag can break this pair.
+const DSH_VERSION = '0.2.1-rc.2'
 const DOWNLOAD_TIMEOUT_MS = 5 * 60 * 1000
 const INSTALL_TIMEOUT_MS = 12 * 60 * 1000
 
@@ -213,7 +216,7 @@ export class RuntimeInstaller {
           npmCli,
           [
             'install',
-            '@deepseek-ai/dsh@latest',
+            `@deepseek-ai/dsh@${DSH_VERSION}`,
             '--prefix',
             runtimeDir,
             '--registry',

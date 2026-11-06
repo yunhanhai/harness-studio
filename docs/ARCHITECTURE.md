@@ -230,7 +230,7 @@ Node.js 同理：自定义路径 → 便携运行时 → `C:\Program Files\nodej
 
 1. 从镜像下载官方 Node.js Windows zip；
 2. 解压到 `<userData>/runtime/node`；
-3. 用 Node 自带的 npm 执行 `npm install @deepseek-ai/dsh@latest --prefix <userData>/runtime`；
+3. 用 Node 自带的 npm 执行 `npm install @deepseek-ai/dsh@0.2.1-rc.2 --prefix <userData>/runtime`；固定已验收的 Node 22 / DSH 组合，上游 `latest` 的最低 Node 版本变化不会自动改变首次安装；
 4. 重新检测并返回版本。
 
 整个过程有阶段进度、取消和超时；失败时保留已有运行时。

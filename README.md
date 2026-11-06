@@ -123,7 +123,7 @@ Harness Studio 换了一个角度：**先让一个人每天用得顺手**。
 ### 一键运行时
 
 - 自动查找：自定义路径 → 便携运行时 → npm 全局 → PATH
-- 找不到时，一键下载 Node.js 并安装 `@deepseek-ai/dsh`
+- 找不到时，一键下载 Node.js 22 并安装已验收的 `@deepseek-ai/dsh@0.2.1-rc.2`；该组合固定版本，避免上游 `latest` 的运行时要求变化影响首次安装
 - 分阶段进度、可取消、超时保护、失败保留旧运行时
 - 支持自定义 npm registry 与 Node 镜像
 

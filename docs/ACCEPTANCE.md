@@ -10,6 +10,8 @@
 
 2026-11-06 用户明确要求现在发布并继续后续优化。本次按该决定推进发布，安装升级和两项人工键盘检查保留为未完成验证，在发行说明中披露；发布授权不代表这些检查通过。下述流程仍作为后续验收目标。
 
+发布前上游检查发现 DSH `latest` 已变为要求 Node.js 24.9+ 的 `0.2.2-rc.1`。本版一键安装因此固定到已验收的 `0.2.1-rc.2`，继续配套 Node 22。修复后重新构建和打包至 `.tools/v0.1.12-release-staging`，最终完整性报告为 `.tools/v0.1.12-release-artifacts.json`（主报告 `.tools/v0.1.12-artifacts.json` 同步指向最终包）。Setup 104,020,924 bytes、Portable 103,751,392 bytes，app.asar SHA-256 `34fd3c00f21bd6f1a01b2c6bc580d4289e4c7a9956b3fcfd30c89e17b3e7a354`。仅安装器主进程代码有变化，两个 preload 与 renderer 仍与真实模型验收一致；未重复付费调用。
+
 ## 仓库回归
 
 在 Windows、Node.js 22+、已安装依赖的 checkout 中运行：

@@ -38,7 +38,7 @@ Harness Studio takes a different angle: **make one developer's daily loop feel f
 - **Studio dashboard** — host status, port, version, uptime, runtime diagnostics, recent workspaces.
 - **Workspace switching** — Studio registers the project directory and opens it in the active tab, then verifies the session's working directory. Other tabs keep their conversations and drafts, and all tabs reuse one `dsh web` host. Project names and paths also follow navigation inside Harness.
 - **Session tabs** — several Harness conversations side by side in one window (`Ctrl+T` new, `Ctrl+W` close, `Ctrl+Tab` / `Ctrl+Shift+Tab` switch). Tabs share one runtime and switch without reloading; each is its own renderer process, so the count is capped (4 by default, 1–8 in Settings → General).
-- **One-click runtime** — detect a local `dsh`, or download Node.js and install `@deepseek-ai/dsh` with live progress.
+- **One-click runtime** — detect a local `dsh`, or download Node.js 22 and install the verified `@deepseek-ai/dsh@0.2.1-rc.2` with live progress. This fixed version keeps installation compatible when upstream `latest` changes its Node.js requirements.
 - **Official conversation UI** — embedded in a locked-down `<webview>`; no fork of model or tool behavior.
 - **Prompt library** — built-ins plus your own, one-click copy into the chat.
 - **Live logs** — stdout/stderr/system, filtering, auto-follow, token redaction.
