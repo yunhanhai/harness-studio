@@ -1,435 +1,131 @@
 # Harness Studio · 深寻工作台
 
-**为 DeepSeek Harness 打造的专属桌面工作台。** 不是另一个聊天客户端，而是把「项目、运行时、提示词、日志」收进一个窗口的日常开发环境。
+**为 DeepSeek Harness 打造的桌面工作台。** 在一个窗口中管理项目、会话、模型、技能、提示词与本地运行时。
 
-![platform](https://img.shields.io/badge/platform-Windows%2010%2F11-5B8CFF?style=flat-square)
-![license](https://img.shields.io/badge/license-MIT-22D3EE?style=flat-square)
-![electron](https://img.shields.io/badge/Electron-44-8B5CF6?style=flat-square)
-![status](https://img.shields.io/badge/status-beta-F59E0B?style=flat-square)
+> **项目支持** · 感谢 [艺の公益站](https://ultrarouter.org/sign-up?aff=KnwD) 为 Harness Studio 提供支持。
 
-[![GitHub release](https://img.shields.io/github/v/release/yunhanhai/harness-studio?style=flat-square&color=5B8CFF)](https://github.com/yunhanhai/harness-studio/releases)
-[![Gitee release](https://img.shields.io/badge/gitee-v0.1.12-C71D23?style=flat-square)](https://gitee.com/yunhanhai/harness-studio/releases)
-[![GitHub stars](https://img.shields.io/github/stars/yunhanhai/harness-studio?style=flat-square&color=F59E0B)](https://github.com/yunhanhai/harness-studio/stargazers)
+[![GitHub release](https://img.shields.io/github/v/release/yunhanhai/harness-studio?style=flat-square&color=5B8CFF)](https://github.com/yunhanhai/harness-studio/releases) [![Gitee release](https://img.shields.io/badge/Gitee-v0.1.12-C71D23?style=flat-square)](https://gitee.com/yunhanhai/harness-studio/releases) ![Windows](https://img.shields.io/badge/Windows-10%2F11%20x64-5B8CFF?style=flat-square) [![License](https://img.shields.io/badge/license-MIT-22D3EE?style=flat-square)](LICENSE) ![Beta](https://img.shields.io/badge/status-beta-F59E0B?style=flat-square)
 
-[English](README.en.md) · [下载](#下载) · [架构说明](docs/ARCHITECTURE.md) · [发布指南](docs/PUBLISHING.md) · [参与贡献](CONTRIBUTING.md) · [开发接手](docs/HANDOFF.md) · [本地安装](docs/LOCAL-INSTALL.md)
+[下载](#下载) · [快速开始](#快速开始) · [功能概览](#功能概览) · [开发进展](#开发进展) · [文档](#文档) · [English](README.en.md)
 
-> Harness Studio 是独立的开源项目，**不是 DeepSeek 官方产品**。它复用 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的 Web 运行时与会话能力，不包含模型权重、账号或任何闭源服务。
+Harness Studio 是独立开源项目，与 DeepSeek 官方无隶属关系；运行时和会话界面来自 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)。
 
----
+![Harness Studio 启动台](docs/screenshots/home.png)
 
-## 预览
+## 下载
 
-![启动台](docs/screenshots/home.png)
+当前公开版本：**v0.1.12** · **Windows 10/11 x64**
 
-<table>
-  <tr>
-    <td width="50%"><img src="docs/screenshots/prompts.png" alt="提示词库" /></td>
-    <td width="50%"><img src="docs/screenshots/palette.png" alt="命令面板" /></td>
-  </tr>
-  <tr>
-    <td align="center"><sub>提示词库：把好问题沉淀成可复用资产</sub></td>
-    <td align="center"><sub>命令面板：Ctrl+K 到达任何地方</sub></td>
-  </tr>
-</table>
-
-![工作区启动](docs/screenshots/workspace-starting.png)
-
----
-
-## 为什么还要一个 Desktop？
-
-官方 DeepSeek Harness Desktop 是一套完整、严谨的 Electron 工程：签名、更新、内置运行时、Office 运行时、平台浏览器，基础设施非常扎实。但它更偏向「把整套 Harness 交付出去」，源码构建链长，且没有面向普通用户的安装包。
-
-Harness Studio 换了一个角度：**先让一个人每天用得顺手**。
-
-| 日常体验 | 官方 Desktop | Harness Studio |
+| 下载来源 | 安装版 | 便携版 |
 | --- | --- | --- |
-| 获取方式 | 源码构建 | Setup 安装包 / 免安装便携版 |
-| 运行时 | 随包内置、专用 profile | 自动检测本机 `dsh`，或一键安装便携运行时 |
-| 多项目 | 单工作区 | 多工作区，切换时复用 Host，避免重复启动 |
-| 提示词 | 无 | 内置 6 条 + 自建、标签、使用次数 |
-| 日志 | 写文件，需自己找 | 实时面板、筛选、复制、令牌脱敏 |
-| 会话洞察 | 无 | token / 缓存命中 / 成本估算 / 14 天趋势 / 按模型与工作区分布 |
-| 全局快速提问 | 无 | `Ctrl+Alt+Space` 呼出输入框，直接发到当前会话 |
-| 命令面板 | 无 | `Ctrl+K` 搜索命令 / 工作区 / 提示词 |
-| 主题 | 跟随系统 | 深色 / 浅色 / 跟随系统 + 6 种强调色 |
-| 托盘与全局键 | 有 | 有，且支持关闭到托盘、最小化到托盘 |
-| 更新 | 官方更新通道 | 检查 GitHub Release、后台下载、重启安装 |
+| GitHub | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.12/Harness-Studio-0.1.12-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.12/Harness-Studio-0.1.12-x64-Portable.exe) |
+| Gitee | [Setup.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.12/Harness-Studio-0.1.12-x64-Setup.exe) | [Portable.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.12/Harness-Studio-0.1.12-x64-Portable.exe) |
 
-> 说明：官方 Desktop 在账号、强更策略、Office 技能等基础能力上更完整；Studio 的目标是把**高频开发体验**做得更轻、更快、更可定制。
+- **安装版**：适合日常使用，创建桌面和开始菜单快捷方式，支持自动更新。
+- **便携版**：免安装，数据保存在程序旁的 `HarnessStudioData/`。
 
----
+完整发行说明：[GitHub Releases](https://github.com/yunhanhai/harness-studio/releases) · [Gitee 发行版](https://gitee.com/yunhanhai/harness-studio/releases)
 
-## 功能
-
-### 启动台
-
-- 运行时状态、端口、版本、运行时长一屏可见
-- 最近工作区按固定 / 最近使用排序
-- 运行时诊断：来源、Node 版本、`DSH_HOME`、CLI 路径
-- 空状态引导，第一次打开就知道下一步做什么
-
-### 多工作区
-
-每个工作区绑定一个项目目录。切换时，Studio 会登记目录并在**当前标签页**打开对应的 Harness 会话，核对会话的实际工作目录后更新显示；其他标签保留原会话和输入。所有标签**复用同一个 Host 进程**，切换项目不必重新启动本地服务。
-
-在内嵌界面手动切换项目时，Studio 的项目名称和路径也会跟随更新。删除 Studio 工作区只移除书签，不会停止所有标签共用的服务。返回只有未发送草稿的旧项目时，上游可能打开新的空会话；需要保留草稿时，建议保留原标签。
-
-会话、凭据仍由 `~/.dsh` 管理，与 `dsh` CLI 共用。配置档案默认使用独立的 `studio`（首次启动从 `web` 复制），避免和正在运行的 `dsh web` 争用同一个 profile。
-
-### 会话标签页
-
-在工作区里并排打开多个 Harness 会话：一个盯着长任务，另一个继续问别的问题，切换是瞬时的，不会重新加载。
-
-- `Ctrl+T` 新建、`Ctrl+W` 关闭、`Ctrl+Tab` / `Ctrl+Shift+Tab` 切换，鼠标中键也能关闭；命令面板里也有对应命令；
-- 标签名跟随会话标题，每个标签保留自己的会话、滚动位置与输入状态；
-- 所有标签共用一个运行时，每个标签是一个独立的渲染进程，默认最多 4 个，可在「设置 → 通用 → 会话标签页」调整（1–8）；
-- 新标签打开在内嵌界面上次所在的位置，在左侧会话列表里选择即可；重启运行时后会收拢成一个标签；
-- 快速提问发到你正在看的那个标签；焦点在内嵌终端里时，`Ctrl+W` / `Ctrl+T` 交给终端，不会被拦截。
-
-### 会话输入焦点（v0.1.10）
-
-修复反向切标签后文字仍进入后台会话的问题。切标签统一交接 DOM 与原生输入焦点，离开工作区后输入交回 Studio；加载完成时保留正在使用的工具栏输入框。该修复已包含在当前本地安装版；v0.1.10 已在 GitHub 与 Gitee 发布，产物及两平台公开安装包的整文件下载校验通过。双向切换、跨页输入和发送确认的 Win32 自动验收已通过，人工键盘结果仍待确认。
-
-### 模型与免账号使用（v0.1.12）
-
-新增「设置 → 模型设置」、启动台和命令面板入口。首次打开工作区可选择**使用自定义模型 / 登录 DeepSeek 账号 / 稍后配置**。第三方 API 和本地兼容服务无需 DeepSeek 账号；接口地址、协议、模型 ID 与服务要求的密钥由 Harness 原生表单管理。没有配置可用模型时，可以先写草稿和管理技能，生成回答前仍需配置并选择模型。
-
-当前兼容层支持 OpenAI Chat Completions、OpenAI Responses 与 Anthropic Messages。本地服务若不验证密钥，可填写 `local-placeholder`；有认证时使用服务要求的密钥。工具调用、图片和推理能力取决于实际模型与接口。
-
-### DSH 技能中心（v0.1.12）
-
-侧栏与 `Ctrl+6` 打开技能中心，可搜索、预览正文和附带资源，查看项目/用户来源、无效声明与同名覆盖。标准项目 `.dsh/skills` 和当前 DSH_HOME 的 `skills` 支持新建、Markdown / 完整技能文件夹导入、编辑备份、删除与恢复；脚本、引用资料、二进制资源和空目录会一起保留。共享 `.agents`、自定义与随包来源只读。
-
-清单显示默认磁盘目录与可静态识别的自定义候选，完整 preset 配置及虚拟/远程提供商尚未包含。当前会话能否调用、是否刷新，请在 Harness 的 `/` 菜单确认。备份位于 Studio 数据目录的 `skill-backups`，恢复会检查原目录与外部修改，避免覆盖后续编辑。
-
-「插件精选」提供社区项目说明、官方发现组件文档与社区索引地址，安装仍由 Harness 管理；推荐项的组合兼容性尚未经过 Studio 验收。模型入口与技能中心已随 v0.1.12 在 GitHub、Gitee 发布。所选 Chat Completions 服务的多轮对话、技能指令与 `read` 工具验收通过；安装升级与人工键盘检查仍待补充，详见 [验收记录](docs/ACCEPTANCE.md)。
-
-### 插件管理（v0.1.9）
-
-启动台快捷操作与命令面板中新增「插件管理」，会切回工作区，在当前标签页打开 Harness 自带的管理面板。运行时需要先就绪；找不到兼容入口时会提示。
-
-插件安装、启停、配置和来源由 Harness 管理，官方目前没有默认插件市场。参见 [Harness 插件管理说明](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/client/ui-plugin-manager/README.zh.md)。插件管理入口从 v0.1.9 起提供，该版已在 GitHub 与 Gitee 发布并完成公开安装包整文件下载校验。
-
-### 发送确认
-
-内嵌界面按下回车就立即发送，误触无法撤回，而且队列里的待发消息会被一并提交。开启后 Studio 会在发送前问一次：
-
-- 「每次发送前确认」——拦截回车与发送按钮，确认后才真正发出；
-- 「发送会带上排队消息时额外提醒」——队列非空时，确认框明确写出「会连同 N 条排队消息一起提交」（默认开启）。
-
-两个开关都在「设置 → 通用 → 发送确认」。拿不到确认答复时一律放行，不会因为外壳异常堵住发送。
-
-### 一键运行时
-
-- 自动查找：自定义路径 → 便携运行时 → npm 全局 → PATH
-- 找不到时，一键下载 Node.js 22 并安装已验收的 `@deepseek-ai/dsh@0.2.1-rc.2`；该组合固定版本，避免上游 `latest` 的运行时要求变化影响首次安装
-- 分阶段进度、可取消、超时保护、失败保留旧运行时
-- 支持自定义 npm registry 与 Node 镜像
-
-### 内嵌官方会话界面
-
-不重写聊天 UI，不复制模型能力。Studio 用隔离的 `<webview>` 加载官方 Web UI：
-
-- 只允许当前 Host origin；
-- 新窗口、跨域导航交给系统浏览器；
-- 注入减少动效、滚动条与选中色，保持与外壳一致；
-- 支持缩放、前进后退、刷新、DevTools、专注模式。
-
-### 提示词库
-
-- 内置代码审查、重构、测试、解释代码、提交信息、需求拆解
-- 标题 / 内容 / 标签，按使用次数排序
-- 一键复制到剪贴板，粘贴进会话即可
-- 全部本地存储，不上传
-
-### 日志与诊断
-
-- Host 的 stdout / stderr / 系统消息实时汇总
-- 级别筛选、关键字过滤、自动跟随、一键复制
-- 启动 URL 中的 `token` 自动替换为 `token=***`
-- 同时写入 `host-YYYY-MM-DD.log`，退出后可查
-
-### 会话洞察
-
-官方 Desktop 没有。Studio 直接读取本机 `~/.dsh` 的会话数据，把用量变成可读的指标：
-
-- **总览卡片**：会话数、总 token、缓存命中率、回合 / 步骤、模型耗时、预估花费
-- **14 天趋势图**：按会话最后活跃日归入本地日历日，柱高为 token 总量
-- **按模型 / 按工作区分布**：哪个 provider、哪个项目最消耗上下文
-- **会话明细表**：标题、目录、模型、token、回合、活跃时间，可筛选、可打开会话目录
-- **自定义单价**：设置 → 洞察里填每百万 token 的价格与货币，估算花费；全填 0 则隐藏
-
-数据来源优先级：
-
-1. `~/.dsh/storages/session_projcache/sessions/*.json` —— DSH 自己的会话投影缓存，含 token、回合、模型等；
-2. 回退到 `~/.dsh/sessions/**/session.v*.jsonl.zstd` 的日志头，只统计会话与目录。
-
-整个过程只读本地文件，不解析对话内容，不上传任何东西。
-
-![会话洞察](docs/screenshots/insights.png)
-
-### 全局快速提问
-
-在任何应用里按 `Ctrl+Alt+Space`，弹出一个输入框，写完按 Enter 直接发到当前 Harness 会话——不用切窗口。
-
-- 自动发送：默认发送后关闭弹窗并显示主窗口，可改为只填入输入框
-- 自动切换到工作区：即使你停在启动台或日志页，也会自动切过去再注入
-- 最近提问：发送过的内容会被记住（默认 6 条，可调 1–20），一键回填重发
-- 首次运行的说明弹窗会被自动关掉；**登录 / API Key 弹窗不会被碰**，避免误操作账号
-- `Shift+Enter` 换行，`Esc` 关闭
-- 行为可在「设置 → 通用 → 快速提问」调整
-
-> 实现上不依赖 Harness 内部 RPC：Studio 聚焦 composer，通过 Chromium 真实输入事件写入文本，再点击发送按钮。上游改版时比抓私有 API 更稳。
-
-![全局快速提问](docs/screenshots/quickask.png)
-
-最近提问记录保存在 `%APPDATA%\Harness Studio\quickask-recent.json`，只存文本，可随时删除。
-
-### 占用诊断
-
-Harness 对「一个 profile 只能被一个进程写入」和「一个会话只能被一个写入者持有」做了跨进程加锁。当你在别处还开着 `dsh web`、桌面端或另一个 Studio 时，发消息会得到「当前会话已被占用」。
-
-Studio 让这条提示真正可操作：
-
-- 官方那条瞬态提示既不能选中也没有关闭按钮，3 秒后自己消失。Studio 把它镜像成自己的提示：**可选中、可复制、有关闭按钮、不会自己跑掉**，并隐藏原始的那一份；
-- 提示里直接带「结束其他 DSH 进程」按钮，点开就是本机的 `dsh` 进程列表；
-- 「设置 → 运行时 → 其他 DSH 进程」列出每个进程的 PID、profile、Web/命令行模式与完整命令行，Studio 自己的那条会高亮且不可误杀；结束前会弹确认框；
-- 如果当前权限只能看到机器的一部分进程（Low 完整性令牌），面板会明确显示琥珀色警告，而不是错误地告诉你「没有其他 DSH 进程」。
-
-### 桌面原生能力
-
-- 托盘菜单：打开、切换工作区、重启运行时、日志、设置、退出
-- 全局快捷键：`Ctrl+Alt+H` 显示/隐藏，`Ctrl+Alt+K` 命令面板，`Ctrl+Alt+Space` 快速提问
-- **崩溃自动恢复**：Host 意外退出后按 2s → 5s → 15s 自动重启，界面显示重试倒计时
-- 关闭到托盘 / 最小化到托盘（首次关闭有确认）
-- 开机自启、启动最小化、单实例
-- 无边框窗口、自定义标题栏、窗口状态恢复
-
-### 外观
-
-- 深色 / 浅色 / 跟随系统
-- 6 种强调色 + 自定义取色
-- 界面缩放 80%–140%
-- 会话阅读字号（v0.1.11）：跟随 Harness、14、16、18 px，保存后所有会话正文立即更新，可恢复默认
-- 减少动态效果
-- 中英文字体回退与等宽数字
-
-![浅色主题](docs/screenshots/home-light.png)
-
-### 界面语言（v0.1.8）
-
-在「设置 → 通用 → 界面语言」选择中文、English 或跟随系统，选择会保存并同步到主窗口、命令面板和快速提问。切换语言不会重新加载会话，也不会清掉输入和设置草稿。
-
-Studio 的页面、日期格式、托盘、菜单及确认框使用所选语言；Harness 内嵌界面、用户会话、已保存提示词与原始日志保持原样。已有错误和安装进度快照保留生成时的语言。界面语言从 v0.1.8 起提供，GitHub 和 Gitee 均可下载新版。
-
----
+安装包目前未做代码签名，Windows 可能提示未知发布者；请确认下载来源。构建与发布校验记录见 [验收文档](docs/ACCEPTANCE.md)。
 
 ## 快速开始
 
-### 下载
+1. 打开 Studio，选择一个项目文件夹。
+2. Studio 检测本机 `dsh`；没有可用运行时时，点击“一键安装”。
+3. 打开工作区，在 Harness 原生表单中配置并选择模型。可使用自定义 API、本地兼容服务或 DeepSeek 账号。
+4. 按需打开技能中心、插件管理或新会话标签，开始使用模型与工具。
 
-| 平台 | 安装版 | 便携版 |
-| --- | --- | --- |
-| **GitHub**（全球） | [Setup.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.12/Harness-Studio-0.1.12-x64-Setup.exe) | [Portable.exe](https://github.com/yunhanhai/harness-studio/releases/download/v0.1.12/Harness-Studio-0.1.12-x64-Portable.exe) |
-| **Gitee**（国内更快） | [Setup.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.12/Harness-Studio-0.1.12-x64-Setup.exe) | [Portable.exe](https://gitee.com/yunhanhai/harness-studio/releases/download/v0.1.12/Harness-Studio-0.1.12-x64-Portable.exe) |
+使用自定义 API 或本地兼容服务无需 DeepSeek 账号，服务所需的地址、协议、模型 ID 和密钥仍需自行配置。内置安装组合固定为 Node.js 22 与 `@deepseek-ai/dsh@0.2.1-rc.2`，其他 DSH 版本请核对其 Node.js 要求。
 
-- **Setup.exe**（99 MB）— 安装版，创建开始菜单与桌面快捷方式，支持自动更新
-- **Portable.exe**（99 MB）— 免安装，数据写在可执行文件旁的 `HarnessStudioData/`
+## 功能概览
 
-完整发布页：[GitHub Releases](https://github.com/yunhanhai/harness-studio/releases) · [Gitee 发行版](https://gitee.com/yunhanhai/harness-studio/releases)
+| 能力 | 日常用途 |
+| --- | --- |
+| 多项目与会话标签 | 在当前标签打开项目，多个会话复用一个 Host；默认最多 4 个标签，可调整到 1–8 个 |
+| 模型设置 | 从 Studio 进入 Harness 原生配置；支持兼容接口与本地服务，实际能力取决于模型和协议 |
+| DSH 技能中心 | 搜索、预览和管理标准项目/用户技能，支持完整文件夹导入、编辑备份与恢复 |
+| 插件管理 | 在当前会话打开 Harness 自带的管理面板 |
+| 提示词与快速提问 | 保存常用提示词，用全局快捷键向当前会话发送或填入内容 |
+| 日志与会话洞察 | 查看运行日志、token 用量、缓存命中率、模型/工作区分布和费用估算 |
+| 桌面体验 | 托盘、快捷键、崩溃恢复、主题、阅读字号与中英界面 |
 
-当前版本为 v0.1.12，两平台公开附件均已完整匿名下载并核对哈希。实际打包程序的 8 项官方 DSH 检查通过；安装升级与人工键盘结果单独记录，尚未标记通过。
+[查看功能详解与使用边界](docs/FEATURES.md)
 
-> 当前安装包未做代码签名，Windows SmartScreen 可能提示"未知发布者"。选择「更多信息 → 仍要运行」即可。介意的话可以自行从源码构建。
+<details>
+<summary>查看更多界面：提示词、命令面板与会话洞察</summary>
 
-### 从源码安装到本机（推荐开发者）
+![提示词库](docs/screenshots/prompts.png)
 
-```powershell
-npm install --ignore-scripts
-$env:ELECTRON_MIRROR = "https://npmmirror.com/mirrors/electron/"
-node node_modules/electron/install.js
-npm run install:local
-```
+![命令面板](docs/screenshots/palette.png)
 
-`install:local` 会构建并**原地部署**到 `%LOCALAPPDATA%\Programs\Harness Studio`，同时创建桌面与开始菜单快捷方式。之后再改代码，重复执行这一条就能升级——旧文件会被清空覆盖，不会堆出多个副本；用户数据在 `%APPDATA%\Harness Studio`，升级不受影响。
+![会话洞察](docs/screenshots/insights.png)
 
-细节见 [docs/LOCAL-INSTALL.md](docs/LOCAL-INSTALL.md)。
+</details>
 
-### 首次使用
+## 开发进展
 
-1. 打开 Studio，点击「选择文件夹」，选一个正在开发的项目；
-2. Studio 检测运行时：
-   - 已安装 `dsh`：直接使用；
-   - 没有：点击「一键安装」，自动准备 Node.js 与 `dsh`；
-3. 进入工作区，使用 DeepSeek Harness 原本的模型与工具设置（`~/.dsh`）。Studio 默认创建独立的 `studio` 配置档案，首次启动从 `web` 复制，不会影响你现有的命令行配置；
-4. 没有配置模型密钥时，按 Harness 自己的设置页提示配置。
+以下是**未发布的开发记录**，尚未包含在 v0.1.12 安装包中；后续可用范围以发行说明为准。
 
-### 从源码运行
+| 方向 | 已完成的开发工作 |
+| --- | --- |
+| 档案诊断与恢复 | 配置体检、本地快照、恢复前备份、已识别插件停用与依赖修复 |
+| Profile 管理 | 档案列表、显示名/备注、固定配置复制、完全停止后选择与诊断联动 |
+| 插件目录 | 离线浏览、搜索筛选、版本/许可依据和明确限定的实测状态 |
+| 下载容错 | 有限重试、失败原因、可选内置后备源；自定义来源不自动切换 |
 
-需要 Node.js 22+ 与 npm 10+。
+完整环境预设、多版本库和运行中切换仍在规划。Profile 副本共享同一 `DSH_HOME` 的全局配置；配置可能包含凭据，快照和副本仅用于本机。详见 [开发记录与功能边界](docs/FEATURES.md#环境诊断与配置恢复未发布开发记录)。
+
+## 从源码运行
+
+需要 **Windows 10/11 x64、Node.js 22+、npm 10+**。具体开发环境与构建依赖见 [贡献指南](CONTRIBUTING.md)。
 
 ```powershell
 git clone https://github.com/yunhanhai/harness-studio.git
 cd harness-studio
-npm install
+npm install --ignore-scripts
 $env:ELECTRON_MIRROR = "https://npmmirror.com/mirrors/electron/"
 node node_modules/electron/install.js
 npm run dev
 ```
 
-如果 `npm install` 在受限环境里被生命周期脚本卡住：
+| 常用命令 | 作用 |
+| --- | --- |
+| `npm run dev` | 启动 Electron 开发模式与热更新 |
+| `npm run typecheck` | 检查主进程与渲染进程类型 |
+| `npm run build` | 构建到 `out/` |
+| `npm run preview:ui` | 使用模拟数据在浏览器预览界面 |
+| `npm run dist` | 生成 Windows 安装版与便携版 |
 
-```powershell
-npm install --ignore-scripts
-node node_modules/electron/install.js
-```
-
-### 打包
-
-```powershell
-$env:ELECTRON_BUILDER_BINARIES_MIRROR = "https://npmmirror.com/mirrors/electron-builder-binaries/"
-npm run dist
-```
-
-产物在 `dist/`：NSIS 安装包、便携版、`latest.yml`。
-
----
-
-## 工作原理
-
-```
-┌───────────────────────────────────────────────┐
-│ Electron main                                 │
-│  窗口 · 托盘 · 快捷键 · 设置 · Host 管理      │
-└──────────────┬───────────────────┬────────────┘
-               │ IPC               │ child_process
-┌──────────────▼──────────┐  ┌─────▼──────────────────┐
-│ React 工作台（渲染进程） │  │ dsh web（127.0.0.1）    │
-│  启动台 / 提示词 / 日志  │  │  官方 Web UI 与 Agent   │
-│  设置 / 命令面板 / 主题  │◄─┤  启动令牌 + Cookie      │
-└─────────────────────────┘  └────────────────────────┘
-```
-
-- 主进程负责一切特权操作；渲染进程没有 Node 权限；
-- 内嵌界面使用独立 session 分区，只信任当前 Host origin；
-- 启动 URL 带一次性令牌，日志中自动脱敏；
-- 详细设计见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)；想参与开发先读 [docs/HANDOFF.md](docs/HANDOFF.md)。
-
----
+源码部署到本机见 [本地安装与升级](docs/LOCAL-INSTALL.md)；打包与双平台发布见 [发布指南](docs/PUBLISHING.md)。
 
 ## 快捷键
 
 | 快捷键 | 作用 |
 | --- | --- |
-| `Ctrl+K` | 命令面板 |
-| `Ctrl+,` | 设置 |
-| `Ctrl+1` / `2` / `3` | 启动台 / 工作区 / 会话洞察 |
-| `Ctrl+4` / `5` | 提示词库 / 运行日志 |
-| `Ctrl+T` / `Ctrl+W` | 新建 / 关闭会话标签页 |
-| `Ctrl+Tab` / `Ctrl+Shift+Tab` | 下一个 / 上一个会话标签页 |
-| `Ctrl+Alt+H` | 全局显示 / 隐藏窗口 |
-| `Ctrl+Alt+K` | 全局打开命令面板 |
-| `Ctrl+Alt+Space` | 全局快速提问（直接发到当前会话） |
-| `F12` / `Ctrl+Shift+I` | 开发者工具 |
+| `Ctrl+K` / `Ctrl+,` | 命令面板 / 设置 |
+| `Ctrl+1`–`Ctrl+6` | 启动台、工作区、洞察、提示词、日志、技能中心 |
+| `Ctrl+T` / `Ctrl+W` | 新建 / 关闭会话标签 |
+| `Ctrl+Tab` / `Ctrl+Shift+Tab` | 切换会话标签 |
+| `Ctrl+Alt+H` / `Ctrl+Alt+K` | 全局显示窗口 / 命令面板 |
+| `Ctrl+Alt+Space` | 全局快速提问 |
 
-快捷键可在「设置 → 通用 → 全局快捷键」修改。
+快捷键可在“设置 → 通用”修改。
 
----
+## 文档
 
-## 配置与数据
-
-| 数据 | 路径 |
+| 想了解什么 | 文档 |
 | --- | --- |
-| 设置 | `%APPDATA%\Harness Studio\settings.json` |
-| 工作区 | `%APPDATA%\Harness Studio\workspaces.json` |
-| 提示词 | `%APPDATA%\Harness Studio\prompts.json` |
-| 日志 | `%APPDATA%\Harness Studio\logs\` |
-| 便携运行时 | `%APPDATA%\Harness Studio\runtime\` |
-| DSH 会话 / 凭据 | `~/.dsh`（与 `dsh` CLI 共用） |
+| 功能与使用边界 | [功能详解](docs/FEATURES.md) |
+| 配置、数据与 Host 设计 | [架构说明](docs/ARCHITECTURE.md) |
+| 参与开发 | [贡献指南](CONTRIBUTING.md) · [开发交接](docs/HANDOFF.md) |
+| 安装、打包与发布 | [本地安装](docs/LOCAL-INSTALL.md) · [发布指南](docs/PUBLISHING.md) |
+| 版本变化与验证记录 | [更新日志](CHANGELOG.md) · [验收文档](docs/ACCEPTANCE.md) |
+| 问题与建议 | [GitHub Issues](https://github.com/yunhanhai/harness-studio/issues) · [Gitee Issues](https://gitee.com/yunhanhai/harness-studio/issues) |
 
-便携版把上述 `Harness Studio` 目录替换为可执行文件旁的 `HarnessStudioData/`。
+## 致谢与许可
 
-开发时可用 `HARNESS_STUDIO_USER_DATA` 指向隔离目录：
+感谢 [艺の公益站](https://ultrarouter.org/sign-up?aff=KnwD) 提供支持，感谢 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 提供运行时、Agent 与 Web UI，以及所有贡献者。
 
-```powershell
-$env:HARNESS_STUDIO_USER_DATA = "D:\tmp\hs-dev"
-npm run dev
-```
+基于 [Electron](https://www.electronjs.org/)、[React](https://react.dev/)、[Vite](https://vite.dev/)、[Tailwind CSS](https://tailwindcss.com/) 构建，图标来自 [Lucide](https://lucide.dev/)。
 
----
-
-## 开发
-
-```powershell
-npm run dev          # Electron + HMR
-npm run typecheck    # 主进程 + 渲染进程
-npm run test:conversation-font # 阅读字号设置与 preload 回归
-npm run build        # 构建 out/
-npm run preview:ui   # 无需 Electron 的浏览器 UI 预览
-npm run icons        # 从 resources/brand.svg 重新生成图标
-```
-
-浏览器预览会在 `http://127.0.0.1:4179` 用 mock API 渲染真实 React 包，适合改样式和截图。
-
-目录：
-
-```
-src/
-  main/       主进程：窗口、托盘、Host、运行时、IPC、存储
-  preload/    contextBridge 白名单；workspace preload 注入主题
-  renderer/   React 工作台与命令面板
-  shared/     类型、默认值、IPC 通道
-scripts/      图标生成、UI 预览、截图
-docs/         架构、发布指南、截图
-```
-
----
-
-## 发布到 GitHub / Gitee
-
-仓库已经准备好：
-
-- `.github/workflows/ci.yml`：类型检查、工作区/插件导航、语言、标签焦点、阅读字号回归与构建
-- `.github/workflows/release.yml`：打 `v*` 标签自动构建并发布 Release
-- `.github/workflows/mirror-gitee.yml`：手动把仓库镜像到 Gitee
-- `docs/PUBLISHING.md`：从替换占位符到双平台发布的完整步骤
-
-仓库已配置为 `yunhanhai/harness-studio`。如果你 fork 到自己的账号，需要同步替换 4 处：
-
-1. `src/shared/defaults.ts` 的 `GITHUB_REPO` / `GITEE_REPO`
-2. `package.json` 的 `homepage` / `repository`
-3. `electron-builder.yml` 的 `publish.owner`
-4. 本 README 与 `README.en.md` 中的仓库链接
-
----
-
-## 路线图
-
-- [x] 会话洞察：token、缓存命中、成本、每日趋势（读取 `~/.dsh/sessions` 与投影缓存）
-- [x] 自动更新：`electron-updater` + GitHub Releases
-- [x] 全局快速提问：`Ctrl+Alt+Space` 呼出输入框，直接发到当前会话
-- [x] Host 崩溃自动恢复：指数退避重启 + 界面倒计时
-- [x] 会话标签页：一个运行时上并排打开多个会话（原计划是每个标签一个 Host，改为共用一个，原因见[架构说明](docs/ARCHITECTURE.md#会话标签页)）
-- [x] 官方插件管理入口（v0.1.9）
-- [ ] macOS 构建与签名
-- [x] 界面英文化（v0.1.8）
-
-欢迎在 Issues 里投票或补充。
-
----
-
-## 致谢
-
-- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) — 运行时、Agent 与 Web UI，MIT
-- [Electron](https://www.electronjs.org/)、[React](https://react.dev/)、[Vite](https://vite.dev/)、[Tailwind CSS](https://tailwindcss.com/)
-- [Lucide](https://lucide.dev/) 图标
-- 所有提交 issue、截图和 PR 的人
-
-## 许可
-
-[MIT](LICENSE) © 2026 Harness Studio Contributors
-
-## 免责声明
-
-本项目与 DeepSeek 官方无隶属关系。「DeepSeek」「DeepSeek Harness」是其各自权利人的商标。使用本项目产生的模型调用费用、数据与合规责任由使用者自行承担。
+[MIT](LICENSE) © 2026 Harness Studio Contributors。DeepSeek 相关名称与商标属于其各自权利人；模型服务费用与数据使用规则由所选服务决定。
